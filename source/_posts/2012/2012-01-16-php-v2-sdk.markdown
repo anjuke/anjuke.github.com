@@ -1,0 +1,235 @@
+---
+layout: post
+title: "PHP V2 SDK 设计规范"
+date: 2012-01-16 16:27
+author: erning
+comments: true
+categories: 
+ - spec
+---
+
+本文涉及PHP V2代码级SDK设计的规范。
+
+## 代码
+
+### 目录结构和命名
+
+SDK的模块代码将和客户代码在同一个运行时环境下执行，代码的命名需要注意，避免名称冲突。
+
+假设发布功能模块的SDK名称为`($SDK_NAME)`，其代码的根目录应该命名为:`app-($SDK_NAME)-shared`。
+
+    app-($SDK_NAME)-shared
+    |
+    +--- classes
+    |    |    
+    |    +--- $(SDK_NAME)
+    |    |    |
+    |    |    + API.php
+    |    |
+    |    + ...
+    |
+    +--- config
+    |    |
+    |    +--- database.php
+    |    |
+    |    +--- common.php
+    |    |
+    |    + ...
+    |
+    +--- lib
+
+对使用SDK的客户代码，只需要关心一个类`($SDK_NAME)_API`，类文件位于`classes/($SDK_NAME)/API.php`。
+客户代码在需要调用模块的地方引用
+
+```php
+<?php
+apf_require_class("{$SDK_NAME}_API");
+$api = ($SDK_NAME)_API::get_instance();
+$api->exported_func();
+```
+
+API文件的基本格式为：
+
+```php
+<?php
+apf_require_class('....');
+apf_require_class('....');
+
+class ($SDK_NAME)_API {
+    const VERSION = '....';
+
+    public static function get_instance() {
+        ...
+    }
+
+    public function exported_func() {
+        ...
+    }
+}
+```
+
+<!-- more -->
+
+### 配置管理
+代码已经有**名字空间**的概念，要求代码在独立的名字空间下，而配置文件原先没有这个概念。
+为了不和其他代码模块冲突，配置文件也需要遵循前缀的策略。
+
+#### Database
+SDK的数据库配置不能够简单的起名为`master`、`slave`，而必须增加`($SDK_NAME)_`前缀。例如
+
+```php
+<?php
+...
+$config['bbs_master'] = array(
+    ...
+);
+
+$config['bbs_slave'] = array(
+    ...
+);
+```
+
+如上述例子，SDK里引用的配置项要求**全部采用`($SDK_NAME)_`作为前缀**。
+
+#### Memcached
+SDK的Memcached配置也必须增加`($SDK_NAME)_`前缀。例如
+
+```php
+<?php
+...
+$config['server' = array(...);
+$config["{$SDK_NAME}_server"] = array(...);
+```
+
+同时，system下的`APF_Cache_Factory`类的`get_memcache()`和`load_memcache()`方法也需要做相应的改进，增加memcache的名字参数
+
+```diff
+diff --git a/system/classes/apf/cache/Factory.php b/system/classes/apf/cache/Factory.php
+--- a/system/classes/apf/cache/Factory.php
++++ b/system/classes/apf/cache/Factory.php
+@@ -17,20 +17,20 @@ class APF_Cache_Factory {
+     /**
+      * @return APF_Cache_Memcache
+      */
+-    public function get_memcache() {
+-        if (!isset($this->memcache)) {
+-            $this->memcache = $this->load_memcache();
++    public function get_memcache($name='') {
++        if (!isset($this->memcaches[$name])) {
++            $this->memcaches[$name] = $this->load_memcaches($name);
+         }
+-        return $this->memcache;
++        return $this->memcaches[$name];
+     }
+ 
+     /**
+      * @return APF_Cache_Memcache
+      */
+-    public function load_memcache() {
++    public function load_memcache($name='') {
+         apf_require_class($this->memcache_class);
+         $memcache = new $this->memcache_class();
+-        $servers = APF::get_instance()->get_config("servers", "cache");
++        $servers = APF::get_instance()->get_config(($name) ? "{$name}_servers" : "servers", "cache");
+         foreach ($servers as $server) {
+             $memcache->addServer($server['host'], $server['port']);
+         }
+@@ -39,9 +39,9 @@ class APF_Cache_Factory {
+     }
+ 
+     /**
+-     * @var APF_Cache_Memcache
++     * @var APF_Cache_Memcache array
+      */
+-    private $memcache;
++    private $memcaches=array();
+ 
+     //
+```
+
+这个对system的改动，需要使用SDK的**各个事业部都应该进行**。
+
+### 部署建议
+
+代码位置：
+
+    RELEASE_PATH
+    |
+    +--- app-foobar
+    |
+    +--- app-($SDK_NAME)-shared
+    |
+    +--- app-($SDK_NAME)-demo
+    |
+    +--- system
+
+入口文件：
+
+    /home/www/v2
+    |
+    +--- foobar
+    |    |
+    |    +--- index.php
+    |    |
+    |    +--- config
+    |    |    |
+    |    |    +--- database.php
+    |    |    |
+    |    |    + ...
+    |
+    |
+    +--- ($SDK_NAME)
+    |    |
+    |    +--- 
+    |    |
+    |    +--- config_($SDK_VERSION)
+    |    |    |
+    |    |    +--- database.php
+    |    |    |
+    |    |    + ...
+    |
+
+
+`($SDK_NAME)/config_($SDK_VERSION)`目录下的文件由SDK的配置发布工具自动更新。
+
+`index.php`里的配置文件路径:
+
+```php
+<?php
+...
+$G_CONF_PATH=array( 
+		APP_PATH."../app-{$SDK_NAME}-shared/config/",       // SDK的缺省配置
+		APP_PATH.'config/',                                 // APP的缺省配置
+		"/home/www/v2/{$SDK_NAME}/config_{$SDK_VERSION}/",  // SDK的生成环境配置，由agent自动更新
+		'/home/www/v2/'.APP_NAME.'/config/',                // APP的生成环境配置，可以覆盖SDK的配置
+);
+```
+
+## 版本
+
+### 兼容性要求
+
+SDK和客户app程序都依赖APF的system，因此SDK首先要保证不使用特殊的system版本，例如数据库访问应该仅依赖`system/apf/db`里现有的方法。
+
+其他事业部对system的改动也将严格限制。一般情况下，
+
+* 不允许对现有的system目录下的类进行改动
+* 由于新功能或改进功能而增加修改的类应该方在app程序的目录下，例如`app-aifang-core`这样的包内
+* 不应该出现`APF_`为名字空间前缀的类
+
+### 版本号规则
+
+* 版本号的基本规则为X.Y.Z三部分的数字
+* 公开的API改变或减少，增加X，同时Y,Z清0
+* 公开的API增加或者实现的改变，增加Y，同时Z清0
+* 仅对BUG修复的，增加Z
+* 预发布、测试的版本，格式为X.Y.0-foobar，其中Z为0。这种版本不作为对外公布的正式版本，仅供开发或测试使用。
+* 所有新的公开发布必须使用新的版本号
+
+详细规则见张吉翻译的[版本号的语义命名法](https://github.com/anjuke-inc/semver/blob/zh-cn/semver.md)
+
+
+## 自动化配置部署
+
+客户程序的app服务器上需要配置SDK的config-agent脚本。这个脚本根据SDK的服务提供方要求，自动修改SDK相关的配置。
+
