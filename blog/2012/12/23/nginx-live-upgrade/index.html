@@ -1,0 +1,529 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Nginx热升级 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="系统管理员可以使用Nginx提供的信号机制来对其进行维护，比较常用的是kill -HUP &lt;master pid&gt;命令，它能通知Nginx使用新的配置文件启动工作进程，并逐个关闭旧进程，完成平滑切换。当需要对Nginx进行版本升级或增减模块时，为了不丢失请求，可以结合使用USR2、 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/12/23/nginx-live-upgrade/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Nginx热升级</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-23T22:11:00+08:00" pubdate data-updated="true">Dec 23<span>rd</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>系统管理员可以使用Nginx提供的信号机制来对其进行维护，比较常用的是<code>kill -HUP &lt;master pid&gt;</code>命令，它能通知Nginx使用新的配置文件启动工作进程，并逐个关闭旧进程，完成平滑切换。当需要对Nginx进行版本升级或增减模块时，为了不丢失请求，可以结合使用<code>USR2</code>、<code>WINCH</code>等信号进行平滑过度，达到热升级的目的。如果中途遇到问题，也能立刻回退至原版本。</p>
+
+<h2>操作步骤</h2>
+
+<p>1、备份原Nginx二进制文件；</p>
+
+<p>2、编译新Nginx源码，安装路径需与旧版一致；</p>
+
+<p>3、向主进程发送<code>USR2</code>信号，Nginx会启动一个新版本的master进程和工作进程，和旧版一起处理请求：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>prey:~ root# ps -ef|grep nginx
+</span><span class='line'> 127     1   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'> 129   127   nginx: worker process
+</span><span class='line'>prey:~ root# <span class="nb">kill</span> -USR2 127
+</span><span class='line'>prey:~ root# ps -ef|grep nginx
+</span><span class='line'> 127     1   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'> 129   127   nginx: worker process
+</span><span class='line'>5180   127   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'>5182  5180   nginx: worker process
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<!-- more -->
+
+
+<p>4、向原Nginx主进程发送<code>WINCH</code>信号，它会逐步关闭旗下的工作进程（主进程不退出），这时所有请求都会由新版Nginx处理：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>prey:~ root# <span class="nb">kill</span> -WINCH 127
+</span><span class='line'>prey:~ root# ps -ef|grep nginx
+</span><span class='line'> 127     1   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'>5180   127   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'>5182  5180   nginx: worker process
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>5、如果这时需要回退，可向原Nginx主进程发送<code>HUP</code>信号，它会重新启动工作进程， <strong>仍使用旧版配置文件</strong> 。尔后可以将新版Nginx进程杀死（使用<code>QUIT</code>、<code>TERM</code>、或者<code>KILL</code>）：</p>
+
+<p>6、如果不需要回滚，可以将原Nginx主进程杀死，至此完成热升级。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>prey:~ root# <span class="nb">kill </span>127
+</span><span class='line'>prey:~ root# ps -ef|grep nginx
+</span><span class='line'>5180     1   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'>5182  5180   nginx: worker process
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>切换过程中，Nginx会将旧的<code>.pid</code>文件重命名为<code>.pid.oldbin</code>文件，并在旧进程退出后删除。</p>
+
+<h2>原理简介</h2>
+
+<h3>多进程模式下的请求分配方式</h3>
+
+<p>Nginx默认工作在多进程模式下，即主进程（master process）启动后完成配置加载和端口绑定等动作，<code>fork</code>出指定数量的工作进程（worker process），这些子进程会持有监听端口的文件描述符（fd），并通过在该描述符上添加监听事件来接受连接（accept）。</p>
+
+<h3>信号的接收和处理</h3>
+
+<p>Nginx主进程在启动完成后会进入等待状态，负责响应各类系统消息，如SIGCHLD、SIGHUP、SIGUSR2等。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="c1">// src/os/unix/ngx_process_cycle.c</span>
+</span><span class='line'><span class="kt">void</span>
+</span><span class='line'><span class="nf">ngx_master_process_cycle</span><span class="p">(</span><span class="n">ngx_cycle_t</span> <span class="o">*</span><span class="n">cycle</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">sigset_t</span>           <span class="n">set</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">set</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">set</span><span class="p">,</span> <span class="n">SIGCHLD</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">set</span><span class="p">,</span> <span class="n">ngx_signal_value</span><span class="p">(</span><span class="n">NGX_RECONFIGURE_SIGNAL</span><span class="p">));</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">set</span><span class="p">,</span> <span class="n">ngx_signal_value</span><span class="p">(</span><span class="n">NGX_CHANGEBIN_SIGNAL</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="n">SIG_BLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">set</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">ngx_log_error</span><span class="p">(</span><span class="n">NGX_LOG_ALERT</span><span class="p">,</span> <span class="n">cycle</span><span class="o">-&gt;</span><span class="n">log</span><span class="p">,</span> <span class="n">ngx_errno</span><span class="p">,</span>
+</span><span class='line'>                      <span class="s">&quot;sigprocmask() failed&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span> <span class="p">;;</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">sigsuspend</span><span class="p">(</span><span class="o">&amp;</span><span class="n">set</span><span class="p">);</span> <span class="c1">// 等待信号</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 信号回调函数定义在 src/os/unix/ngx_process.c 中，</span>
+</span><span class='line'>        <span class="c1">// 它只负责设置全局变量，实际处理逻辑在这里。</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">ngx_change_binary</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">ngx_change_binary</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>            <span class="n">ngx_log_error</span><span class="p">(</span><span class="n">NGX_LOG_NOTICE</span><span class="p">,</span> <span class="n">cycle</span><span class="o">-&gt;</span><span class="n">log</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;changing binary&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">ngx_new_binary</span> <span class="o">=</span> <span class="n">ngx_exec_new_binary</span><span class="p">(</span><span class="n">cycle</span><span class="p">,</span> <span class="n">ngx_argv</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上述代码中的<code>ngx_exec_new_binary</code>函数会调用<code>execve</code>系统函数运行一个新的Nginx主进程，并将当前监听端口的文件描述符通过环境变量的方式传递给新的主进程，这样新的主进程<code>fork</code>出的子进程就同样能够对监听端口添加事件回调，接受连接，从而使得新老Nginx共同处理用户请求。</p>
+
+<h2>其它方式</h2>
+
+<p>除了使用上述方式进行Nginx热升级，还可以选择以下两种方式：</p>
+
+<h3>Keepalived主备切换</h3>
+
+<p>Nginx用作LB时一般会用<a href="http://www.keepalived.org/">Keepalived</a>做热备，即DNS解析指向一个虚拟IP（VIP），主备服务器上分别启动Keepalived进程，当Master健康检查失败，Slave会自动抢夺VIP，完成切换。</p>
+
+<p>在进行热升级时就可以使用这种方式，在Slave上进行Nginx升级，然后关闭Master的Keepalived进程，完成VIP的漂移。测试完成后可以对继续对Master进行升级操作，或选择回滚。</p>
+
+<h3>Tengine动态模块</h3>
+
+<p>当需要增加Nginx模块时，必须对Nginx源码进行重新编译，然后采用上面提到的方式进行热升级。Nginx官网上说未来并无打算增加动态模块加载的功能，至少1.x中不会。</p>
+
+<p>如果你愿意使用<a href="http://tengine.taobao.org/">Tengine</a>，淘宝开发的一个Nginx分支，它提供了动态模块加载（DSO）功能。这里简单介绍一下使用方法：</p>
+
+<h4>动态添加内部模块</h4>
+
+<p>以<code>http_sub_module</code>为例，到Nginx源码目录执行以下命令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>./configure --with-http_sub_module<span class="o">=</span>shared
+</span><span class='line'><span class="nv">$ </span>make
+</span><span class='line'><span class="nv">$ </span>sudo make dso_install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>它会将编译好的<code>ngx_http_sub_filter_module.so</code>文件复制到<code>/usr/local/nginx/modules</code>目录下。随后在Nginx配置文件中的最外层添加以下内容：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>dso <span class="o">{</span>
+</span><span class='line'>    load ngx_http_sub_filter_module.so;
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>执行<code>sbin/nginx -s reload</code>，就能完成模块的加载。</p>
+
+<h4>第三方模块</h4>
+
+<p>对于第三方模块，Tengine提供了<code>dso_tool</code>命令，能够一步安装：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>sbin/dso_tool --add-module<span class="o">=</span>/home/dso/lua-nginx-module
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Nginx信号汇总</h2>
+
+<p>以下内容译自：http://wiki.nginx.org/CommandLine</p>
+
+<h3>主进程支持的信号</h3>
+
+<ul>
+<li><code>TERM</code>, <code>INT</code>: 立刻退出</li>
+<li><code>QUIT</code>: 等待工作进程结束后再退出</li>
+<li><code>KILL</code>: 强制终止进程</li>
+<li><code>HUP</code>: 重新加载配置文件，使用新的配置启动工作进程，并逐步关闭旧进程。</li>
+<li><code>USR1</code>: 重新打开日志文件</li>
+<li><code>USR2</code>: 启动新的主进程，实现热升级</li>
+<li><code>WINCH</code>: 逐步关闭工作进程</li>
+</ul>
+
+
+<h3>工作进程支持的信号</h3>
+
+<ul>
+<li><code>TERM</code>, <code>INT</code>: 立刻退出</li>
+<li><code>QUIT</code>: 等待请求处理结束后再退出</li>
+<li><code>USR1</code>: 重新打开日志文件</li>
+</ul>
+
+
+<h3>nginx -s signal 支持的信号</h3>
+
+<ul>
+<li><code>stop</code>: 等价于<code>TERM</code>, <code>INT</code></li>
+<li><code>quit</code>: <code>QUIT</code></li>
+<li><code>reopen</code>: <code>USR1</code></li>
+<li><code>reload</code>: <code>HUP</code></li>
+</ul>
+
+
+<h3>使用方法</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>sbin/nginx -s reload
+</span><span class='line'><span class="nv">$ </span><span class="nb">kill</span> -HUP <span class="k">$(</span>cat logs/nginx.pid<span class="k">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-23T22:11:00+08:00" pubdate data-updated="true">Dec 23<span>rd</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ops/'>Ops</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/12/16/cia-noir-3/" title="Previous Post: Clojure实战(3)：使用Noir框架开发博客(下)">&laquo; Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/" title="Next Post: Homebrew is just like gentoo portage">Homebrew is just like gentoo portage &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/12/23/nginx-live-upgrade/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/12/23/nginx-live-upgrade/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

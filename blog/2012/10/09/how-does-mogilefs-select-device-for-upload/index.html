@@ -1,0 +1,425 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Mogilefs设备权重算法 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="遇到的问题 有几块设备已经剩余10%容量，有几块设备剩余75%容量，为什么75%的util相当高呢
+原本理解mogilefs平均分配新文件到设备上，猜想应该是不对的 看看mogilefs到底是怎么做的呢 处理文件是Query.pl干的，确认新建文件是cmd_create_open函数所为 1
+2 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/10/09/how-does-mogilefs-select-device-for-upload/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Mogilefs设备权重算法</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-09T17:55:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/78811efe9c142e0898c049686e25594d"></p>
+
+<h3>遇到的问题</h3>
+
+<ul>
+<li>有几块设备已经剩余10%容量，有几块设备剩余75%容量，为什么75%的util相当高呢</li>
+<li>原本理解mogilefs平均分配新文件到设备上，猜想应该是不对的</li>
+</ul>
+
+
+<h3>看看mogilefs到底是怎么做的呢</h3>
+
+<ul>
+<li>处理文件是Query.pl干的，确认新建文件是cmd_create_open函数所为</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">cmd_create_open</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">#略</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">#默认情况下设备的选择是从这开始的，参数是所有设备</span>
+</span><span class='line'>    <span class="nv">@devices</span> <span class="o">=</span> <span class="n">sort_devs_by_freespace</span><span class="p">(</span><span class="nn">Mgd::</span><span class="n">device_factory</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">get_all</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">#略</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>sort_devs_by_freespace用剩余百分比做为权重，生成一个二维数组做参数[前20个]</li>
+<li>真正的返回值是通过MogileFS::Util::weighted_list进行权重计算</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">sort_devs_by_freespace</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@devices_with_weights</span> <span class="o">=</span> <span class="nb">map</span> <span class="p">{</span> <span class="c1">#生成二维数组，剩余大小用来做权重</span>
+</span><span class='line'>        <span class="p">[</span><span class="nv">$_</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="n">percent_free</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nb">sort</span> <span class="p">{</span>  <span class="c1">#排序，从大到小排序</span>
+</span><span class='line'>        <span class="nv">$b</span><span class="o">-&gt;</span><span class="n">percent_free</span> <span class="sr">&lt;=&gt;</span> <span class="nv">$a</span><span class="o">-&gt;</span><span class="n">percent_free</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nb">grep</span> <span class="p">{</span>  <span class="c1">#过滤设备，只要可以新建文件的，就是状态为alive的</span>
+</span><span class='line'>        <span class="nv">$_</span><span class="o">-&gt;</span><span class="n">should_get_new_files</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nv">@_</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@list</span> <span class="o">=</span>
+</span><span class='line'>        <span class="nn">MogileFS::Util::</span><span class="n">weighted_list</span><span class="p">(</span><span class="nb">splice</span><span class="p">(</span><span class="nv">@devices_with_weights</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">@list</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>这里才是算法的核心，让容量多的多放点文件，但当容量很大时基本随即，做个例子会比较直观</li>
+<li>假设有两个设备，剩余的容量分别是10和75</li>
+<li>那么sum就是85，如果乘以随机数的话可能是8.5(0.1)或者是76.5(0.9)</li>
+<li>如果是8.5，那么75就大于8.5了，先返回了【并且这种概率大】</li>
+<li>如果是76.5，那么75就不大于76.5了, 则返回另一个【这种概率小】</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">weighted_list</span> <span class="p">(@)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@list</span> <span class="o">=</span> <span class="nb">grep</span> <span class="p">{</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span> <span class="nv">@_</span><span class="p">;</span> <span class="c1">#排除掉等于0的</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@ret</span><span class="p">;</span> <span class="c1">#初始化返回数组</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$sum</span> <span class="o">+=</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">foreach</span> <span class="nv">@list</span><span class="p">;</span> <span class="c1">#累加剩余容量</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$getone</span> <span class="o">=</span> <span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">shift</span><span class="p">(</span><span class="nv">@list</span><span class="p">)</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span class='line'>            <span class="k">if</span> <span class="nb">scalar</span><span class="p">(</span><span class="nv">@list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">#只有一个了，直接返回</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$val</span> <span class="o">=</span> <span class="nb">rand</span><span class="p">()</span> <span class="o">*</span> <span class="nv">$sum</span><span class="p">;</span> <span class="c1">#总容量乘以0到1的随机数</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$curval</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$idx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nv">$idx</span> <span class="o">&lt;</span> <span class="nb">scalar</span><span class="p">(</span><span class="nv">@list</span><span class="p">);</span> <span class="nv">$idx</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">my</span> <span class="nv">$item</span> <span class="o">=</span> <span class="nv">$list</span><span class="p">[</span><span class="nv">$idx</span><span class="p">];</span>
+</span><span class='line'>            <span class="nv">$curval</span> <span class="o">+=</span> <span class="nv">$item</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="c1">#累加进去,保证肯定有返回</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$curval</span> <span class="o">&gt;=</span> <span class="nv">$val</span><span class="p">)</span> <span class="p">{</span> <span class="c1">#如果curval比随机乘积大</span>
+</span><span class='line'>                <span class="k">my</span> <span class="p">(</span><span class="nv">$ret</span><span class="p">)</span> <span class="o">=</span> <span class="nb">splice</span><span class="p">(</span><span class="nv">@list</span><span class="p">,</span> <span class="nv">$idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span> <span class="c1">#切割出来</span>
+</span><span class='line'>                <span class="nv">$sum</span> <span class="o">-=</span> <span class="nv">$item</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="c1">#从总容量里减去</span>
+</span><span class='line'>                <span class="k">return</span> <span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>   <span class="c1">#返回这个设备</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">push</span> <span class="nv">@ret</span><span class="p">,</span> <span class="nv">$getone</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">while</span> <span class="nv">@list</span><span class="p">;</span> <span class="c1">#循环执行getone，加到返回数组</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">@ret</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-09T17:55:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2012</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/10/09/reviewboard-howto/" title="Previous Post: reviewboard 简要使用介绍">&laquo; reviewboard 简要使用介绍</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/10/15/solr-guildeline/" title="Next Post: 深入Solr实战">深入Solr实战 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/10/09/how-does-mogilefs-select-device-for-upload/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/10/09/how-does-mogilefs-select-device-for-upload/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

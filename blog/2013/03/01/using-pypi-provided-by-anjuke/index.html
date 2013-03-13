@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>使用安居客提供的PyPI镜像 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="主要提示：安居客现在拥有了自己的PyPI镜像，直接使用http://pypi.corp.anjuke.com/simple ，就可以节省重复去公网下载模块的流量与时间。 Welcome to the Python World! &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2013/03/01/using-pypi-provided-by-anjuke/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">使用安居客提供的PyPI镜像</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-01T10:52:00+08:00" pubdate data-updated="true">Mar 1<span>st</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>主要提示：安居客现在拥有了自己的PyPI镜像，直接使用http://pypi.corp.anjuke.com/simple ，就可以节省重复去公网下载模块的流量与时间。</p>
+
+<h2>Welcome to the Python World!</h2>
+
+<p>这篇文章的目标读者是还刚接触Python以及安居客将要使用Python的各位开发者，强烈建议把文中提到的延伸信息都阅读一下，百利无害。</p>
+
+<p>使用Python开发程序是一件轻松惬意的事情，它的第三方模块分发机制让开发者能够很方便快速的发布自己的代码、安装部署使用其他开发者做的模块。（详细请参考<a href="http://docs.python.org/2/install/index.html">安装Python模块</a>，<a href="http://docs.python.org/2/distutils/index.html">发布Python模块</a>）</p>
+
+<p>关于Python打包的方式以及开源软加架构里打包的背景信息，可以阅读<a href="http://www.ituring.com.cn/article/19090">这篇内容</a>了解更多。</p>
+
+<h2>如何安装第三方的Python模块</h2>
+
+<p>标准的Python模块源码包里都会带上一个<code>setup.py</code>，它是Python的模块分发机制中的一部分，其中会定义模块的基本信息以及 <strong>依赖</strong> ，后者就是我们重点需要关注的问题。</p>
+
+<p>通常我们只需要执行</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>python setup.py install</span></code></pre></td></tr></table></div></figure>
+
+
+<p>即可完成安装。</p>
+
+<h2>Python模块的分发</h2>
+
+<p>传统模块的分发如果采用原始的人肉方式那就显得不够好了；所以Python社区有了PyPI（Python Package Index），官方的地址是<a href="https://pypi.python.org">pypi.python.org</a>，全世界各地还有几个<a href="http://www.pypi-mirrors.org">镜像</a>；以及配套使用的客户端程序，<code>setuptools</code>和<code>pip</code></p>
+
+<p><strong>我们建议使用<code>pip</code></strong></p>
+
+<p>前者一般在Python安装的时候随同一起分发，后者需要手工安装（<code>pythonbrew</code>里则是会自动一起安装）</p>
+
+<p>对于想要使用的模块依赖，使用</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>easy_install foobar
+</span><span class='line'>
+</span><span class='line'>#或者
+</span><span class='line'>pip install foobar</span></code></pre></td></tr></table></div></figure>
+
+
+<p>它的过程就像是ubuntu下的<code>apt-get</code>，自动从配置的镜像（默认是官方）自动查找目标模块，下载，（编译）安装，整个过程轻松简单。</p>
+
+<h2>为什么我们要提供安居客的镜像</h2>
+
+<p>出于安居客未来架构发展的需要，我们在开发、生产环境的部署将会更多的采用自动化；项目的依赖是其中一个不可忽视的环节。对于Python来说，快速高效地安装依赖能提高效率，减少错误。</p>
+
+<p>还有一点是，每次安装都从官方下载会造成流量和时间的浪费；更多的，因为某些大家都懂的原因造成一个项目依赖无法安装，很令人恼火。做镜像提高速度，减少问题也是让工程师快乐的一个体现。</p>
+
+<h2>如何使用安居客的PyPI镜像</h2>
+
+<p><strong>更详细的使用方法请参考<code>easy_install</code>和<code>pip</code>的文档</strong></p>
+
+<h3>安装 (install)</h3>
+
+<ul>
+<li>easy_install</li>
+</ul>
+
+
+<p>直接使用easy_install的命令，带上参数指定</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>easy_install -i http://pypi.corp.anjuke.com/simple FOOBAR</span></code></pre></td></tr></table></div></figure>
+
+
+<p>或者写配置文件<code>~/.pydistutils.cfg</code>，内容如下</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[easy_install]
+</span><span class='line'>index_url = http://pypi.corp.anjuke.com/simple</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>pip</li>
+</ul>
+
+
+<p>直接使用pip命令，带上参数</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>pip -i http://pypi.corp.anjuke.com/simple install FOOBAR</span></code></pre></td></tr></table></div></figure>
+
+
+<p>或者写配置文件<code>~/.pip/pip.conf</code>，内容如下</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[global]
+</span><span class='line'>index-url = http://pypi.corp.anjuke.com/simple</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>搜索 (search)</h3>
+
+<p><strong>暂未支持</strong></p>
+
+<h2>最后</h2>
+
+<p>我们希望为工程师、开发者提供更好的环境来支持开发工作。</p>
+
+<p>如果大家在使用中有各种问题，意见和建议，欢迎联系我们。</p>
+
+<p>Happy Hacking ;)</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-01T10:52:00+08:00" pubdate data-updated="true">Mar 1<span>st</span>, 2013</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/" title="Previous Post: Homebrew is just like gentoo portage">&laquo; Homebrew is just like gentoo portage</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2013/03/01/using-pypi-provided-by-anjuke/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2013/03/01/using-pypi-provided-by-anjuke/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

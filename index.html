@@ -1,0 +1,992 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="主要提示：安居客现在拥有了自己的PyPI镜像，直接使用http://pypi.corp.anjuke.com/simple ，就可以节省重复去公网下载模块的流量与时间。 Welcome to the Python World! &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-01T10:52:00+08:00" pubdate data-updated="true">Mar 1<span>st</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>主要提示：安居客现在拥有了自己的PyPI镜像，直接使用http://pypi.corp.anjuke.com/simple ，就可以节省重复去公网下载模块的流量与时间。</p>
+
+<h2>Welcome to the Python World!</h2>
+
+<p>这篇文章的目标读者是还刚接触Python以及安居客将要使用Python的各位开发者，强烈建议把文中提到的延伸信息都阅读一下，百利无害。</p>
+
+<p>使用Python开发程序是一件轻松惬意的事情，它的第三方模块分发机制让开发者能够很方便快速的发布自己的代码、安装部署使用其他开发者做的模块。（详细请参考<a href="http://docs.python.org/2/install/index.html">安装Python模块</a>，<a href="http://docs.python.org/2/distutils/index.html">发布Python模块</a>）</p>
+
+<p>关于Python打包的方式以及开源软加架构里打包的背景信息，可以阅读<a href="http://www.ituring.com.cn/article/19090">这篇内容</a>了解更多。</p>
+
+<h2>如何安装第三方的Python模块</h2>
+
+<p>标准的Python模块源码包里都会带上一个<code>setup.py</code>，它是Python的模块分发机制中的一部分，其中会定义模块的基本信息以及 <strong>依赖</strong> ，后者就是我们重点需要关注的问题。</p>
+
+<p>通常我们只需要执行</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>python setup.py install</span></code></pre></td></tr></table></div></figure>
+
+
+<p>即可完成安装。</p>
+
+<h2>Python模块的分发</h2>
+
+<p>传统模块的分发如果采用原始的人肉方式那就显得不够好了；所以Python社区有了PyPI（Python Package Index），官方的地址是<a href="https://pypi.python.org">pypi.python.org</a>，全世界各地还有几个<a href="http://www.pypi-mirrors.org">镜像</a>；以及配套使用的客户端程序，<code>setuptools</code>和<code>pip</code></p>
+
+<p><strong>我们建议使用<code>pip</code></strong></p>
+
+<p>前者一般在Python安装的时候随同一起分发，后者需要手工安装（<code>pythonbrew</code>里则是会自动一起安装）</p>
+
+<p>对于想要使用的模块依赖，使用</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>easy_install foobar
+</span><span class='line'>
+</span><span class='line'>#或者
+</span><span class='line'>pip install foobar</span></code></pre></td></tr></table></div></figure>
+
+
+<p>它的过程就像是ubuntu下的<code>apt-get</code>，自动从配置的镜像（默认是官方）自动查找目标模块，下载，（编译）安装，整个过程轻松简单。</p>
+
+<h2>为什么我们要提供安居客的镜像</h2>
+
+<p>出于安居客未来架构发展的需要，我们在开发、生产环境的部署将会更多的采用自动化；项目的依赖是其中一个不可忽视的环节。对于Python来说，快速高效地安装依赖能提高效率，减少错误。</p>
+
+<p>还有一点是，每次安装都从官方下载会造成流量和时间的浪费；更多的，因为某些大家都懂的原因造成一个项目依赖无法安装，很令人恼火。做镜像提高速度，减少问题也是让工程师快乐的一个体现。</p>
+
+<h2>如何使用安居客的PyPI镜像</h2>
+
+<p><strong>更详细的使用方法请参考<code>easy_install</code>和<code>pip</code>的文档</strong></p>
+
+<h3>安装 (install)</h3>
+
+<ul>
+<li>easy_install</li>
+</ul>
+
+
+<p>直接使用easy_install的命令，带上参数指定</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>easy_install -i http://pypi.corp.anjuke.com/simple FOOBAR</span></code></pre></td></tr></table></div></figure>
+
+
+<p>或者写配置文件<code>~/.pydistutils.cfg</code>，内容如下</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[easy_install]
+</span><span class='line'>index_url = http://pypi.corp.anjuke.com/simple</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>pip</li>
+</ul>
+
+
+<p>直接使用pip命令，带上参数</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>pip -i http://pypi.corp.anjuke.com/simple install FOOBAR</span></code></pre></td></tr></table></div></figure>
+
+
+<p>或者写配置文件<code>~/.pip/pip.conf</code>，内容如下</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[global]
+</span><span class='line'>index-url = http://pypi.corp.anjuke.com/simple</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>搜索 (search)</h3>
+
+<p><strong>暂未支持</strong></p>
+
+<h2>最后</h2>
+
+<p>我们希望为工程师、开发者提供更好的环境来支持开发工作。</p>
+
+<p>如果大家在使用中有各种问题，意见和建议，欢迎联系我们。</p>
+
+<p>Happy Hacking ;)</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew Is Just Like Gentoo Portage</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-20T14:28:00+08:00" pubdate data-updated="true">Jan 20<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
+
+<h2>一句话提示：</h2>
+
+<blockquote><p>利用<code>brew versions</code>和<code>brew switch</code>命令也可以实现gentoo portage里eselect类似的版本切换功能!</p></blockquote>
+
+<p>老规矩，喜欢听故事的继续看下去XDDD</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-23T22:11:00+08:00" pubdate data-updated="true">Dec 23<span>rd</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>系统管理员可以使用Nginx提供的信号机制来对其进行维护，比较常用的是<code>kill -HUP &lt;master pid&gt;</code>命令，它能通知Nginx使用新的配置文件启动工作进程，并逐个关闭旧进程，完成平滑切换。当需要对Nginx进行版本升级或增减模块时，为了不丢失请求，可以结合使用<code>USR2</code>、<code>WINCH</code>等信号进行平滑过度，达到热升级的目的。如果中途遇到问题，也能立刻回退至原版本。</p>
+
+<h2>操作步骤</h2>
+
+<p>1、备份原Nginx二进制文件；</p>
+
+<p>2、编译新Nginx源码，安装路径需与旧版一致；</p>
+
+<p>3、向主进程发送<code>USR2</code>信号，Nginx会启动一个新版本的master进程和工作进程，和旧版一起处理请求：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>prey:~ root# ps -ef|grep nginx
+</span><span class='line'> 127     1   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'> 129   127   nginx: worker process
+</span><span class='line'>prey:~ root# <span class="nb">kill</span> -USR2 127
+</span><span class='line'>prey:~ root# ps -ef|grep nginx
+</span><span class='line'> 127     1   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'> 129   127   nginx: worker process
+</span><span class='line'>5180   127   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
+</span><span class='line'>5182  5180   nginx: worker process
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/12/23/nginx-live-upgrade/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-16T20:20:00+08:00" pubdate data-updated="true">Dec 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>Session和Cookie</h2>
+
+<p>做网络编程的人肯定对这两个概念不陌生，因此这里就不介绍它们的定义和作用了。我们要实现的需求也很简单：用户通过一个表单登录，在当前窗口中保持登录状态，并可以选择“记住我”来免去关闭并新开窗口之后的重登录。显然，前者使用Session，后者使用Cookie。下面我们就来看Noir对这两者的支持。</p>
+
+<h3>Session</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">require</span> <span class="ss">&#39;noir.session</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/put!</span> <span class="ss">:username</span> <span class="s">&quot;john&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/get</span> <span class="ss">:username</span> <span class="s">&quot;nobody&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/clear!</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>很简单的API。注意<code>put!</code>函数中的<code>!</code>，和之前遇到的<code>?</code>一样，这种特殊字符是合法的函数名，但<code>!</code>习惯用来表示该方法会改变某个对象的状态，这里<code>put!</code>就表示会改变Session的状态。</p>
+
+<p>Noir还提供了一种“闪信（Flash）”机制，主要用于在页面跳转之间暂存消息。如用户登录后会跳转到首页，如果想在首页显示“登录成功”的信息，就需要用到闪信了。闪信的API也放置在<code>noir.session</code>命名空间下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">noir.session/flash-put!</span> <span class="s">&quot;登录成功&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/flash-get</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>闪信的生命周期是一次请求，即在设置了闪信后的下一个请求中，可以多次<code>flash-get</code>，但再下一次请求就获取不到值了。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/12/16/cia-noir-3/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-08T12:09:00+08:00" pubdate data-updated="true">Dec 8<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>在Eclipse中编写Clojure代码</h2>
+
+<p>从这章起我们就要开始真正的编码了。Vim可能是很多程序员的选择，但如果你像我一样更喜欢GUI界面，那就来看看如何在Eclipse中编写Clojure代码吧。</p>
+
+<h3>安装Eclipse插件</h3>
+
+<p>Eclipse提供了一个Clojure插件：CounterClockwise，可以用来编写Clojure代码，进行语法高亮、调试等操作。打开Eclipse的Market Place，搜索counterclockwise关键字，点击Install即可。</p>
+
+<h3>将Leiningen项目导入Eclipse</h3>
+
+<p>由于CounterClockwise插件并没有默认使用Leiningen来管理项目，因此需要做一些额外的工作。</p>
+
+<p>在使用<code>lein new</code>命令创建项目后，在project.clj文件中增加如下一行：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defproject </span><span class="nv">...</span>
+</span><span class='line'>            <span class="ss">:dev-dependencies</span> <span class="p">[[</span><span class="nv">lein-eclipse</span> <span class="s">&quot;1.0.0&quot;</span><span class="p">]]</span>
+</span><span class='line'>            <span class="nv">...</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后依次执行<code>lein deps</code>和<code>lein eclipse</code>，会看到项目根目录下生成了.project和.classpath文件。然后就可以进入Eclipse导入这个项目了。如果使用Git进行版本控制，<code>lein</code>已经为你生成好了.gitignore文件。执行了<code>git init</code>后，就能在Eclilpse中选择Share Project菜单项，进行可视化的版本控制。</p>
+
+<h2>使用表单</h2>
+
+<p>我们现在需要编写一个新建文章的功能，它是一个简单的页面，页面上有“标题”和“内容”两个文本框，并有一个“提交”按钮。</p>
+
+<p>在src/blog/views目录下新建一个文件article.clj，输入以下内容：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">blog.views.article</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">blog.views.common</span> <span class="ss">:as</span> <span class="nv">common</span><span class="p">])</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:use</span> <span class="p">[</span><span class="nv">noir.core</span><span class="p">]</span>
+</span><span class='line'>        <span class="p">[</span><span class="nv">hiccup.form-helpers</span><span class="p">]))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nf">defpage</span> <span class="s">&quot;/blog/add&quot;</span> <span class="p">[]</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">common/layout</span>
+</span><span class='line'>    <span class="p">[</span><span class="ss">:h1</span> <span class="s">&quot;新建文章&quot;</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">form-to</span> <span class="p">[</span><span class="ss">:post</span> <span class="s">&quot;/blog/add&quot;</span><span class="p">]</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">label</span> <span class="s">&quot;title&quot;</span> <span class="s">&quot;标题：&quot;</span><span class="p">)</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">text-field</span> <span class="p">{</span><span class="ss">:size</span> <span class="mi">50</span><span class="p">}</span> <span class="s">&quot;title&quot;</span><span class="p">)</span> <span class="p">[</span><span class="ss">:br</span><span class="p">]</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">label</span> <span class="s">&quot;content&quot;</span> <span class="s">&quot;内容：&quot;</span><span class="p">)</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">text-area</span> <span class="p">{</span><span class="ss">:rows</span> <span class="mi">20</span> <span class="ss">:cols</span> <span class="mi">50</span><span class="p">}</span> <span class="s">&quot;content&quot;</span><span class="p">)</span> <span class="p">[</span><span class="ss">:br</span><span class="p">]</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">submit-button</span> <span class="s">&quot;提交&quot;</span><span class="p">))))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>defpage</code>和<code>common/layout</code>我们之前已经见到过，前者定义了URL<code>/blog/add</code>指向的页面，后者则是套用了一个模板。<code>[:h1 ...]</code>和<code>[:br]</code>也应该熟悉，它们是Hiccup的语法，分别生成<code>&lt;h1&gt;...&lt;/h1&gt;</code>和<code>&lt;br&gt;</code>标签。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/12/08/cia-noir-2/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-25T16:58:00+08:00" pubdate data-updated="true">Nov 25<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>前言</h2>
+
+<p>为什么要学习一门新的语言？我的想法很简单，平时OO、PO代码写多了，却从未接触过函数式编程，不免有些遗憾。考察下来，Clojure可以用来尝尝鲜，所以就决定学一学。为了给自己的学习留下些记录，就有了这样一份教程。</p>
+
+<p>Clojure已经有一些不错的教程，如<a href="http://java.ociweb.com/mark/">Mark Volkmann</a>的<a href="http://java.ociweb.com/mark/clojure/article.html">Clojure - Functional Programming for the JVM</a>，Storm的主要贡献者<a href="http://xumingming.sinaapp.com/">徐明明</a>也对这个教程做了<a href="http://xumingming.sinaapp.com/302/clojure-functional-programming-for-the-jvm-clojure-tutorial/">全文翻译</a>。还有一些不错的书籍，像<a href="http://oreilly.com/">O&#8217;Reilly</a>的<a href="http://www.amazon.com/Clojure-Programming-Chas-Emerick/dp/1449394701">Clojure Programming</a>，都值得一读。我是从Mark的教程开始学起的，对其中没有提到的部分则是参考了Clojure Programming这本书。Clojure的<a href="http://clojure.org/">官方网站</a>上有详尽的<a href="http://clojure.github.com/clojure/">API参考</a>，可以作为工具书查阅。</p>
+
+<p>但是，上面提到的教程都是针对Clojure语言本身的，从 <em>Hello, world!</em> 开始，讲解Clojure的各种语法，关键字，结构等等。虽然Clojure的语法已经足够吸引你的眼球，在<a href="http://en.wikipedia.org/wiki/Read-eval-print_loop">REPL</a>中敲击Clojure代码已经是一种莫大的乐趣了，但似乎还有些不够，我们想看到一个用Clojure编写的应用程序！</p>
+
+<p>因为平时都是做Web开发，所以先从一个Web框架入手会是不错的选择，因此这份教程会从使用<a href="http://webnoir.org/">Noir</a>框架搭建一个博客开始，带你领略Clojure的魅力。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/11/25/cia-noir-1/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-18T19:20:00+08:00" pubdate data-updated="true">Nov 18<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>作者：<a href="http://www.aosabook.org/en/intro1.html#ziade-tarek">Tarek Ziadé</a>，翻译：<a href="mailto:zhangji87@gmail.com">张吉</a></p>
+
+<p>原文：<a href="http://www.aosabook.org/en/packaging.html">http://www.aosabook.org/en/packaging.html</a></p>
+
+<h2>14.1 简介</h2>
+
+<p>对于如何安装软件，目前有两种思想流派。第一种是说软件应该自给自足，不依赖于其它任何部件，这点在Windows和Mac OS X系统中很流行。这种方式简化了软件的管理：每个软件都有自己独立的“领域”，安装和卸载它们不会对操作系统产生影响。如果软件依赖一项不常见的类库，那么这个类库一定是包含在软件安装包之中的。</p>
+
+<p>第二种流派，主要在类Linux的操作系统中盛行，即软件应该是由一个个独立的、小型的软件包组成的。类库被包含在软件包中，包与包之间可以有依赖关系。安装软件时需要查找和安装它所依赖的其他特定版本的软件包。这些依赖包通常是从一个包含所有软件包的中央仓库中获取的。这种理念也催生了Linux发行版中那些复杂的依赖管理工具，如<code>dpkg</code>和<code>RPM</code>。它们会跟踪软件包的依赖关系，并防止两个软件使用了版本相冲突的第三方包。</p>
+
+<p>以上两种流派各有优劣。高度模块化的系统可以使得更新和替换某个软件包变的非常方便，因为每个类库都只有一份，所有依赖于它的应用程序都能因此受益。比如，修复某个类库的安全漏洞可以立刻应用到所有程序中，而如果应用程序使用了自带的类库，那安全更新就很难应用进去了，特别是在类库版本不一致的情况下更难处理。</p>
+
+<p>不过这种“模块化”也被一些开发者视为缺点，因为他们无法控制应用程序的依赖关系。他们希望提供一个独立和稳定的软件运行环境，这样就不会在系统升级后遭遇各种依赖方面的问题。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/11/18/aosa-python-packaging/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-16T23:54:00+08:00" pubdate data-updated="true">Nov 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>作者：<a href="http://www.aosabook.org/en/intro2.html#potter-susan">Susan Potter</a>，翻译：<a href="mailto:zhangji87@gmail.com">张吉</a></p>
+
+<p>原文：<a href="http://www.aosabook.org/en/git.html">http://www.aosabook.org/en/git.html</a></p>
+
+<h2>6.1 Git概述</h2>
+
+<p>Git能够让不同的协作者通过一个点对点的仓库网络对数据内容（通常是代码，当然不仅限于代码）进行维护。它支持分布式的工作流程，能够让数据内容临时分离，并最终合并到一起。</p>
+
+<p>本章将阐述Git的内部实现是如何提供以上功能的，以及它和其他版本控制系统（VCS）的区别。</p>
+
+<h2>6.2 Git起源</h2>
+
+<p>为了更好地理解Git的设计思想，我们有必要先了解一下Git项目的发源地——Linux内核开发社区——所面临的问题。</p>
+
+<p>Linux内核开发与其他商业软件项目有很大不同，因为它的开发者众多，且每个开发者的参与程度和对Linux内核代码的理解有很大差异。多年以来，内核代码一直都是以Tar压缩文件以及补丁的形式维护的，而当时的核心开发团队一直在寻找一个能够满足他们各方面需求的版本控制系统。</p>
+
+<p>Git就是在这样的背景下于2005年作为一款开源软件诞生的。当时，Linux内核代码通过两种版本控制系统进行维护，BitKeeper和CVS，分别由两组核心开发团队使用。BitKeeper相较于当时颇为流行的CVS，提供了一种不同的历史展示方式。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/11/16/aosa-git/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-31T18:00:00+08:00" pubdate data-updated="true">Oct 31<span>st</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
+
+<p>Storm UI提供了基本的监控界面，可以查看当前时点集群内脚本的运行情况，其中比较重要的是消息吞吐量（Transferred）和处理延迟（Process latency）。不足的是，这套系统没有记录时序数据，因此想看一段时间内的趋势图，或是做脚本上下线的负载监控，Storm UI就无能为力了。</p>
+
+<p>不过，Storm Nimbus开放了一套Thrift API，可以使用他获取各类信息。下面就介绍一下如何使用Python编写监控程序，定时获取脚本运行状态（吞吐量和延迟），并在监控系统中出图。</p>
+
+<h3>安装Thrift API</h3>
+
+<p><a href="http://thrift.apache.org/">Thrift</a>是Apache基金会下的一个项目，定义了一套面向服务程序的通信协议。它使用Thrift的<a href="http://thrift.apache.org/docs/idl/">IDL</a>定义接口，通过一个工具转换成不同语言的客户端，供其他程序调用。</p>
+
+<p>可以<a href="http://archive.apache.org/dist/thrift/0.7.0/">点此下载Thrift源码包</a>，因为Storm使用的Thrift版本是0.7.0，所以建议安装该版本。</p>
+
+<p>安装过程即 ./configure &amp;&amp; make &amp;&amp; sudo make install，安装完成后PATH会多出thrift这个命令。</p>
+
+<h3>生成Storm Thrift API代码文件</h3>
+
+<p>Storm Thrift API的定义文件在源码中提供，可以从Github中克隆相应的分支，并执行thrift命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git clone -b 0.7.0 git://github.com/nathanmarz/storm.git
+</span><span class='line'>$ cd storm/src
+</span><span class='line'>$ thrift --gen py storm.thrift
+</span><span class='line'>$ cd gen-py</span></code></pre></td></tr></table></div></figure>
+
+
+<p>源码中似乎已经提供了py这个文件夹，也可以直接使用。</p>
+
+<h3>获取某个Topology的吞吐量和延迟</h3>
+
+<p>首先在Python项目中添加如下依赖：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>setup(install_requires=['thrift==0.7.0'])</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以下代码会找到集群中名为access_log的脚本，记录filter（Bolt）的吞吐量和延迟数。由于Storm Thrift API返回值的组织方式比较复杂，所以需要多多参考刚才生成的gen-py包中的内容。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="c">#连接到Storm Nimbus Thrift Server：</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">socket</span> <span class="o">=</span> <span class="n">TSocket</span><span class="o">.</span><span class="n">TSocket</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">nimbus_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">nimbus_port</span><span class="p">)</span>
+</span><span class='line'><span class="n">transport</span> <span class="o">=</span> <span class="n">TTransport</span><span class="o">.</span><span class="n">TFramedTransport</span><span class="p">(</span><span class="n">socket</span><span class="p">)</span>
+</span><span class='line'><span class="n">protocol</span> <span class="o">=</span> <span class="n">TBinaryProtocol</span><span class="o">.</span><span class="n">TBinaryProtocol</span><span class="p">(</span><span class="n">transport</span><span class="p">)</span>
+</span><span class='line'><span class="n">nimbus</span> <span class="o">=</span> <span class="n">Nimbus</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">protocol</span><span class="p">)</span>
+</span><span class='line'><span class="n">transport</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'><span class="c">#获取集群内脚本信息，得到脚本ID：</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">cluster_info</span> <span class="o">=</span> <span class="n">nimbus</span><span class="o">.</span><span class="n">getClusterInfo</span><span class="p">()</span>
+</span><span class='line'><span class="n">topology_id</span> <span class="o">=</span> <span class="bp">None</span>
+</span><span class='line'><span class="k">for</span> <span class="n">topology</span> <span class="ow">in</span> <span class="n">cluster_info</span><span class="o">.</span><span class="n">topologies</span><span class="p">:</span>
+</span><span class='line'><span class="k">if</span> <span class="n">topology</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;access_log&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="n">topology_id</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">id</span>
+</span><span class='line'>
+</span><span class='line'><span class="c"># 获取脚本信息，计算吞吐量和延迟毫秒数</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">topology_info</span> <span class="o">=</span> <span class="n">nimbus</span><span class="o">.</span><span class="n">getTopologyInfo</span><span class="p">(</span><span class="n">topology_id</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">transferred</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'><span class="n">filter_latencies</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span class='line'><span class="k">for</span> <span class="n">executor_info</span> <span class="ow">in</span> <span class="n">topology_info</span><span class="o">.</span><span class="n">executors</span><span class="p">:</span>
+</span><span class='line'>    <span class="c"># 600表示10分钟内的均值</span>
+</span><span class='line'>    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">transferred</span><span class="p">[</span><span class="s">&#39;600&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+</span><span class='line'>        <span class="n">transferred</span> <span class="o">+=</span> <span class="n">v</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">component_id</span> <span class="o">==</span> <span class="s">&#39;filter&#39;</span><span class="p">:</span>
+</span><span class='line'>        <span class="n">latencies</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span class='line'>        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">specific</span><span class="o">.</span><span class="n">bolt</span><span class="o">.</span><span class="n">process_ms_avg</span><span class="p">[</span><span class="s">&#39;600&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+</span><span class='line'>            <span class="n">latencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">filter_latencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">latencies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">latencies</span><span class="p">))</span>
+</span><span class='line'><span class="n">filter_latency</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">filter_latencies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">filter_latencies</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后就可以将计算得到的transferred和filter_latency输出到监控系统中绘图了。</p>
+
+<h3>注意事项</h3>
+
+<p>在调试的过程中，有时会尝试用telnet查看Storm Thrift Server是否存活，一旦这样操作就会导致Nimbus挂起，无法自动退出。和作者确认过，这是Thrift自身的Bug，目前还没有解决方法。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-30T10:29:00+08:00" pubdate data-updated="true">Oct 30<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/084c149bb5a1769082ef794c6dcd1a91"></p>
+
+<p>之前我们有提到<a href="/blog/2012/10/15/solr-guildeline/">Solr的使用的一些规范</a>，这次我们深入实例。</p>
+
+<p>我们从access log中找出一些查询耗时比较高的查询,跟去&#8221;深入solr实战&#8221;中提到的修改方式,做了一些更改,查询结果没有变化但是速度出现下降</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/10/30/solr-guideline-in-action/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/blog/page/2/">&larr; Older</a>
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        var disqus_script = 'count.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,532 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="作者: Pieter Hintjens &#112;&#104;&#x40;&#105;&#x6d;&#97;&#x74;&#105;&#x78;&#46;&#99;&#x6f;&#109;, CEO iMatix Corporation.
+翻译: 张吉 &#x6a;&#105;&#x7a;&# &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/page/5/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter3/">ZMQ 指南 - 第三章 高级请求-应答模式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#x69;&#x6c;&#116;&#x6f;&#58;&#x70;&#x68;&#x40;&#105;&#109;&#x61;&#x74;&#105;&#x78;&#x2e;&#x63;&#x6f;&#x6d;">&#112;&#104;&#x40;&#105;&#x6d;&#97;&#x74;&#105;&#x78;&#46;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#x61;&#105;&#x6c;&#x74;&#x6f;&#58;&#106;&#x69;&#122;&#104;&#97;&#x6e;&#x67;&#x40;&#97;&#110;&#x6a;&#117;&#107;&#101;&#46;&#x63;&#111;&#x6d;">&#x6a;&#105;&#x7a;&#x68;&#x61;&#x6e;&#x67;&#64;&#x61;&#110;&#x6a;&#117;&#107;&#101;&#x2e;&#99;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+
+<p>在第二章中我们通过开发一系列的小应用来熟悉ØMQ的基本使用方法，每个应用会引入一些新的特性。本章会沿用这种方式，来探索更多建立在ØMQ请求-应答模式之上的高级工作模式。</p>
+
+<p>本章涉及的内容有：</p>
+
+<ul>
+<li>在请求-应答模式中创建和使用消息信封</li>
+<li>使用REQ、REP、DEALER和ROUTER套接字</li>
+<li>使用标识来手工指定应答目标</li>
+<li>使用自定义离散路由模式</li>
+<li>使用自定义最近最少使用路由模式</li>
+<li>构建高层消息封装类</li>
+<li>构建基本的请求应答代理</li>
+<li>合理命名套接字</li>
+<li>模拟client-worker集群</li>
+<li>构建可扩展的请求-应答集群云</li>
+<li>使用管道套接字监控线程</li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter3/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter2/">ZMQ 指南 - 第二章 ZeroMQ进阶</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#x69;&#108;&#x74;&#111;&#58;&#112;&#x68;&#64;&#x69;&#x6d;&#x61;&#x74;&#x69;&#x78;&#46;&#99;&#x6f;&#109;">&#x70;&#x68;&#x40;&#x69;&#109;&#97;&#116;&#x69;&#120;&#x2e;&#x63;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#97;&#105;&#x6c;&#x74;&#111;&#58;&#x6a;&#105;&#x7a;&#104;&#x61;&#x6e;&#x67;&#x40;&#x61;&#110;&#106;&#117;&#x6b;&#x65;&#x2e;&#x63;&#x6f;&#109;">&#106;&#105;&#x7a;&#104;&#97;&#110;&#103;&#x40;&#97;&#x6e;&#106;&#x75;&#x6b;&#x65;&#x2e;&#x63;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+
+<p>第一章我们简单试用了ZMQ的若干通信模式：请求-应答模式、发布-订阅模式、管道模式。这一章我们将学习更多在实际开发中会使用到的东西：</p>
+
+<p>本章涉及的内容有：</p>
+
+<ul>
+<li>创建和使用ZMQ套接字</li>
+<li>使用套接字发送和接收消息</li>
+<li>使用ZMQ提供的异步I/O套接字构建你的应用程序</li>
+<li>在单一线程中使用多个套接字</li>
+<li>恰当地处理致命和非致命错误</li>
+<li>处理诸如Ctrl-C的中断信号</li>
+<li>正确地关闭ZMQ应用程序</li>
+<li>检查ZMQ应用程序的内存泄露</li>
+<li>发送和接收多帧消息</li>
+<li>在网络中转发消息</li>
+<li>建立简单的消息队列代理</li>
+<li>使用ZMQ编写多线程应用程序</li>
+<li>使用ZMQ在线程间传递信号</li>
+<li>使用ZMQ协调网络中的节点</li>
+<li>使用标识创建持久化套接字</li>
+<li>在发布-订阅模式中创建和使用消息信封</li>
+<li>如何让持久化的订阅者能够从崩溃中恢复</li>
+<li>使用阈值（HWM）防止内存溢出</li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter2/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter1/">ZMQ 指南 - 第一章 ZeroMQ基础</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#105;&#108;&#116;&#111;&#58;&#x70;&#104;&#64;&#x69;&#109;&#97;&#x74;&#x69;&#x78;&#46;&#99;&#x6f;&#x6d;">&#112;&#104;&#x40;&#x69;&#x6d;&#97;&#x74;&#105;&#x78;&#x2e;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#x6a;&#x69;&#122;&#x68;&#97;&#x6e;&#103;&#64;&#97;&#x6e;&#x6a;&#117;&#x6b;&#101;&#x2e;&#x63;&#111;&#x6d;">&#x6a;&#105;&#122;&#x68;&#x61;&#110;&#103;&#64;&#97;&#x6e;&#106;&#x75;&#107;&#x65;&#46;&#99;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+
+<p>With thanks to Bill Desmarais, Brian Dorsey, CAF, Daniel Lin, Eric Desgranges, Gonzalo Diethelm, Guido Goldstein, Hunter Ford, Kamil Shakirov, Martin Sustrik, Mike Castleman, Naveen Chawla, Nicola Peduzzi, Oliver Smith, Olivier Chamoux, Peter Alexander, Pierre Rouleau, Randy Dryburgh, John Unwin, Alex Thomas, Mihail Minkov, Jeremy Avnet, Michael Compton, Kamil Kisiel, Mark Kharitonov, Guillaume Aubert, Ian Barber, Mike Sheridan, Faruk Akgul, Oleg Sidorov, Lev Givon, Allister MacLeod, Alexander D&#8217;Archangel, Andreas Hoelzlwimmer, Han Holl, Robert G. Jakabosky, Felipe Cruz, Marcus McCurdy, Mikhail Kulemin, Dr. Gergő Érdi, Pavel Zhukov, Alexander Else, Giovanni Ruggiero, Rick &#8220;Technoweenie&#8221;, Daniel Lundin, Dave Hoover, Simon Jefford, Benjamin Peterson, Justin Case, Devon Weller, Richard Smith, Alexander Morland, Wadim Grasza, Michael Jakl, and Zed Shaw for their contributions, and to Stathis Sideris for <a href="http://www.ditaa.org">Ditaa</a>.</p>
+
+<p>Please use the <a href="https://github.com/imatix/zguide/issues">issue tracker</a> for all comments and errata. This version covers the latest stable release of 0MQ and was published on Mon 10 October, 2011.</p>
+
+<p>The Guide is mainly <a href="http://zguide.zeromq.org/page:all">in C</a>, but also in <a href="http://zguide.zeromq.org/php:all">PHP</a> and <a href="http://zguide.zeromq.org/lua:all">Lua</a>.</p>
+
+<hr />
+
+<p>This work is licensed under a <a href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-ShareAlike 3.0 License</a>.</p>
+
+<h3>拯救世界</h3>
+
+<p>如何解释ZMQ？有些人会先说一堆ZMQ的好：它是一套用于快速构建的套接字组件；它的信箱系统有超强的路由能力；它太快了！而有些人则喜欢分享他们被ZMQ点悟的时刻，那些被灵感击中的瞬间：所有的事情突然变得简单明了，让人大开眼界。另一些人则会拿ZMQ同其他产品做个比较：它更小，更简单，但却让人觉得如此熟悉。对于我个人而言，我则更倾向于和别人分享ZMQ的诞生史，相信会和各位读者有所共鸣。</p>
+
+<p>编程是一门科学，但往往会乔装成一门艺术。我们从不去了解软件最底层的机理，或者说根本没有人在乎这些。软件并不只是算法、数据结构、编程语言、或者抽象云云，这些不过是一些工具而已，被我们创造、使用、最后抛弃。软件真正的本质，其实是人的本质。</p>
+
+<p>举例来说，当我们遇到一个高度复杂的问题时，我们会群策群力，分工合作，将问题拆分为若干个部分，一起解决。这里就体现了编程的科学：创建一组小型的构建模块，让人们易于理解和使用，那么大家就会一起用它来解决问题。</p>
+
+<p>我们生活在一个普遍联系的世界里，需要现代的编程软件为我们做指引。所以，未来我们所需要的用于处理大规模计算的构建模块，必须是普遍联系的，而且能够并行运作。那时，程序代码不能再只关注自己，它们需要互相交流，变得足够健谈。程序代码需要像人脑一样，数以兆计的神经元高速地传输信号，在一个没有中央控制的环境下，没有单点故障的环境下，解决问题。这一点其实并不意外，因为就当今的网络来讲，每个节点其实就像是连接了一个人脑一样。</p>
+
+<p>如果你曾和线程、协议、或网络打过交道，你会觉得我上面的话像是天方夜谭。因为在实际应用过程中，只是连接几个程序或网络就已经非常困难和麻烦了。数以兆计的节点？那真是无法想象的。现今只有资金雄厚的企业才能负担得起这种软件和服务。</p>
+
+<p>当今世界的网络结构已经远远超越了我们自身的驾驭能力。十九世纪八十年代的软件危机，弗莱德•布鲁克斯曾说过，这个世上<a href="http://en.wikipedia.org/wiki/No_Silver_Bullet">没有银弹</a>。后来，免费和开源解决了这次软件危机，让我们能够高效地分享知识。如今，我们又面临一次新的软件危机，只不过我们谈论得不多。只有那些大型的、富足的企业才有财力建立高度联系的应用程序。那里有云的存在，但它是私有的。我们的数据和知识正在从我们的个人电脑中消失，流入云端，无法获得或与其竞争。是谁坐拥我们的社交网络？这真像一次巨型主机的革命。</p>
+
+<p>我们暂且不谈其中的政治因素，光那些就可以另外出本书了。目前的现状是，虽然互联网能够让千万个程序相连，但我们之中的大多数却无法做到这些。这样一来，那些真正有趣的大型问题（如健康、教育、经济、交通等领域），仍然无法解决。我们没有能力将代码连接起来，也就不能像大脑中的神经元一样处理那些大规模的问题。</p>
+
+<p>已经有人尝试用各种方法来连接应用程序，如数以千计的IETF规范，每种规范解决一个特定问题。对于开发人员来说，HTTP协议是比较简单和易用的，但这也往往让问题变得更糟，因为它鼓励人们形成一种重服务端、轻客户端的思想。</p>
+
+<p>所以迄今为止人们还在使用原始的TCP/UDP协议、私有协议、HTTP协议、网络套接字等形式连接应用程序。这种做法依旧让人痛苦，速度慢又不易扩展，需要集中化管理。而分布式的P2P协议又仅仅适用于娱乐，而非真正的应用。有谁会使用Skype或者Bittorrent来交换数据呢？</p>
+
+<p>这就让我们回归到编程科学的问题上来。想要拯救这个世界，我们需要做两件事情：一，如何在任何地点连接任何两个应用程序；二、将这个解决方案用最为简单的方式包装起来，供程序员使用。</p>
+
+<p>也许这听起来太简单了，但事实确实如此。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter1/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/07/16/aps/">Anjuke PHP Service 规范</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-16T22:22:00+08:00" pubdate data-updated="true">Jul 16<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Zhang Erning <a href="&#x6d;&#x61;&#105;&#108;&#x74;&#111;&#x3a;&#101;&#x72;&#110;&#105;&#x6e;&#x67;&#x40;&#x61;&#110;&#x6a;&#x75;&#107;&#101;&#46;&#99;&#111;&#x6d;">&#x65;&#x72;&#x6e;&#x69;&#110;&#103;&#64;&#x61;&#110;&#106;&#x75;&#x6b;&#101;&#x2e;&#x63;&#x6f;&#x6d;</a><br/>
+v1.0, July 2011</p>
+
+<h2>Goal</h2>
+
+<p>我们的目标是为PHP应用程序搭建一个轻量、灵活、高性能的异步远过程调用(RPC)的解决方案。同时也希望能够方便隔离前端的应用程序和后端的服务进程，使得产品的开发和部署更加便捷。</p>
+
+<p><strong>轻量</strong></p>
+
+<ul>
+<li>可以将服务进程与PHP应用服务部署在同一台物理服务器上</li>
+<li>一台应用服务器上能够部署多种服务进程</li>
+</ul>
+
+
+<p><strong>灵活</strong></p>
+
+<ul>
+<li>PHP应用程序可以采用进程间通讯(IPC)的方式与部署在同一服务器上的服务进程交互</li>
+<li>PHP应用程序也能够通过网络通讯(TCP)的方式与部署在其他服务器上的服务进程交互</li>
+<li>与服务进程通讯的方式可以通过配置文件调整，PHP的应用程序本身并不关心</li>
+<li>服务进程可以采用各种语言编写</li>
+</ul>
+
+
+<p><strong>高性能</strong></p>
+
+<ul>
+<li>为PHP提供异步方法调用的基本目的就是为了解决了PHP程序在处理请求的时候单线程的问题，因此不能以牺牲性能为代价</li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2011/07/16/aps/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/06/10/code-swarm/">代码大爆炸</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-06-10T22:22:00+08:00" pubdate data-updated="true">Jun 10<span>th</span>, 2010</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><a href="http://vimeo.com/12267345"><img src="/medias/20100610/CodeSwarmAnjuke.png" alt="Code Swarm" /></a></p>
+
+<p>上面这张图就是安居客在Subversion源代码库里的代码大爆炸。</p>
+
+<p>接下来的视频可以看到从2007年的一个工程师到现在三十来个工程师的爆炸过程，挺有趣的。</p>
+
+<iframe width="640" height="510" src="http://www.youtube.com/embed/VDCmIRW9rlE " frameborder="0" allowfullscreen></iframe>
+
+
+<p></p>
+
+<p>&#8212; <a href="http://vis.cs.ucdavis.edu/~ogawa/codeswarm/">CodeSwarm</a></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+    <a class="next" href="/blog/page/4/">Newer &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        var disqus_script = 'count.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,467 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>reviewboard 简要使用介绍 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="Hold a sec! What is reviewboard ? reviewboard是一款基于web的强大的code
+review工具，他提供了便捷、强大的功能来帮助开发者更顺利地进行code review这一核心工作。支持众多版本控制系统。 reviewboard in Anjuke &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/10/09/reviewboard-howto/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Reviewboard 简要使用介绍</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-09T09:06:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
+
+<h2>Hold a sec! What is reviewboard ?</h2>
+
+<p><a href="http://www.reviewboard.org/">reviewboard</a>是一款基于web的强大的code
+review工具，他提供了便捷、强大的功能来帮助开发者更顺利地进行code review这一核心工作。支持众多版本控制系统。</p>
+
+<!-- more -->
+
+
+<h2>reviewboard in Anjuke Inc.</h2>
+
+<p>在安居客，我们使用reviewboard来进行code review，他的地址是</p>
+
+<p><a href="http://git.corp.anjuke.com/reviews">http://git.corp.anjuke.com/reviews</a></p>
+
+<p>使用域帐号登录</p>
+
+<p><img class="center" src="/images/2012/10/reviewboard001.jpg"></p>
+
+<p>登录后，找到右上角的<code>my
+account</code>，进入可以设置自己所在的组，这里需要设置到您所在的组，这样发送到这个组的review请求才会发送通知邮件</p>
+
+<p><img class="center" src="/images/2012/10/reviewboard002.jpg"></p>
+
+<h2>How could I get access ?</h2>
+
+<h3>安装环境与配置</h3>
+
+<p><strong>以下这些操作都是针对unix-like的操作系统，如果您使用的是windows，可以在本地生成diff文件后上传</strong></p>
+
+<p>RBTools包含了一些reviewboard的自动脚本，由<a href="http://python.org">Python</a>写成，可以通过Python的包管理器<code>setuptools</code>或者<code>pip</code>安装</p>
+
+<p>安装RBTools可以利用以下命令 (必要的时候需要sudo)</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>easy_install RBTools</span></code></pre></td></tr></table></div></figure>
+
+
+<p>或者</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>pip install RBTools</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果没有安装easy_install或者pip，以ubuntu为例，可以使用以下命令安装</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>aptitude install python-setuptools
+</span><span class='line'>aptitude install python-pip</span></code></pre></td></tr></table></div></figure>
+
+
+<p>关于Python环境，推荐使用<a href="https://github.com/utahta/pythonbrew">pythonbrew</a>，以和系统自带的Python环境隔离</p>
+
+<p>安装完成后，会发现有多出一个<code>post-review</code>的命令，它就是我们用来和reviewboard发送review请求的工具</p>
+
+<h2>Looks great, let&#8217;s get this thing done</h2>
+
+<h3>设置代码仓库</h3>
+
+<p>如果您的仓库还未在reviewboard里可用，那么需要先设置一下</p>
+
+<p>如果您不知道怎么做，可以联系管理员(例如尔宁、Sysdev)</p>
+
+<p>使用admin帐号登录，并选择到后台</p>
+
+<p><img class="center" src="/images/2012/10/reviewboard003.jpg"></p>
+
+<p><img class="center" src="/images/2012/10/reviewboard004.jpg"></p>
+
+<p><img class="center" src="/images/2012/10/reviewboard005.jpg"></p>
+
+<p>新建仓库，设置参考下图，这里的名字将会在后面<code>.reviewboardrc</code>里使用</p>
+
+<p><img class="center" src="/images/2012/10/reviewboard006.jpg"></p>
+
+<h3>配置.reviewboardrc</h3>
+
+<p><code>post-review</code>命令会检查当前目录和用户的<code>$HOME</code>下是否有这个配置，里面可以写一些有用的信息来帮助<code>post-review</code>认识仓库和请求的一些信息</p>
+
+<p><em><strong>推荐: 在每个代码版本仓库下都保留一个通用的<code>.reviewboardrc</code>配置</strong></em></p>
+
+<p>一个典型的<code>.reviewboardrc</code>配置内容如下</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>REVIEWBOARD_URL="http://git.corp.anjuke.com/reviews"
+</span><span class='line'>REPOSITORY='image-service'</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>REVIEWBOARD_URL</code>设置了reviewboard的地址，<code>REPOSITORY</code>则是之前设置好的仓库名字</p>
+
+<h3>发起review请求</h3>
+
+<p>对于发送review请求，主要可以有2种形式:</p>
+
+<ol>
+<li>先发送请求，再手动上传diff文件</li>
+<li>发送请求的同时上传diff文件</li>
+</ol>
+
+
+<h4>创建请求并手工上传diff</h4>
+
+<p>简单的在有.reviewboardrc配置的目录下执行命令，或者在界面上新建，效果是一样的:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>post-review</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em><strong>注意: 第一次执行会要求输入用户名和密码；当然也可以在<code>.reviewboardrc</code>里设置</strong></em></p>
+
+<p><img src="/medias/20121009/rb.howto.001.png" alt="" /></p>
+
+<p>如上图会得到一个review请求的地址，访问它，再手工上传diff文件</p>
+
+<p><img class="center" src="/images/2012/10/reviewboard007.jpg"></p>
+
+<p>此外，还需要填入一些必要的信息</p>
+
+<ul>
+<li>summary</li>
+<li>branch</li>
+<li>选择group或者people</li>
+<li>group的话，就和第一步准备里加入的组有关系了，组里人的才能收到邮件</li>
+</ul>
+
+
+<p>在这个阶段和发布后，自己以及别人就可以通过这个URL来看到您的review请求，点右上角的<code>view diff</code>可以看到具体的代码diff情况，并作出评价等</p>
+
+<h4>生成diff的方法</h4>
+
+<p>参考如下</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git diff $sha1sum_1 $sha1sum_2 &gt; foobar.diff # 注意是从1到2的变化，所以别搞反了</span></code></pre></td></tr></table></div></figure>
+
+
+<p>完成后点击publish即可发布这个review请求。</p>
+
+<h3>发起请求的同时上传diff文件</h3>
+
+<p>在git仓库里执行<code>post-review</code>时，可以通过参数直接生成diff文件并上传，命令实例:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>post-review --revision-range=970521dfb4c42f89b1a4749cec77cd919c184632:401097033760d6b188039b11aab0c853b68541b4</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em><strong>注意: 这里第一个版本必须在远程的代码仓库里存在，否则将无法发布review请求</strong></em></p>
+
+<p>到生成的URL里发现已经有diff文件上传好了，只需要填入必要的字段就可以发布了。</p>
+
+<h3>便捷的方法</h3>
+
+<p>这里给出一个较为便捷的发起请求的方法，参数会告诉post-review来根据git的提交信息自动获取描述信息</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>post-review \
+</span><span class='line'>--guess-summary \ # 自动根据git commit comment提取
+</span><span class='line'>--guess-description \ # 自动根据git commit comment提取
+</span><span class='line'>--revision-range=":" \ # 这里填上需要的版本号
+</span><span class='line'>--branch="master" # 替换成需要的分支</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Oops</h2>
+
+<p>如果出现错误，这种时候请检查一下<code>.reviewboardrc</code>配置是否有问题；还可以通过<code>--debug</code>参数查看详细信息。</p>
+
+<p>如果还是搞不定的话，果断求助吧!</p>
+
+<h2>More?</h2>
+
+<p>抱歉，目前我也只能写这么多，更多关于<code>reviewboard</code>和<code>RBTools</code>的应用请翻阅其他资料网站或者其他手册。</p>
+
+<hr />
+
+<p>Last updated 2012/11/27 By Lei Chen <a href="mailto:chenlei@anjuke.com">chenlei@anjuke.com</a> from
+sysdev team</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-09T09:06:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2012</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/10/02/zc-dot-buildout-workflow/" title="Previous Post: zc.buildout Workflow">&laquo; zc.buildout Workflow</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/10/09/how-does-mogilefs-select-device-for-upload/" title="Next Post: Mogilefs设备权重算法">Mogilefs设备权重算法 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/10/09/reviewboard-howto/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/10/09/reviewboard-howto/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

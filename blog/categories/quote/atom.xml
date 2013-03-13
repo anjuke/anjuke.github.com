@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: quote | Anjuke Engineering]]></title>
+  <link href="http://arch.corp.anjuke.com/blog/categories/quote/atom.xml" rel="self"/>
+  <link href="http://arch.corp.anjuke.com/"/>
+  <updated>2013-03-13T12:15:00+08:00</updated>
+  <id>http://arch.corp.anjuke.com/</id>
+  <author>
+    <name><![CDATA[Anjuke Inc.]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[The Zen of Python]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/02/27/the-zen-of-python/"/>
+    <updated>2012-02-27T12:23:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/02/27/the-zen-of-python</id>
+    <content type="html"><![CDATA[<pre><code>&gt;&gt;&gt; import this
+</code></pre>
+
+<blockquote><p>The Zen of Python, by Tim Peters</p>
+
+<p><strong>Beautiful</strong> is better than ugly.<br/>
+Explicit is better than implicit.<br/>
+Simple is better than complex.<br/>
+Complex is better than complicated.<br/>
+Flat is better than nested.<br/>
+Sparse is better than dense.<br/>
+Readability counts.<br/>
+Special cases aren't special enough to break the rules.<br/>
+Although practicality beats purity.<br/>
+Errors should never pass silently.<br/>
+Unless explicitly silenced.<br/>
+In the face of ambiguity, refuse the temptation to guess.<br/>
+There should be one-- and preferably only one --obvious way to do it.<br/>
+Although that way may not be obvious at first unless you're Dutch.<br/>
+Now is better than never.<br/>
+Although never is often better than <em>right</em> now.<br/>
+If the implementation is hard to explain, it's a bad idea.<br/>
+If the implementation is easy to explain, it may be a good idea.<br/>
+Namespaces are one honking great idea -- let's do more of those!</p></blockquote>
+]]></content>
+  </entry>
+  
+</feed>

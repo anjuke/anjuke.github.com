@@ -1,0 +1,914 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: spec | Anjuke Engineering]]></title>
+  <link href="http://arch.corp.anjuke.com/blog/categories/spec/atom.xml" rel="self"/>
+  <link href="http://arch.corp.anjuke.com/"/>
+  <updated>2013-03-13T12:15:00+08:00</updated>
+  <id>http://arch.corp.anjuke.com/</id>
+  <author>
+    <name><![CDATA[Anjuke Inc.]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[PHP V2 SDK 设计规范]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/01/16/php-v2-sdk/"/>
+    <updated>2012-01-16T16:27:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/01/16/php-v2-sdk</id>
+    <content type="html"><![CDATA[<p>本文涉及PHP V2代码级SDK设计的规范。</p>
+
+<h2>代码</h2>
+
+<h3>目录结构和命名</h3>
+
+<p>SDK的模块代码将和客户代码在同一个运行时环境下执行，代码的命名需要注意，避免名称冲突。</p>
+
+<p>假设发布功能模块的SDK名称为<code>($SDK_NAME)</code>，其代码的根目录应该命名为:<code>app-($SDK_NAME)-shared</code>。</p>
+
+<pre><code>app-($SDK_NAME)-shared
+|
++--- classes
+|    |    
+|    +--- $(SDK_NAME)
+|    |    |
+|    |    + API.php
+|    |
+|    + ...
+|
++--- config
+|    |
+|    +--- database.php
+|    |
+|    +--- common.php
+|    |
+|    + ...
+|
++--- lib
+</code></pre>
+
+<p>对使用SDK的客户代码，只需要关心一个类<code>($SDK_NAME)_API</code>，类文件位于<code>classes/($SDK_NAME)/API.php</code>。
+客户代码在需要调用模块的地方引用</p>
+
+<p><code>php
+&lt;?php
+apf_require_class("{$SDK_NAME}_API");
+$api = ($SDK_NAME)_API::get_instance();
+$api-&gt;exported_func();
+</code></p>
+
+<p>API文件的基本格式为：</p>
+
+<p>```php
+&lt;?php
+apf_require_class('....');
+apf_require_class('....');</p>
+
+<p>class ($SDK_NAME)_API {</p>
+
+<pre><code>const VERSION = '....';
+
+public static function get_instance() {
+    ...
+}
+
+public function exported_func() {
+    ...
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<!-- more -->
+
+
+<h3>配置管理</h3>
+
+<p>代码已经有<strong>名字空间</strong>的概念，要求代码在独立的名字空间下，而配置文件原先没有这个概念。
+为了不和其他代码模块冲突，配置文件也需要遵循前缀的策略。</p>
+
+<h4>Database</h4>
+
+<p>SDK的数据库配置不能够简单的起名为<code>master</code>、<code>slave</code>，而必须增加<code>($SDK_NAME)_</code>前缀。例如</p>
+
+<p>```php
+&lt;?php
+...
+$config['bbs_master'] = array(</p>
+
+<pre><code>...
+</code></pre>
+
+<p>);</p>
+
+<p>$config['bbs_slave'] = array(</p>
+
+<pre><code>...
+</code></pre>
+
+<p>);
+```</p>
+
+<p>如上述例子，SDK里引用的配置项要求<strong>全部采用<code>($SDK_NAME)_</code>作为前缀</strong>。</p>
+
+<h4>Memcached</h4>
+
+<p>SDK的Memcached配置也必须增加<code>($SDK_NAME)_</code>前缀。例如</p>
+
+<p><code>php
+&lt;?php
+...
+$config['server' = array(...);
+$config["{$SDK_NAME}_server"] = array(...);
+</code></p>
+
+<p>同时，system下的<code>APF_Cache_Factory</code>类的<code>get_memcache()</code>和<code>load_memcache()</code>方法也需要做相应的改进，增加memcache的名字参数</p>
+
+<p>```diff
+diff --git a/system/classes/apf/cache/Factory.php b/system/classes/apf/cache/Factory.php
+--- a/system/classes/apf/cache/Factory.php
++++ b/system/classes/apf/cache/Factory.php
+@@ -17,20 +17,20 @@ class APF_Cache_Factory {</p>
+
+<pre><code> /**
+  * @return APF_Cache_Memcache
+  */
+</code></pre>
+
+<ul>
+<li> public function get_memcache() {</li>
+<li><pre><code> if (!isset($this-&gt;memcache)) {
+</code></pre></li>
+<li><pre><code>     $this-&gt;memcache = $this-&gt;load_memcache();
+</code></pre></li>
+<li> public function get_memcache($name='') {</li>
+<li><pre><code> if (!isset($this-&gt;memcaches[$name])) {
+</code></pre></li>
+<li><pre><code>     $this-&gt;memcaches[$name] = $this-&gt;load_memcaches($name);
+ }
+</code></pre></li>
+<li><pre><code> return $this-&gt;memcache;
+</code></pre></li>
+<li><pre><code> return $this-&gt;memcaches[$name];
+</code></pre>
+
+<p> }</p>
+
+<p> /**</p>
+
+<ul>
+<li>@return APF_Cache_Memcache
+*/</li>
+</ul>
+</li>
+<li> public function load_memcache() {</li>
+<li> public function load_memcache($name='') {
+
+<pre><code> apf_require_class($this-&gt;memcache_class);
+ $memcache = new $this-&gt;memcache_class();
+</code></pre></li>
+<li><pre><code> $servers = APF::get_instance()-&gt;get_config("servers", "cache");
+</code></pre></li>
+<li><pre><code> $servers = APF::get_instance()-&gt;get_config(($name) ? "{$name}_servers" : "servers", "cache");
+ foreach ($servers as $server) {
+     $memcache-&gt;addServer($server['host'], $server['port']);
+ }
+</code></pre>
+
+<p>@@ -39,9 +39,9 @@ class APF_Cache_Factory {
+ }</p>
+
+<p> /**</p></li>
+<li><ul>
+<li>@var APF_Cache_Memcache</li>
+</ul>
+</li>
+<li><ul>
+<li>@var APF_Cache_Memcache array
+*/</li>
+</ul>
+</li>
+<li> private $memcache;</li>
+<li><p> private $memcaches=array();</p>
+
+<p> //
+```</p></li>
+</ul>
+
+
+<p>这个对system的改动，需要使用SDK的<strong>各个事业部都应该进行</strong>。</p>
+
+<h3>部署建议</h3>
+
+<p>代码位置：</p>
+
+<pre><code>RELEASE_PATH
+|
++--- app-foobar
+|
++--- app-($SDK_NAME)-shared
+|
++--- app-($SDK_NAME)-demo
+|
++--- system
+</code></pre>
+
+<p>入口文件：</p>
+
+<pre><code>/home/www/v2
+|
++--- foobar
+|    |
+|    +--- index.php
+|    |
+|    +--- config
+|    |    |
+|    |    +--- database.php
+|    |    |
+|    |    + ...
+|
+|
++--- ($SDK_NAME)
+|    |
+|    +--- 
+|    |
+|    +--- config_($SDK_VERSION)
+|    |    |
+|    |    +--- database.php
+|    |    |
+|    |    + ...
+|
+</code></pre>
+
+<p><code>($SDK_NAME)/config_($SDK_VERSION)</code>目录下的文件由SDK的配置发布工具自动更新。</p>
+
+<p><code>index.php</code>里的配置文件路径:</p>
+
+<p>```php
+&lt;?php
+...
+$G_CONF_PATH=array(</p>
+
+<pre><code>    APP_PATH."../app-{$SDK_NAME}-shared/config/",       // SDK的缺省配置
+    APP_PATH.'config/',                                 // APP的缺省配置
+    "/home/www/v2/{$SDK_NAME}/config_{$SDK_VERSION}/",  // SDK的生成环境配置，由agent自动更新
+    '/home/www/v2/'.APP_NAME.'/config/',                // APP的生成环境配置，可以覆盖SDK的配置
+</code></pre>
+
+<p>);
+```</p>
+
+<h2>版本</h2>
+
+<h3>兼容性要求</h3>
+
+<p>SDK和客户app程序都依赖APF的system，因此SDK首先要保证不使用特殊的system版本，例如数据库访问应该仅依赖<code>system/apf/db</code>里现有的方法。</p>
+
+<p>其他事业部对system的改动也将严格限制。一般情况下，</p>
+
+<ul>
+<li>不允许对现有的system目录下的类进行改动</li>
+<li>由于新功能或改进功能而增加修改的类应该方在app程序的目录下，例如<code>app-aifang-core</code>这样的包内</li>
+<li>不应该出现<code>APF_</code>为名字空间前缀的类</li>
+</ul>
+
+
+<h3>版本号规则</h3>
+
+<ul>
+<li>版本号的基本规则为X.Y.Z三部分的数字</li>
+<li>公开的API改变或减少，增加X，同时Y,Z清0</li>
+<li>公开的API增加或者实现的改变，增加Y，同时Z清0</li>
+<li>仅对BUG修复的，增加Z</li>
+<li>预发布、测试的版本，格式为X.Y.0-foobar，其中Z为0。这种版本不作为对外公布的正式版本，仅供开发或测试使用。</li>
+<li>所有新的公开发布必须使用新的版本号</li>
+</ul>
+
+
+<p>详细规则见张吉翻译的<a href="https://github.com/anjuke-inc/semver/blob/zh-cn/semver.md">版本号的语义命名法</a></p>
+
+<h2>自动化配置部署</h2>
+
+<p>客户程序的app服务器上需要配置SDK的config-agent脚本。这个脚本根据SDK的服务提供方要求，自动修改SDK相关的配置。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[版本号的语义命名法 2.0.0-rc.1]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/01/07/semver/"/>
+    <updated>2012-01-07T16:27:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/01/07/semver</id>
+    <content type="html"><![CDATA[<p>翻译: <a href="http://git.corp.anjuke.com/cgit/jizhang/semver.git/">jizhang</a></p>
+
+<p>在软件管理过程中，随着系统规模的扩大，会有越来越多的模块被加入进来，包与包之间的依赖关系往往会让我们陷入痛苦的境地。</p>
+
+<p>当系统中有很多依赖关系存在时，发布新版本的包会成为一场恶梦。如果依赖过于紧密，就可能会产生“版本锁”，即发布包的新版本时需要发布其依赖包的新版本；如果依赖关系很松散，这样还是会陷入混乱，因为需要对更多的包进行兼容。这些问题往往会成为项目向前推进的绊脚石。</p>
+
+<p>为了解决这个问题，我拟定了一组简单的规则，用来规范软件发布中的版本号命名。在实施这组规则之前，我们需要一套API接口。这个接口可以是一组文档，也可以是代码实现。最重要的是，这套API接口必须是明确和精准的。在确认了这套API接口之后，对它的任何改动都要通过特定的版本号递增规则来进行。假设版本号的格式为X.Y.Z（主版本.次版本.补丁）。修复Bug会递增补丁版本，向前兼容的API修改或新增功能会递增次版本，向前不兼容的API修改会递增主版本。</p>
+
+<p>我给这套规则起名为“版本号的语义命名法”。在这种规则下，版本号的递增过程是带有特定含义的。</p>
+
+<!-- more -->
+
+
+<h2>版本号的语义命名法 - 详细说明（SemVer）</h2>
+
+<p>下文中出现的关键字“必须”、“禁止”、“应该”、“不应该”、“建议”、“可以”等名词的含义与RFC 2119规范中定义的一致。</p>
+
+<ol>
+<li><p>使用版本号语义命名法的软件必须提供一组公共的API接口。这套API接口可以是由代码实现的，也可以是由文档所规范的。无论是哪一种情况，API都应该要精确。</p></li>
+<li><p>普通的版本号必须以X.Y.Z的形式命名。X、Y、Z都是正整数。X表示主版本，Y表示次版本，Z表示补丁版本。每个版本号元素必须以1为单位递增，如1.9.0 -> 1.10.0 -> 1.11.0。</p></li>
+<li><p>当某个版本的软件包发布后，该包的内容禁止再做更改。每一次修改都必须发布一个新的版本。</p></li>
+<li><p>主版本号为0的版本（0.y.z）是初始开发版本，任何内容都可以随时做出修改。此时的API应视为不稳定的。</p></li>
+<li><p>1.0.0版定义了公共API接口。此后的版本号递增规则就需要按照API的修改或新增内容来区别对待。</p></li>
+<li><p>当发生BUG修复操作，且该修复是向前兼容的，则递增补丁版本Z（x.y.Z，其中x大于0）。BUG修复是指修正软件不正确行为的内部修改。</p></li>
+<li><p>当公共API添加了新功能，且该修改是向前兼容的，则递增次版本（x.Y.z，其中x大于0）。当公共API的某个功能被标记为弃用，则必须递增次版本。当有全新的功能或优化被引入私有代码，则可以递增次版本。当补丁版本级别的变动发生时，也可以选择递增次版本。次版本递增时，补丁版本必须重置为0。</p></li>
+<li><p>当公共API发生任何向前不兼容的变动时，必须递增主版本（X.y.z，其中X大于0）。当发生补丁版本级别或次版本级别的变动时，也可以选择递增主版本。主版本递增时，次版本和补丁版本必须都重置为0。</p></li>
+<li><p>表示预发布版本号时，可以在补丁版本号之后添加一个破折号，以及一组由点号相连的标识符。标识符必须由ASCII码表中的字母、数字、以及破折号组成，即[0-9A-Za-z-]。预发布版本号的优先级要比相应的正常版本号低。预发布版本号示例：1.0.0-alpha, 1.0.0-alpha.1, 1.0.0-0.3.7, 1.0.0-x.7.z.92。</p></li>
+<li><p>表示构建版本号时，可以在补丁版本号或预发布版本号之后添加一个加号，以及一组由点号相连的标识符。标识符必须由ASCII码表中的字母、数字、以及破折号组成，即[0-9A-Za-z-]。构建版本号的优先级要比相应的正常版本号高。构建版本号示例：1.0.0+build.1, 1.3.7+build.11.e0f985a。</p></li>
+<li><p>版本号优先级的比较方式为：将版本号按主版本、次版本、补丁版本、预发布版本、构建版本分割；主版本、次版本、补丁版本按数字大小比较；预发布版本和构建版本需要进一步按句点分割，每一部分使用如下方式比较：若为数字，则按照数字大小比较；若为字母或破折号，则按照其在ASCII码表中的顺序比较；若对应部分分别为数字和字母，则数字一方的优先级低。示例：1.0.0-alpha &lt; 1.0.0-alpha.1 &lt; 1.0.0-beta.2 &lt; 1.0.0-beta.11 &lt; 1.0.0-rc.1 &lt; 1.0.0-rc.1+build.1 &lt; 1.0.0 &lt; 1.0.0+0.3.7 &lt; 1.3.7+build &lt; 1.3.7+build.2.b8f12d7 &lt; 1.3.7+build.11.e0f985a。</p></li>
+</ol>
+
+
+<h2>为什么要使用版本号的语义命名法?</h2>
+
+<p>这种命名方法并不是一个全新的概念，事实上，你目前使用的版本号命名方法可能已经与上文中的规范相近。但是，“相近”还不够，如果不能严格按照某个标准来进行命名，这样的版本号在依赖管理中就是无用的。在对版本号有了清晰的定义后，就能很方便地和软件用户进行交流。一旦版本号的变化规律得以明确，那依赖管理也能够较好地进行。</p>
+
+<p>为什么说版本号的语义命名可以让依赖管理更好地进行？以下举一个简单的示例。有一个名为“Firetruck”的库，需要调用名为“Ladder”的包，该包的版本号使用了语义命名法。Firetruck创建之初，Ladder的版本号是3.1.0。Firetruck中使用了Ladder在3.1.0版本才开始有的新特性，因此可以确定只要Ladder的版本号在3.1.0和4.0.0之间（不含4.0.0），都是可以被Firetruck使用的。当Ladder发布了3.1.1和3.2.0版本时，你可以很放心地将它们添加到依赖管理系统中。</p>
+
+<p>作为一个责任心强的开发人员，当有新包发布时，你一定会对照它的更新日志，验证其功能的完整性。现实世界是混乱的，除了谨小慎微，我们别无他法。语义命名法所能帮到你的，就是在发布或升级软件包时，不用逐一检验依赖关系，从而节省时间。</p>
+
+<p>如果以上所说都符合你的需求，你所要做的就是对外声明自己在使用语义命名法，并在项目的README中添加通往本站点的链接，那么他人就能了解这一规范，并从中受益。</p>
+
+<h2>问答</h2>
+
+<h3>在软件开发阶段，如何正确处理0.y.z类型的版本号？</h3>
+
+<p>最简单的方法是，将最初的开发版本号定为0.1.0，并在后续的开发中逐一递增次版本号。</p>
+
+<h3>何时发布1.0.0版本？</h3>
+
+<p>如果你的软件已经在产品中投入使用，那它应该已经是1.0.0版本了；如果你提供的公共API已经有用户使用，那也应该发布1.0.0版本；如果你已经开始担心向前兼容的问题，那这时你也应该已经发布了1.0.0版本。</p>
+
+<h3>这种命名方式是否抑制了敏捷开发和快速迭代？</h3>
+
+<p>主版本为0的版本号就是为了敏捷开发而存在的。如果你每天都需要更新API，那就只有两种可能：一是它仍在0.x.x版本下；二是你们创建了一个独立的开发分支，准备发布下一个主版本。</p>
+
+<h3>如果即使发生了很微小的向前不兼容的修改也需要递增主版本号，那是不是很快就会遇到类似42.0.0这样的版本？</h3>
+
+<p>这个问题涉及到的是如何负责任地开发，以及开发的计划性。如果软件包被很多其他代码依赖，那么轻易地引入向前不兼容的改动是很不合理的，会有很高的代价。因此，在递增主版本之前，你需要详细考量变动所带来的影响，它的成本和收益。</p>
+
+<h3>为公共API撰写详细的文档需要很大的工作量！</h3>
+
+<p>如何恰当地为软件撰写使用文档，这是开发者的责任。正确管理软件的复杂性往往决定了项目开发是否高效。如果没有人知道如何使用你的软件，哪些方法是能够正确地调用的，那就无法管理项目了。以长远的眼光来看，版本号的语义命名法配合详尽的软件说明文档，可以让项目运作得更为顺畅。</p>
+
+<h3>如果我做了向前不兼容的改动，但不小心只递增了次版本，该如何补救？</h3>
+
+<p>一旦发现破坏了语义命名的规则，你就应该立即发布一个新的次版本，重新恢复向前兼容。记住，即使在这样的失误中，对已发布的版本进行修改也是严格禁止的。如果可以，应该在错误版本的发布说明中向用户解释这次错误，从而避免其他问题。</p>
+
+<h3>如果我没有更新公共API，而是更新了它所依赖的软件包，应该如何递增版本？</h3>
+
+<p>这种行为是向前兼容的，因为并没有影响到公共API。含有依赖项的软件包应该在发布说明中注明其所依赖的软件包清单，并对可能出现的包冲突做出提示。至于这次更新应递增补丁版本还是次版本，取决于对该依赖项的升级是为了修复BUG还是添加新功能。如果是添加新功能，就意味着代码量的增加，显然应该递增次版本。</p>
+
+<h3>修改BUG时造成公共API的变化，应该怎么做？</h3>
+
+<p>这时你就需要判断清楚，如果此次修改会对该API的用户群造成很大的影响，那最好还是递增主版本号，即使只是修复一个BUG。记住，版本号语义命名法的目的就是为了让版本号的递增规律携带特定的含义，如果软件包的变化会影响到用户，就应该使用正确的版本号变动方式来告知他们。</p>
+
+<h3>我该如何处理弃用的功能？</h3>
+
+<p>软件开发中，弃用现存的功能是很常见的。在你决定弃用公共API中的某项功能时，需要做两件事情：1）更新API文档，让用户知道本次修改；2）递增次版本。通常来说，当决定弃用某个API时，在递增主版本之前，应至少发布一个次版本，从而让用户能够平滑地切换到新API中。</p>
+
+<h2>关于</h2>
+
+<p>版本号语义命名法的规范文档由Gravatar的发明者、GitHub的合伙创始人<a href="http://tom.preston-werner.com">Tom Preston-Werner</a>撰写。</p>
+
+<p>如果你想给我一些反馈，可以在GitHub中<a href="https://github.com/mojombo/semver/issues">创建一个话题</a>.</p>
+
+<h2>协议</h2>
+
+<p>Creative Commons - CC BY 3.0
+http://creativecommons.org/licenses/by/3.0/</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[多关键字的文本精确匹配搜索]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2011/11/28/multi-string-search/"/>
+    <updated>2011-11-28T22:22:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2011/11/28/multi-string-search</id>
+    <content type="html"><![CDATA[<p>基本的要求是对给定的一个文本块进行关键字匹配，进行匹配的关键字是多个，而且可能非常多(成千上万)，然后输出各个匹配到的关键字的位置。这可用用作关键字的高亮显示，当然也可用进行敏感词过滤。</p>
+
+<p>参考linux命令行<code>fgrep</code></p>
+
+<h2>功能</h2>
+
+<p>输入一段文本，输出匹配到的关键字在输入文本中的位置。</p>
+
+<p>例如，关键词列表：</p>
+
+<p>```</p>
+
+<h1>关键字    类型(可选)</h1>
+
+<p>安居客      公司名称
+二手房      通用名词
+```</p>
+
+<p>待查询文本为：</p>
+
+<blockquote><p><em>安居客，是安居客集团旗下国内最大的专业二手房网站。自2007年上线至今的短短4年时间里，安居客凭借其“专业二手房搜索引擎”的核心竞争力在业内独树一帜。通过对用户需求的精准把握、海量的二手房房源、精准的搜索功能、强大的产品研发能力，为用户提供最佳找房体验。目前，安居客的足迹已经遍布全国超过29个城市，注册用户超过1000万。</em></p></blockquote>
+
+<p>输出结果为:</p>
+
+<p><code>
+[
+  (安居客, 公司名称, 0),
+  (二手房, 通用名词, 69),
+  (安居客, 公司名称, 134),
+  (二手房, 通用名词, 161),
+  (二手房, 通用名词, 275),
+  (安居客, 公司名称, 392)
+]
+</code></p>
+
+<!-- more -->
+
+
+<p>这里我们要求待匹配的关键字列表相对稳定，在进行文本查询之前要准备好。对多组关键字列表的检索可用采用多个服务实例的方案。</p>
+
+<h2>API</h2>
+
+<p>服务名称：<strong>mss</strong></p>
+
+<h3>match(text)</h3>
+
+<h4>参数</h4>
+
+<ul>
+<li><strong>text</strong>
+  待搜索的文本</li>
+</ul>
+
+
+<h4>返回结果</h4>
+
+<ul>
+<li><p><strong>True</strong>
+文本中<strong>包含有</strong>关键字列表中任何一个关键字</p></li>
+<li><p><strong>False</strong>
+文本中<strong>不包含</strong>关键字列表中任何一个关键字</p></li>
+</ul>
+
+
+<h3>search(text, fmt=[kw,idx])</h3>
+
+<h4>参数</h4>
+
+<ul>
+<li><p><strong>text</strong>
+  待搜索的文本</p></li>
+<li><p><strong>fmt</strong>`
+  设定返回结果的格式。缺省为返回匹配到的关键字和该关键字在文本中的起始位置</p>
+
+<ul>
+<li><code>kw</code> - 返回匹配到的关键字</li>
+<li><code>idx</code> - 返回匹配到的关键字在文本中的起始位置</li>
+<li><code>type</code> - 返回匹配到的关键字在字典中定义的类型</li>
+</ul>
+</li>
+</ul>
+
+
+<h4>返回结果</h4>
+
+<p>返回结果为匹配到的关键字列表。例如当<code>fmt=kw,idx,type</code>时，返回格式为</p>
+
+<p><code>
+[
+  ("安居客", 0, 公司名称),
+  ("二手房", 69, 通用名词),
+  ("安居客", 134, 公司名称),
+  ("二手房", 161, 通用名词),
+  ("二手房", 275, 通用名词),
+  ("安居客", 392, 公司名称)
+]
+</code></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[汉字转拼音服务规范]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2011/11/03/hanzi-to-pinyin/"/>
+    <updated>2011-11-03T22:22:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2011/11/03/hanzi-to-pinyin</id>
+    <content type="html"><![CDATA[<p>我们希望安居客的搜索引擎能够更好的做到同音字的容错，采用拼音容错是一个不错的方法。因此，需要一个将汉字转换为拼音的组件。同时，汉字转拼音组件还可以有多个用途，例如以拼音的首字母来检索小区名、人名等。</p>
+
+<p>这样我们需要一个通用的将汉字转换为拼音的服务。</p>
+
+<h2>功能</h2>
+
+<p>基本功能就是中文拉丁化，输入一段中文文本，输出转变为汉语拼音的文本。</p>
+
+<p>要求原文中的全角标点符号、空格等应该转为对应的半脚符号。原汉字与英文间如果没有空格分隔，转换为拼音后应该加入空格分隔。</p>
+
+<p>例如，“<strong>我的英文名是Bob。</strong>” 转化后为'<strong>wo de ying wen ming shi Bob.</strong>'</p>
+
+<!-- more -->
+
+
+<h3>多种输出格式</h3>
+
+<ul>
+<li><p>声调
+  <code>wǒ dē yīng wén míng shì Bob</code>或<code>wo3 de1 ying1 wen2 ming2 shi4 Bob</code></p></li>
+<li><p>声母输出
+  <code>w d y w m sh Bob</code></p></li>
+<li><p>首字母输出
+  <code>w d y w m s Bob</code></p></li>
+</ul>
+
+
+<h3>词组形式的拼音输出</h3>
+
+<p>允许将一个中文词组以拼音词组的形式输出。本服务不需考虑中文分词，要求输入的文本已经是分词完毕的。</p>
+
+<p>例如输入</p>
+
+<pre><code>南京市 长江 大桥
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>nanjingshi changjiang daqiao
+</code></pre>
+
+<p>注意与缺省情况下一个汉字一个拼音分隔的输出格式的区别。</p>
+
+<h3>多音字处理</h3>
+
+<p>应该能够智能的处理多音字的情况，例如
+输入：</p>
+
+<pre><code>南京市长江大桥
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>nan jing shi chang jiang da qiao
+</code></pre>
+
+<p>在无法智能辨认多音字的情况下，同时输出一个字或词的多个拼音，以|符号分隔多音字(词)。</p>
+
+<p>例如：输入：</p>
+
+<pre><code>南京市长江大桥
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>nan jing shi chang|zhang jiang da|dai qiao
+</code></pre>
+
+<p>以词组为切分单位时，输出整个词的多种拼音</p>
+
+<p>输入：</p>
+
+<pre><code>南京市 长江 大桥
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>nanjingshi changjiang|zhangjiang daqiao|daiqiao
+</code></pre>
+
+<p>需要建立合理的拼音词库以解决常用的多音字问题，例如“莘庄立交”、“北翟路”等</p>
+
+<h3>南方口音</h3>
+
+<p>不再区分前后鼻音、卷舌音、翘色音，例如</p>
+
+<pre><code>wo de yin wen min si Bob
+</code></pre>
+
+<p>对应表为：</p>
+
+<pre><code>z = zh              c = ch              s = sh
+k = g               f = h               l = n
+an = ang            en = eng            in = ing
+lan = lang          uan = uang          l = r
+</code></pre>
+
+<h2>API</h2>
+
+<p>服务名称：<strong>hz2py</strong></p>
+
+<h3>convert(text, fmt=[df], sc=True, pp=False, fuzzy=0)</h3>
+
+<h4>参数</h4>
+
+<ul>
+<li><p><strong>text</strong>
+  待转换的中文文本</p></li>
+<li><p><strong>fmt</strong>
+  设定转换的方式的格式。缺省为返回单字拆分的拼音格式</p>
+
+<ul>
+<li><code>df</code> - Default 全拼</li>
+<li><code>tm</code> - Tone Marks 全拼带音调</li>
+<li><code>tn</code> - Tone Numbers 全拼带数字形式的音调</li>
+<li><code>ic</code> - Initial Consonant only 声母</li>
+<li><code>fl</code> - First Letter 首字母</li>
+</ul>
+</li>
+<li><p><strong>sc</strong>
+  Split Character，是否以单个汉字为切割单位的拼音输出字为单位</p>
+
+<ul>
+<li><code>True</code> - 单字拆分</li>
+<li><code>False</code> - 不拆分。以输入的中文文本的分词为准</li>
+</ul>
+</li>
+<li><p><strong>pp</strong>
+  Polyphone 是否输出无法判断的多音字(词)</p>
+
+<ul>
+<li><code>False</code> - 不输出多音字</li>
+<li><code>True</code> - 输出多音字</li>
+</ul>
+</li>
+<li><p><strong>fuzzy</strong>
+  Puzzy 拼音模糊化</p>
+
+<ul>
+<li><code>0</code> - 不处理</li>
+<li><code>1</code> - 模糊化 z-zh c-ch s-sh</li>
+<li><code>2</code> - 模糊化 k-g f-h l-n l-r</li>
+<li><code>4</code> - 模糊化 an-ang en-eng in-ing lan-lang uan-uang</li>
+</ul>
+</li>
+</ul>
+
+
+<h4>返回结果</h4>
+
+<p>如果只需要一个格式，直接返回转换后的结果。例如调用<code>convert('南京市长江大桥')</code> 返回：</p>
+
+<pre><code>nan jing shi chang jiang da qiao
+</code></pre>
+
+<p>如果有多个格式选项，返回所有格式的结果。例如调用<code>convert('南京市 长江 大桥', fmt=[tm,tn,fl], sc=False)</code> 返回：</p>
+
+<p>```javascript
+{</p>
+
+<pre><code>'tm': 'nánjīngshì chángjīang dàqiáo'
+'tn': 'nan2jing1shi4 chang2jiang1 da4qiao2'
+'fl': 'njs cj dq'
+</code></pre>
+
+<p>}
+```</p>
+
+<p>假设转拼音服务无法识别“莘”字在下面短语中的读音，当调用<code>convert('莘庄 立交', fmt=[tn,fl], sc=False, pp=True)</code>将返回：</p>
+
+<p>```javascript
+{</p>
+
+<pre><code>'tn': 'xin1zhuang1|shen1zhuang1 li4jiao3'
+'fl': 'xz|sz lj'
+</code></pre>
+
+<p>}
+```</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Anjuke PHP Service 规范]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2011/07/16/aps/"/>
+    <updated>2011-07-16T22:22:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2011/07/16/aps</id>
+    <content type="html"><![CDATA[<p>Zhang Erning <a href="&#109;&#x61;&#x69;&#x6c;&#x74;&#111;&#x3a;&#101;&#x72;&#x6e;&#105;&#110;&#x67;&#x40;&#x61;&#x6e;&#x6a;&#x75;&#x6b;&#x65;&#x2e;&#99;&#111;&#x6d;">&#x65;&#x72;&#110;&#105;&#110;&#103;&#64;&#97;&#110;&#x6a;&#x75;&#x6b;&#101;&#46;&#x63;&#x6f;&#x6d;</a><br/>
+v1.0, July 2011</p>
+
+<h2>Goal</h2>
+
+<p>我们的目标是为PHP应用程序搭建一个轻量、灵活、高性能的异步远过程调用(RPC)的解决方案。同时也希望能够方便隔离前端的应用程序和后端的服务进程，使得产品的开发和部署更加便捷。</p>
+
+<p><strong>轻量</strong></p>
+
+<ul>
+<li>可以将服务进程与PHP应用服务部署在同一台物理服务器上</li>
+<li>一台应用服务器上能够部署多种服务进程</li>
+</ul>
+
+
+<p><strong>灵活</strong></p>
+
+<ul>
+<li>PHP应用程序可以采用进程间通讯(IPC)的方式与部署在同一服务器上的服务进程交互</li>
+<li>PHP应用程序也能够通过网络通讯(TCP)的方式与部署在其他服务器上的服务进程交互</li>
+<li>与服务进程通讯的方式可以通过配置文件调整，PHP的应用程序本身并不关心</li>
+<li>服务进程可以采用各种语言编写</li>
+</ul>
+
+
+<p><strong>高性能</strong></p>
+
+<ul>
+<li>为PHP提供异步方法调用的基本目的就是为了解决了PHP程序在处理请求的时候单线程的问题，因此不能以牺牲性能为代价</li>
+</ul>
+
+
+<!-- more -->
+
+
+<h2>Architect</h2>
+
+<p>为了实现这几个基本目标，我们选用<strong>ØMQ</strong>作为底层实现的基础，采用PHP直接与服务进程通讯的方式，而不是通过庞大复杂的中间件。</p>
+
+<p>服务进程(Service)以ØMQ的<strong>XREP</strong>套接字绑定在某个位置，客户程序(Client)用ØMQ的<strong>XREQ</strong>套接字连接服务进程。客户程序发送请求；服务进程处理请求，之后返回结果；客户程序接收结果并进行后续操作。</p>
+
+<pre><code> +-------+      +-------+      +-------+      +-------+
+ |  PHP  |      |  PHP  |      |  PHP  |      |  PHP  |
+ +---+---+      +---+---+      +---+---+      +---+---+
+     |              |              |              |  
+     |              |              |              |  
+     \------zmq-----+------zmq-----+------zmq-----/
+             |              |              |
+             |              |              |
+       /-----+-----\  /-----+-----\  /-----+-----\
+       |           |  |           |  |           |
+       | Service A |  | Service B |  | Service C |
+       |           |  |           |  |           |
+       \-----------/  \-----------/  \-----------/
+</code></pre>
+
+<h3>Asynchronous</h3>
+
+<p>要求客户程序和服务进程间实现异步的方法调用。客户程序允许一次发送多条请求给服务进程，之后一起等待结果。</p>
+
+<pre><code>           Synchronous RPC                          Asynchronous RPC
+
+  Client      Service A    Service B        Client      Service A    Service B
+     |            |            |               |            |            |
+ 0 S |-----------&gt;|            |           0 S |-----------&gt;|            |
+ 1   |            |            |           1   |------------------------&gt;|
+ 2   |            |            |           2   |            |            |
+ 3   |&lt;-----------|            |           3   |&lt;-----------|            |
+ 4   |------------------------&gt;|           4   |            |            |
+ 5   |            |            |           5   |            |            |
+ 6   |            |            |           6 F |&lt;------------------------|
+ 7   |            |            |           7   |            |            |
+ 8   |            |            |           8   |            |            |
+ 9 F |&lt;------------------------|           9   |            |            |
+     |            |            |               |            |            |
+
+ The services can't proceed multiple       The services can proceed multiple
+ requests in parallel. Thus wait time      requests in parallel. Thus client
+ becomes long.                             can gather results faster.        
+</code></pre>
+
+<h3>Parallel Pipelining</h3>
+
+<p>当服务进程从一个客户程序收到多条请求时可以并行处理这些请求，当任何一个请求处理完成时，应当立即将这个请求的结果返回给客户程序。也就是说，服务进程返回结果的顺序不必与客户程序请求的顺序一致。</p>
+
+<p>客户程序发起的每一个请求都会分配一个唯一的请求序列号。服务进程返回结果时，要求将相应请求的序列号原封不动的返回给客户程序，客户程序通过这一个序列号识别当前收到的结果是哪一个请求的。</p>
+
+<pre><code>  RPC without parallel pipelining           RPC with parallel pipelining
+
+      Client           Service                  Client           Service
+         |               |  |                      |               |  |
+     0 S |--1-----------&gt;|  |                  0 S |--1-----------&gt;|  |
+     1   |--2--------------&gt;|                  1   |--2--------------&gt;|
+     2   |               |  |                  2   |               |  |
+     3   |               |  |                  3   |&lt;-2---------------|
+     4   |               |  |                  4   |               |  |
+     5   |&lt;-1------------|  |                  5 F |&lt;-1------------|  |
+     6 F |&lt;-2---------------|                  6   |               |  |
+     7   |               |  |                  7   |               |  |
+     8   |               |  |                  8   |               |  |
+     9   |               |  |                  9   |               |  |
+         |               |  |                      |               |  |
+
+ The service must return in received       The service can return just when it
+ order, even if former task is heavy       finished and the client can receive
+ and following one is light.               replies faster.
+</code></pre>
+
+<h3>Flexible Worker</h3>
+
+<p>通常服务进程需要维护多个处理程序(Worker)，这样在接收到多个请求的时候能够并行处理这些请求。我们建议使用ØMQ来实现线程间(或进程间)的通讯，这样不必再为多线程间的共享数据而引入各种各样的锁机制，减少不必要的麻烦。</p>
+
+<pre><code>      A Service with several workers
+
+ /-----------------------------------------\
+ | Service                                 |
+ |                                         |
+ |          +--------+  +--------+         |
+ |          : Worker |  : Worker |         |
+ |          +--------+  +--------+         |
+ |                                         |
+ |    +--------+  +--------+  +--------+   |
+ |    : Worker |  : Worker |  : Worker |   |
+ |    +--------+  +--------+  +--------+   |
+ |                                         |
+ \-----------------------------------------/ 
+</code></pre>
+
+<p>我们这里还规范了一份处理程序和其所属的服务进程间的通讯协议。采用这一规范来实现的处理程序将能够被我们的通用服务进程调度和管理，使处理程序是采用不同的语言开发。我们的规范要求处理程序采用ØMQ的<strong>XREQ</strong>套接字连接至其所属的服务进程，发出准备好的消息，并等待分配的任务。</p>
+
+<h2>Message Format</h2>
+
+<ul>
+<li>客户程序与服务进程之间通讯的消息格式应当完全采用如下<strong>APS/Client</strong>规范。</li>
+<li>通用服务进程与处理程序之间通讯的消息格式采用如下的<strong>APS/Worker</strong>规范。</li>
+</ul>
+
+
+<h3>APS/Client</h3>
+
+<p>客户程序与服务进程间通过<strong>REQUEST</strong>和<strong>REPLY</strong>互相通讯。由客户程序向服务进程发起的是<strong>REQUEST</strong>命令；服务进程返回的是<strong>REPLY</strong>命令。</p>
+
+<h4>REQUEST</h4>
+
+<ul>
+<li>Frame 1: "APS10" (5 bytes string)</li>
+<li>Frame 2: Sequence, Timestamp, Expiry (msgpacked array)</li>
+<li>Frame 3: Method (printable string)</li>
+<li>Frame 4: Request body (msgpack(params))</li>
+</ul>
+
+
+<h4>REPLY</h4>
+
+<ul>
+<li>Frame 1: "APS10" (5 bytes string)</li>
+<li>Frame 2: Sequence, Timestamp, Status (msgpacked array)</li>
+<li>Frame 3: Reply body (msgpack(result))</li>
+</ul>
+
+
+<h3>APS/Worker</h3>
+
+<p>通用的服务进程将通过以下消息与处理程序进行通讯。</p>
+
+<p>第一个消息由处理程序发起，处理程序向通用服务进程发送<strong>HEARTBEAT</strong>消息，表示已经准备妥当可以接收任务；通用服务进程将客户程序的请求以<strong>REQUEST</strong>命令转发给处理程序；处理程序完成后以<strong>REPLY</strong>命令回复给通用服务进程；通用服务进程负责转给请求的客户程序。REQUEST命令只能由服务进程发起；REPLY命令只能由处理程序发起。</p>
+
+<p>处理程序和通用服务进程间可以定时发送<strong>HEARTBEAT</strong>消息，以告知对方自己还处在正常状态。单通用服务进程在一段时间内没有收到处理程序的状态报告，可以认为改处理程序异常，而不再给其分配任务。</p>
+
+<p>处理程序主动退出时应该使用<strong>GOODBYE</strong>消息通知通用服务进程，通用服务进程保证不再分配任务给这个处理程序。当处理程序收到通用服务进程发来的<strong>GOODBYE</strong>消息，在处理完当前任务后可以退出进程。</p>
+
+<h4>HEARTBEAT</h4>
+
+<ul>
+<li>Frame 1: "APS10"</li>
+<li>Frame 2: 0x01 (one byte, representing HEARTBEAT)</li>
+<li>Frame 3: Timestamp (msgpacked)</li>
+</ul>
+
+
+<h4>GOODBYE</h4>
+
+<ul>
+<li>Frame 1: "APS10"</li>
+<li>Frame 2: 0x02 (one byte, representing GOODBYE)</li>
+<li>Frame 3: Timestamp (msgpacked)</li>
+</ul>
+
+
+<h4>REQUEST</h4>
+
+<ul>
+<li>Frame 1: "APS10"</li>
+<li>Frame 2: 0x00</li>
+<li>Frame 3: Envelope (from upstream route, may more than one frame)</li>
+<li>Frame 4: Empty</li>
+<li>Frame 5: Sequence, Timestamp, Expiry (msgpacked array)</li>
+<li>Frame 6: Method (printable string)</li>
+<li>Frame 7: Request body (msgpack(params))</li>
+</ul>
+
+
+<h4>REPLY</h4>
+
+<ul>
+<li>Frame 1: "APS10"</li>
+<li>Frame 2: 0x00</li>
+<li>Frame 3: Envelope (from upstream route, may more than one frame)</li>
+<li>Frame 4: Empty</li>
+<li>Frame 5: Sequence, Timestamp, Status (msgpacked array)</li>
+<li>Frame 6: Reply body (msgpack([result]))</li>
+</ul>
+
+
+<h2>Realibility</h2>
+
+<p>可靠性的控制不此描述，由客户程序和通用服务进程的具体实现负责可靠性。</p>
+]]></content>
+  </entry>
+  
+</feed>

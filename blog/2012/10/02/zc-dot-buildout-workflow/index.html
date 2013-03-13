@@ -1,0 +1,538 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>zc.buildout Workflow - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="This article aims to provide a concrete workflow of using zc.buildout to deploy development and production environment. Project Structure (BuildOut &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/10/02/zc-dot-buildout-workflow/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">zc.buildout Workflow</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-02T14:44:00+08:00" pubdate data-updated="true">Oct 2<span>nd</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
+
+<p>This article aims to provide a concrete workflow of using zc.buildout to deploy development and production environment.</p>
+
+<h2>Project Structure (BuildOut SKELeton)</h2>
+
+<p>Here is a minimum application structure with zc.buildout.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>git clone git@github.com:jizhang/boskel.git
+</span><span class='line'><span class="nv">$ </span>find boskel
+</span><span class='line'>boskel
+</span><span class='line'>boskel/.gitignore
+</span><span class='line'>boskel/bootstrap.py
+</span><span class='line'>boskel/buildout.cfg
+</span><span class='line'>boskel/offline.cfg
+</span><span class='line'>boskel/setup.py
+</span><span class='line'>boskel/src
+</span><span class='line'>boskel/src/boskel
+</span><span class='line'>boskel/src/boskel/__init__.py
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Development Environment</h2>
+
+<p>To initiate the application:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd </span>boskel
+</span><span class='line'><span class="nv">$ </span>python bootstrap.py --distribute
+</span><span class='line'><span class="nv">$ </span>bin/buildout
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, a fully functional and isolated python environment has been built. Try the following commands:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>bin/python
+</span><span class='line'>&gt;&gt;&gt; import boskel
+</span><span class='line'>&gt;&gt;&gt;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It shows the bin/python interpreter is able to find the newly created boskel package.</p>
+
+<p>Here are something you may want to catch up:</p>
+
+<ul>
+<li><p><strong>bootstrap.py</strong> Since not everyone has installed zc.buildout locally (by pip install zc.buildout), an initiation script is included. It will download the latest distribute package (it defaults to use setuptools, but distribute package is a replacement and better choice) and zc.buildout packages. It&#8217;ll generate bin/buildout script, which is the hero of this article.</p></li>
+<li><p><strong>buildout.cfg</strong> A typical buildout configuration file. In detail, the &#8216;develop = .&#8217; tells buildout to find pakcage in the current directory, which must includes a setup.py script. And &#8216;interpreter = python&#8217; indicates that a new interpreter bin/python should be generated. This special interpreter is made capable of finding all the dependencies of this application.</p></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>cat buildout.cfg
+</span><span class='line'><span class="o">[</span>buildout<span class="o">]</span>
+</span><span class='line'><span class="nv">parts</span> <span class="o">=</span> python
+</span><span class='line'><span class="nv">develop</span> <span class="o">=</span> .
+</span><span class='line'>
+</span><span class='line'><span class="o">[</span>python<span class="o">]</span>
+</span><span class='line'><span class="nv">recipe</span> <span class="o">=</span> zc.recipe.egg
+</span><span class='line'><span class="nv">interpreter</span> <span class="o">=</span> python
+</span><span class='line'><span class="nv">eggs</span> <span class="o">=</span>
+</span><span class='line'>    boskel
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><strong>setup.py</strong> A standard package setup script. &#8216;packages&#8217; and &#8216;package_dir&#8217; option should be written as is shown, since it&#8217;s a convention of buildout to put all source code in an &#8216;src&#8217; folder.</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>cat setup.py
+</span><span class='line'>from setuptools import setup, find_packages
+</span><span class='line'>
+</span><span class='line'>setup<span class="o">(</span>
+</span><span class='line'>    <span class="nv">name</span><span class="o">=</span><span class="s1">&#39;boskel&#39;</span>,
+</span><span class='line'>    <span class="nv">version</span><span class="o">=</span><span class="s1">&#39;0.1.0&#39;</span>,
+</span><span class='line'>    <span class="nv">packages</span><span class="o">=</span>find_packages<span class="o">(</span><span class="s1">&#39;src&#39;</span><span class="o">)</span>,
+</span><span class='line'>    <span class="nv">package_dir</span><span class="o">={</span><span class="s1">&#39;&#39;</span>: <span class="s1">&#39;src&#39;</span><span class="o">}</span>,
+</span><span class='line'>    <span class="nv">zip_safe</span><span class="o">=</span>False,
+</span><span class='line'>    <span class="nv">install_requires</span><span class="o">=[</span>
+</span><span class='line'>    <span class="o">]</span>
+</span><span class='line'><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><strong>offline.cfg</strong> This file will be used to run buildout in a remote server without internet access.</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>cat offline.cfg
+</span><span class='line'><span class="o">[</span>buildout<span class="o">]</span>
+</span><span class='line'><span class="nv">extends</span> <span class="o">=</span> buildout.cfg
+</span><span class='line'>download-cache <span class="o">=</span> downloads
+</span><span class='line'>install-from-cache <span class="o">=</span> <span class="nb">true</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Production Environment</h2>
+
+<p>When deploying to a production environment, dependency isolation is very important, unless one plans to deploy only one application per server, then he may install all the packages globally. Otherwise, an environment isolation tool should be chosen, and virtualenv is a good one.</p>
+
+<p>A typical procedure is as below:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">local</span> <span class="nv">$ </span>python setup.py sdist
+</span><span class='line'><span class="nb">local</span> <span class="nv">$ </span>scp xxx-0.1.tar.gz user@remote:/path/to/dist
+</span><span class='line'>remote <span class="nv">$ </span><span class="nb">source </span>venv/bin/activate
+</span><span class='line'>remote <span class="nv">$ </span>python setup.py install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The dependencies need to be uploaded and installed into the venv first.</p>
+
+<p>As for buildout, we can also use the above approach, deploying with virtualenv. But what if our new distribution&#8217;s dependency tree is conflict with the previous package. Or I have to setup different virtual environments for production and staging release. So, a better solution is to use buildout for every distribution.</p>
+
+<p>The main problem of building-out application on remote servers is dependency handling, since most of the time, there won&#8217;t be internet accessibility in those servers.</p>
+
+<p>There&#8217;re two solutions, one is setting up a pypi repository with <a href="http://pypi.python.org/pypi/collective.eggproxy">eggproxy</a>. It will cache the eggs downloaded from internet for further use.</p>
+
+<p>Another approach is to install from local cache, as is described below.</p>
+
+<p>zc.buildout has an offline mode (bin/buildout -o, which is also useful when developing, since it will not try to checkout the latest packages, making the building much faster). We can trigger this behavior in configuration file, as is shown in the offline.cfg. The &#8216;download-cache&#8217; option indicates where to find the packages. Obviously there should be only one download-cache per server, and whether to use absolute path or a symbolic link to the path is your call.</p>
+
+<p>How about the zc.buildout package itself? In development environment, we use bootstrap.py to install it, but there&#8217;s not offline-mode bootstrap.py available. So my answer to it is setting up a virtualenv which includes a zc.buildout package. To setup this venv:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd </span>virtualenv-x.x.x
+</span><span class='line'><span class="nv">$ </span>python setup.py install
+</span><span class='line'><span class="nv">$ </span>virtualenv venv --distribute
+</span><span class='line'><span class="nv">$ </span><span class="nb">source </span>venv/bin/activate
+</span><span class='line'><span class="nv">$ </span><span class="nb">cd </span>zc.buildout-x.x.x
+</span><span class='line'><span class="nv">$ </span>python setup.py install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Later, we can use the venv/bin/buildout script to run buildout (no activation needed).</p>
+
+<p>Here&#8217;s the deploying procedure:</p>
+
+<ol>
+<li>Export the source code from git repository, and rsync it to remote server.</li>
+<li>Make a symbolic link to the download cache.</li>
+<li>Execute venv/bin/buildout -c offline.cfg</li>
+</ol>
+
+
+<p>We can use <a href="http://docs.fabfile.org/en/1.4.3/index.html">Fabric</a> to do the job. Here&#8217;s an example task:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="kn">from</span> <span class="nn">fabric.api</span> <span class="kn">import</span> <span class="n">lcd</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">cd</span><span class="p">,</span> <span class="n">run</span>
+</span><span class='line'><span class="kn">from</span> <span class="nn">fabric.contrib.project</span> <span class="kn">import</span> <span class="n">rsync_project</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@task</span>
+</span><span class='line'><span class="k">def</span> <span class="nf">deploy</span><span class="p">(</span><span class="n">rev</span><span class="o">=</span><span class="s">&#39;master&#39;</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">with</span> <span class="n">lcd</span><span class="p">(</span><span class="s">&#39;~/boskel&#39;</span><span class="p">):</span>
+</span><span class='line'>        <span class="n">local</span><span class="p">(</span><span class="s">&#39;git clone --mirror git@github.com:jizhang/boskel.git&#39;</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">local</span><span class="p">(</span><span class="s">&#39;git remote update&#39;</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">rev</span> <span class="o">=</span> <span class="n">local</span><span class="p">(</span><span class="s">&#39;git rev-parse </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">rev</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">prefix</span> <span class="o">=</span> <span class="s">&#39;boskel-</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">rev</span><span class="p">[:</span><span class="mi">7</span><span class="p">]</span>
+</span><span class='line'>        <span class="n">local</span><span class="p">(</span><span class="s">&#39;git archive --prefix=</span><span class="si">%s</span><span class="s">/ --format=tar </span><span class="si">%s</span><span class="s"> | tar xf - -C </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>\
+</span><span class='line'>              <span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">rev</span><span class="p">,</span> <span class="s">&#39;~/boskel/dist&#39;</span><span class="p">))</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">rsync_project</span><span class="p">(</span><span class="s">&#39;/path/to/boskel/dist&#39;</span><span class="p">,</span> <span class="s">&#39;~/boskel/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">prefix</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">with</span> <span class="n">cd</span><span class="p">(</span><span class="s">&#39;/path/to/boskel/dist/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">prefix</span><span class="p">):</span>
+</span><span class='line'>        <span class="n">run</span><span class="p">(</span><span class="s">&#39;ln -s -n -f </span><span class="si">%s</span><span class="s"> downloads&#39;</span> <span class="o">%</span> <span class="s">&#39;/path/to/download-cache&#39;</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">run</span><span class="p">(</span><span class="s">&#39;/path/to/venv/bin/buildout -c offline.cfg&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Conclusion</h2>
+
+<p>Here we combined buildout and virtualenv to setup isolated environment for every distribution. But two things need to be improved:</p>
+
+<ol>
+<li>collective.eggproxy is better than local cache.</li>
+<li>It&#8217;s unnecessary to build application in every server. We should use a dedicated server to build the pakcage and rsync these files to other servers.</li>
+</ol>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">jizhang</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-02T14:44:00+08:00" pubdate data-updated="true">Oct 2<span>nd</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/python/'>python</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/09/08/a-workaround-for-flask-werkzeugs-incompatibility-with-buildout/" title="Previous Post: A Workaround for Flask Werkzeug's Incompatibility With Buildout">&laquo; A Workaround for Flask Werkzeug's Incompatibility With Buildout</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/10/09/reviewboard-howto/" title="Next Post: reviewboard 简要使用介绍">reviewboard 简要使用介绍 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/10/02/zc-dot-buildout-workflow/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/10/02/zc-dot-buildout-workflow/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,471 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>汉字转拼音服务规范 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="我们希望安居客的搜索引擎能够更好的做到同音字的容错，采用拼音容错是一个不错的方法。因此，需要一个将汉字转换为拼音的组件。同时，汉字转拼音组件还可以有多个用途，例如以拼音的首字母来检索小区名、人名等。 这样我们需要一个通用的将汉字转换为拼音的服务。 功能 基本功能就是中文拉丁化，输入一段中文文本， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2011/11/03/hanzi-to-pinyin/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">汉字转拼音服务规范</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-11-03T22:22:00+08:00" pubdate data-updated="true">Nov 3<span>rd</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>我们希望安居客的搜索引擎能够更好的做到同音字的容错，采用拼音容错是一个不错的方法。因此，需要一个将汉字转换为拼音的组件。同时，汉字转拼音组件还可以有多个用途，例如以拼音的首字母来检索小区名、人名等。</p>
+
+<p>这样我们需要一个通用的将汉字转换为拼音的服务。</p>
+
+<h2>功能</h2>
+
+<p>基本功能就是中文拉丁化，输入一段中文文本，输出转变为汉语拼音的文本。</p>
+
+<p>要求原文中的全角标点符号、空格等应该转为对应的半脚符号。原汉字与英文间如果没有空格分隔，转换为拼音后应该加入空格分隔。</p>
+
+<p>例如，“<strong>我的英文名是Bob。</strong>” 转化后为&#8217;<strong>wo de ying wen ming shi Bob.</strong>&#8217;</p>
+
+<!-- more -->
+
+
+<h3>多种输出格式</h3>
+
+<ul>
+<li><p>声调
+  <code>wǒ dē yīng wén míng shì Bob</code>或<code>wo3 de1 ying1 wen2 ming2 shi4 Bob</code></p></li>
+<li><p>声母输出
+  <code>w d y w m sh Bob</code></p></li>
+<li><p>首字母输出
+  <code>w d y w m s Bob</code></p></li>
+</ul>
+
+
+<h3>词组形式的拼音输出</h3>
+
+<p>允许将一个中文词组以拼音词组的形式输出。本服务不需考虑中文分词，要求输入的文本已经是分词完毕的。</p>
+
+<p>例如输入</p>
+
+<pre><code>南京市 长江 大桥
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>nanjingshi changjiang daqiao
+</code></pre>
+
+<p>注意与缺省情况下一个汉字一个拼音分隔的输出格式的区别。</p>
+
+<h3>多音字处理</h3>
+
+<p>应该能够智能的处理多音字的情况，例如
+输入：</p>
+
+<pre><code>南京市长江大桥
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>nan jing shi chang jiang da qiao
+</code></pre>
+
+<p>在无法智能辨认多音字的情况下，同时输出一个字或词的多个拼音，以|符号分隔多音字(词)。</p>
+
+<p>例如：输入：</p>
+
+<pre><code>南京市长江大桥
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>nan jing shi chang|zhang jiang da|dai qiao
+</code></pre>
+
+<p>以词组为切分单位时，输出整个词的多种拼音</p>
+
+<p>输入：</p>
+
+<pre><code>南京市 长江 大桥
+</code></pre>
+
+<p>输出：</p>
+
+<pre><code>nanjingshi changjiang|zhangjiang daqiao|daiqiao
+</code></pre>
+
+<p>需要建立合理的拼音词库以解决常用的多音字问题，例如“莘庄立交”、“北翟路”等</p>
+
+<h3>南方口音</h3>
+
+<p>不再区分前后鼻音、卷舌音、翘色音，例如</p>
+
+<pre><code>wo de yin wen min si Bob
+</code></pre>
+
+<p>对应表为：</p>
+
+<pre><code>z = zh              c = ch              s = sh
+k = g               f = h               l = n
+an = ang            en = eng            in = ing
+lan = lang          uan = uang          l = r
+</code></pre>
+
+<h2>API</h2>
+
+<p>服务名称：<strong>hz2py</strong></p>
+
+<h3>convert(text, fmt=[df], sc=True, pp=False, fuzzy=0)</h3>
+
+<h4>参数</h4>
+
+<ul>
+<li><p><strong>text</strong>
+  待转换的中文文本</p></li>
+<li><p><strong>fmt</strong>
+  设定转换的方式的格式。缺省为返回单字拆分的拼音格式</p>
+
+<ul>
+<li><code>df</code> - Default 全拼</li>
+<li><code>tm</code> - Tone Marks 全拼带音调</li>
+<li><code>tn</code> - Tone Numbers 全拼带数字形式的音调</li>
+<li><code>ic</code> - Initial Consonant only 声母</li>
+<li><code>fl</code> - First Letter 首字母</li>
+</ul>
+</li>
+<li><p><strong>sc</strong>
+  Split Character，是否以单个汉字为切割单位的拼音输出字为单位</p>
+
+<ul>
+<li><code>True</code> - 单字拆分</li>
+<li><code>False</code> - 不拆分。以输入的中文文本的分词为准</li>
+</ul>
+</li>
+<li><p><strong>pp</strong>
+  Polyphone 是否输出无法判断的多音字(词)</p>
+
+<ul>
+<li><code>False</code> - 不输出多音字</li>
+<li><code>True</code> - 输出多音字</li>
+</ul>
+</li>
+<li><p><strong>fuzzy</strong>
+  Puzzy 拼音模糊化</p>
+
+<ul>
+<li><code>0</code> - 不处理</li>
+<li><code>1</code> - 模糊化 z-zh c-ch s-sh</li>
+<li><code>2</code> - 模糊化 k-g f-h l-n l-r</li>
+<li><code>4</code> - 模糊化 an-ang en-eng in-ing lan-lang uan-uang</li>
+</ul>
+</li>
+</ul>
+
+
+<h4>返回结果</h4>
+
+<p>如果只需要一个格式，直接返回转换后的结果。例如调用<code>convert('南京市长江大桥')</code> 返回：</p>
+
+<pre><code>nan jing shi chang jiang da qiao
+</code></pre>
+
+<p>如果有多个格式选项，返回所有格式的结果。例如调用<code>convert('南京市 长江 大桥', fmt=[tm,tn,fl], sc=False)</code> 返回：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="s1">&#39;tm&#39;</span><span class="o">:</span> <span class="s1">&#39;nánjīngshì chángjīang dàqiáo&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;tn&#39;</span><span class="o">:</span> <span class="s1">&#39;nan2jing1shi4 chang2jiang1 da4qiao2&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;fl&#39;</span><span class="o">:</span> <span class="s1">&#39;njs cj dq&#39;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>假设转拼音服务无法识别“莘”字在下面短语中的读音，当调用<code>convert('莘庄 立交', fmt=[tn,fl], sc=False, pp=True)</code>将返回：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="s1">&#39;tn&#39;</span><span class="o">:</span> <span class="s1">&#39;xin1zhuang1|shen1zhuang1 li4jiao3&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;fl&#39;</span><span class="o">:</span> <span class="s1">&#39;xz|sz lj&#39;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">erning</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-11-03T22:22:00+08:00" pubdate data-updated="true">Nov 3<span>rd</span>, 2011</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/spec/'>spec</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/10/09/zguide-cn-chapter5/" title="Previous Post: ZMQ 指南 - 第五章 高级发布-订阅模式">&laquo; ZMQ 指南 - 第五章 高级发布-订阅模式</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2011/11/28/multi-string-search/" title="Next Post: 多关键字的文本精确匹配搜索">多关键字的文本精确匹配搜索 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2011/11/03/hanzi-to-pinyin/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2011/11/03/hanzi-to-pinyin/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

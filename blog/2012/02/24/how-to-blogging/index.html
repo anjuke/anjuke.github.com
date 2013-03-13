@@ -1,0 +1,406 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>怎样维护ArchCorp的内容 (未完…) - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="ArchCorp是采用Octopress引擎生成的纯静态网站。因此要想在此发布网志、文章或者帮助改进页面的排版和样式，首先需要了解Octopress的使用。 其次，ArchCorp的站点与我们的其他程序一样，使用Git管理并托管在GitCorp上。 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/02/24/how-to-blogging/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">怎样维护ArchCorp的内容 (未完…)</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-24T01:55:00+08:00" pubdate data-updated="true">Feb 24<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><a href="http://arch.corp.anjuke.com/">ArchCorp</a>是采用<a href="http://octopress.org/">Octopress</a>引擎生成的纯静态网站。因此要想在此发布网志、文章或者帮助改进页面的排版和样式，首先需要了解Octopress的使用。</p>
+
+<p>其次，ArchCorp的站点与我们的其他程序一样，使用Git管理并<a href="http://git.corp.anjuke.com/cgit/enzhang/arch.corp.anjuke.com.git/">托管</a>在<a href="http://git.corp.anjuke.com/">GitCorp</a>上。这样至少需要掌握Git的基本命令和GitCorp的使用。</p>
+
+<p>还有文章的内容使用纯文本的标记语言<a href="http://github.github.com/github-flavored-markdown/">Markdown</a>，所以大家还需要了解Markdown的标记规则。</p>
+
+<p>正如Octopress自己声称的“<em>Octopress is a blogging framework for hackers</em>”。面对频繁的使用命令行而不发憷是基本的要求。</p>
+
+<h2>开始之前</h2>
+
+<p>首先需要安装Git和Ruby(Octopress要求Ruby-1.9.2)。使用<a href="http://rvm.beginrescueend.com/">RVM</a>或<a href="https://github.com/sstephenson/rbenv">rbenv</a>可以很方便地在机器上安装多个ruby环境。我使用的是RVM，所以本文中都以RVM为例。</p>
+
+<p>如果还没有RVM和Ruby-1.9.2，请先安装。</p>
+
+<!-- more -->
+
+
+<h2>设置本地环境</h2>
+
+<pre><code>$ git clone git@git.corp.anjuke.com:enzhang/arch.corp.anjuke.com.git
+$ cd arch.corp.anjuke.com
+</code></pre>
+
+<p>使用<code>ruby --version</code>命令，确认使用的是1.9.2版的Ruby。</p>
+
+<p>接下来安装Octopress的相关依赖</p>
+
+<pre><code>$ gem install bundler
+$ bundle install
+</code></pre>
+
+<h2>本地预览</h2>
+
+<pre><code>$ rake generate
+$ rake preview
+</code></pre>
+
+<p>然后在浏览器中输入地址<code>http://localhost:4000</code>，就可以看到页面内容了。</p>
+
+<h2>撰写文章</h2>
+
+<p>文章的原始内容存在<code>source/_posts</code>目录下，以<code>年-月-日-标题.markdown</code>作为文件名。文件名将作为该篇文章的url slug使用。例如，<code>2012-02-24-how-to-blogging.markdown</code>。</p>
+
+<p>想要写一篇新文章可以直接创建一个新文件，文件名应该符合上述规则。不要在文件名中使用中文、空格等URL不友好的字符。</p>
+
+<p>也可以使用命令自动创建新文件。</p>
+
+<pre><code>$ rake new_post["文章标题"]
+Creating new post: source/_posts/2012-02-24-wen-zhang-biao-ti.markdown
+</code></pre>
+
+<p>发现Octopress自动将“<strong>文章标题</strong>”转为“<strong>wen-zhang-biao-ti</strong>”，这真的很酷。</p>
+
+<p><img class="right" src="/medias/20120224/mvim.gif" width="240" height="214" title="MacVim syntax highlight" ></p>
+
+<p>现在，你可以选用任何你喜欢文本编辑器来编辑刚才新创建的文件，然后就可以用浏览器来预览了。 我喜欢用<a href="http://code.google.com/p/macvim/">MacVim</a>，它可以很容易地加上<a href="https://github.com/tpope/vim-markdown">markdown的语法高亮</a>。</p>
+
+<h3>Meta信息</h3>
+
+<p>在编辑器中打开文章，可以看到前几行是这篇文章的“头信息”，处理引擎会利用这些信息来生成结果页面。例如，</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>---
+</span><span class='line'>layout: post
+</span><span class='line'>title: "怎样维护ArchCorp的内容"
+</span><span class='line'>date: 2012-02-24 01:55
+</span><span class='line'>author: erning
+</span><span class='line'>comments: true
+</span><span class='line'>categories:
+</span><span class='line'>published: false
+</span><span class='line'>---</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我对“头信息”的建议是</p>
+
+<ul>
+<li><code>date</code> 日期与对应文件名的年月日应当一致</li>
+<li><code>author</code> 每一篇都填写完整</li>
+<li><code>categories</code> 不能使用中文，至少目前有bug</li>
+</ul>
+
+
+<h3>正文</h3>
+
+<p>接下来就是文章正文内容了。</p>
+
+<blockquote><p>TODO:</p>
+
+<ul>
+<li>常用的Markdown标记和octopress扩展</li>
+<li>图片视频等媒体资源文件的存放规则</li>
+</ul>
+</blockquote>
+
+<h3>保存</h3>
+
+<p>文章写好后，将改动提交到Git中。建议将本地的提交也push到GitCorp上的个人仓库中，这样方便其他人分享你的改进。ArchCorp的管理员可以通过这个方式，获取你的改动，合并到原始仓库，然后并发布站。</p>
+
+<h2>发布内容</h2>
+
+<p>就是一个Octopress站点，我们可以使用标准的<a href="http://octopress.org/docs/deploying/">部署方法</a>，将到文章发布出去。这里两个最基本的命令是</p>
+
+<pre><code>$ rake generate
+$ rake deploy
+</code></pre>
+
+<p>目前，在<a href="http://arch.corp.anjuke.com/">ArchCorp</a>上我们不允许未经授权的发布。你需要给ArchCorp的管理员提交 <strong><em>pull-request</em></strong> ，由其将你的文章合并到官方仓库后再发布到正式站点。</p>
+
+<p>未完待续&#8230;</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">erning</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-24T01:55:00+08:00" pubdate data-updated="true">Feb 24<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/guide/'>guide</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/01/16/php-v2-sdk/" title="Previous Post: PHP V2 SDK 设计规范">&laquo; PHP V2 SDK 设计规范</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/02/27/the-zen-of-python/" title="Next Post: The Zen of Python">The Zen of Python &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/02/24/how-to-blogging/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/02/24/how-to-blogging/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

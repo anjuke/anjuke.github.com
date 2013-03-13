@@ -1,0 +1,507 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Anjuke PHP Service 规范 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="Zhang Erning &#x65;&#x72;&#x6e;&#x69;&#110;&#103;&#64;&#x61;&#110;&#106;&#x75;&#x6b;&#101;&#x2e;&#x63;&#x6f;&#x6d;
+v1.0, July 2011 Goal &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2011/07/16/aps/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Anjuke PHP Service 规范</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-16T22:22:00+08:00" pubdate data-updated="true">Jul 16<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Zhang Erning <a href="&#x6d;&#x61;&#105;&#108;&#x74;&#111;&#x3a;&#101;&#x72;&#110;&#105;&#x6e;&#x67;&#x40;&#x61;&#110;&#x6a;&#x75;&#107;&#101;&#46;&#99;&#111;&#x6d;">&#x65;&#x72;&#x6e;&#x69;&#110;&#103;&#64;&#x61;&#110;&#106;&#x75;&#x6b;&#101;&#x2e;&#x63;&#x6f;&#x6d;</a><br/>
+v1.0, July 2011</p>
+
+<h2>Goal</h2>
+
+<p>我们的目标是为PHP应用程序搭建一个轻量、灵活、高性能的异步远过程调用(RPC)的解决方案。同时也希望能够方便隔离前端的应用程序和后端的服务进程，使得产品的开发和部署更加便捷。</p>
+
+<p><strong>轻量</strong></p>
+
+<ul>
+<li>可以将服务进程与PHP应用服务部署在同一台物理服务器上</li>
+<li>一台应用服务器上能够部署多种服务进程</li>
+</ul>
+
+
+<p><strong>灵活</strong></p>
+
+<ul>
+<li>PHP应用程序可以采用进程间通讯(IPC)的方式与部署在同一服务器上的服务进程交互</li>
+<li>PHP应用程序也能够通过网络通讯(TCP)的方式与部署在其他服务器上的服务进程交互</li>
+<li>与服务进程通讯的方式可以通过配置文件调整，PHP的应用程序本身并不关心</li>
+<li>服务进程可以采用各种语言编写</li>
+</ul>
+
+
+<p><strong>高性能</strong></p>
+
+<ul>
+<li>为PHP提供异步方法调用的基本目的就是为了解决了PHP程序在处理请求的时候单线程的问题，因此不能以牺牲性能为代价</li>
+</ul>
+
+
+<!-- more -->
+
+
+<h2>Architect</h2>
+
+<p>为了实现这几个基本目标，我们选用<strong>ØMQ</strong>作为底层实现的基础，采用PHP直接与服务进程通讯的方式，而不是通过庞大复杂的中间件。</p>
+
+<p>服务进程(Service)以ØMQ的<strong>XREP</strong>套接字绑定在某个位置，客户程序(Client)用ØMQ的<strong>XREQ</strong>套接字连接服务进程。客户程序发送请求；服务进程处理请求，之后返回结果；客户程序接收结果并进行后续操作。</p>
+
+<pre><code> +-------+      +-------+      +-------+      +-------+
+ |  PHP  |      |  PHP  |      |  PHP  |      |  PHP  |
+ +---+---+      +---+---+      +---+---+      +---+---+
+     |              |              |              |  
+     |              |              |              |  
+     \------zmq-----+------zmq-----+------zmq-----/
+             |              |              |
+             |              |              |
+       /-----+-----\  /-----+-----\  /-----+-----\
+       |           |  |           |  |           |
+       | Service A |  | Service B |  | Service C |
+       |           |  |           |  |           |
+       \-----------/  \-----------/  \-----------/
+</code></pre>
+
+<h3>Asynchronous</h3>
+
+<p>要求客户程序和服务进程间实现异步的方法调用。客户程序允许一次发送多条请求给服务进程，之后一起等待结果。</p>
+
+<pre><code>           Synchronous RPC                          Asynchronous RPC
+
+  Client      Service A    Service B        Client      Service A    Service B
+     |            |            |               |            |            |
+ 0 S |-----------&gt;|            |           0 S |-----------&gt;|            |
+ 1   |            |            |           1   |------------------------&gt;|
+ 2   |            |            |           2   |            |            |
+ 3   |&lt;-----------|            |           3   |&lt;-----------|            |
+ 4   |------------------------&gt;|           4   |            |            |
+ 5   |            |            |           5   |            |            |
+ 6   |            |            |           6 F |&lt;------------------------|
+ 7   |            |            |           7   |            |            |
+ 8   |            |            |           8   |            |            |
+ 9 F |&lt;------------------------|           9   |            |            |
+     |            |            |               |            |            |
+
+ The services can't proceed multiple       The services can proceed multiple
+ requests in parallel. Thus wait time      requests in parallel. Thus client
+ becomes long.                             can gather results faster.        
+</code></pre>
+
+<h3>Parallel Pipelining</h3>
+
+<p>当服务进程从一个客户程序收到多条请求时可以并行处理这些请求，当任何一个请求处理完成时，应当立即将这个请求的结果返回给客户程序。也就是说，服务进程返回结果的顺序不必与客户程序请求的顺序一致。</p>
+
+<p>客户程序发起的每一个请求都会分配一个唯一的请求序列号。服务进程返回结果时，要求将相应请求的序列号原封不动的返回给客户程序，客户程序通过这一个序列号识别当前收到的结果是哪一个请求的。</p>
+
+<pre><code>  RPC without parallel pipelining           RPC with parallel pipelining
+
+      Client           Service                  Client           Service
+         |               |  |                      |               |  |
+     0 S |--1-----------&gt;|  |                  0 S |--1-----------&gt;|  |
+     1   |--2--------------&gt;|                  1   |--2--------------&gt;|
+     2   |               |  |                  2   |               |  |
+     3   |               |  |                  3   |&lt;-2---------------|
+     4   |               |  |                  4   |               |  |
+     5   |&lt;-1------------|  |                  5 F |&lt;-1------------|  |
+     6 F |&lt;-2---------------|                  6   |               |  |
+     7   |               |  |                  7   |               |  |
+     8   |               |  |                  8   |               |  |
+     9   |               |  |                  9   |               |  |
+         |               |  |                      |               |  |
+
+ The service must return in received       The service can return just when it
+ order, even if former task is heavy       finished and the client can receive
+ and following one is light.               replies faster.
+</code></pre>
+
+<h3>Flexible Worker</h3>
+
+<p>通常服务进程需要维护多个处理程序(Worker)，这样在接收到多个请求的时候能够并行处理这些请求。我们建议使用ØMQ来实现线程间(或进程间)的通讯，这样不必再为多线程间的共享数据而引入各种各样的锁机制，减少不必要的麻烦。</p>
+
+<pre><code>      A Service with several workers
+
+ /-----------------------------------------\
+ | Service                                 |
+ |                                         |
+ |          +--------+  +--------+         |
+ |          : Worker |  : Worker |         |
+ |          +--------+  +--------+         |
+ |                                         |
+ |    +--------+  +--------+  +--------+   |
+ |    : Worker |  : Worker |  : Worker |   |
+ |    +--------+  +--------+  +--------+   |
+ |                                         |
+ \-----------------------------------------/ 
+</code></pre>
+
+<p>我们这里还规范了一份处理程序和其所属的服务进程间的通讯协议。采用这一规范来实现的处理程序将能够被我们的通用服务进程调度和管理，使处理程序是采用不同的语言开发。我们的规范要求处理程序采用ØMQ的<strong>XREQ</strong>套接字连接至其所属的服务进程，发出准备好的消息，并等待分配的任务。</p>
+
+<h2>Message Format</h2>
+
+<ul>
+<li>客户程序与服务进程之间通讯的消息格式应当完全采用如下<strong>APS/Client</strong>规范。</li>
+<li>通用服务进程与处理程序之间通讯的消息格式采用如下的<strong>APS/Worker</strong>规范。</li>
+</ul>
+
+
+<h3>APS/Client</h3>
+
+<p>客户程序与服务进程间通过<strong>REQUEST</strong>和<strong>REPLY</strong>互相通讯。由客户程序向服务进程发起的是<strong>REQUEST</strong>命令；服务进程返回的是<strong>REPLY</strong>命令。</p>
+
+<h4>REQUEST</h4>
+
+<ul>
+<li>Frame 1: &#8220;APS10&#8221; (5 bytes string)</li>
+<li>Frame 2: Sequence, Timestamp, Expiry (msgpacked array)</li>
+<li>Frame 3: Method (printable string)</li>
+<li>Frame 4: Request body (msgpack(params))</li>
+</ul>
+
+
+<h4>REPLY</h4>
+
+<ul>
+<li>Frame 1: &#8220;APS10&#8221; (5 bytes string)</li>
+<li>Frame 2: Sequence, Timestamp, Status (msgpacked array)</li>
+<li>Frame 3: Reply body (msgpack(result))</li>
+</ul>
+
+
+<h3>APS/Worker</h3>
+
+<p>通用的服务进程将通过以下消息与处理程序进行通讯。</p>
+
+<p>第一个消息由处理程序发起，处理程序向通用服务进程发送<strong>HEARTBEAT</strong>消息，表示已经准备妥当可以接收任务；通用服务进程将客户程序的请求以<strong>REQUEST</strong>命令转发给处理程序；处理程序完成后以<strong>REPLY</strong>命令回复给通用服务进程；通用服务进程负责转给请求的客户程序。REQUEST命令只能由服务进程发起；REPLY命令只能由处理程序发起。</p>
+
+<p>处理程序和通用服务进程间可以定时发送<strong>HEARTBEAT</strong>消息，以告知对方自己还处在正常状态。单通用服务进程在一段时间内没有收到处理程序的状态报告，可以认为改处理程序异常，而不再给其分配任务。</p>
+
+<p>处理程序主动退出时应该使用<strong>GOODBYE</strong>消息通知通用服务进程，通用服务进程保证不再分配任务给这个处理程序。当处理程序收到通用服务进程发来的<strong>GOODBYE</strong>消息，在处理完当前任务后可以退出进程。</p>
+
+<h4>HEARTBEAT</h4>
+
+<ul>
+<li>Frame 1: &#8220;APS10&#8221;</li>
+<li>Frame 2: 0x01 (one byte, representing HEARTBEAT)</li>
+<li>Frame 3: Timestamp (msgpacked)</li>
+</ul>
+
+
+<h4>GOODBYE</h4>
+
+<ul>
+<li>Frame 1: &#8220;APS10&#8221;</li>
+<li>Frame 2: 0x02 (one byte, representing GOODBYE)</li>
+<li>Frame 3: Timestamp (msgpacked)</li>
+</ul>
+
+
+<h4>REQUEST</h4>
+
+<ul>
+<li>Frame 1: &#8220;APS10&#8221;</li>
+<li>Frame 2: 0x00</li>
+<li>Frame 3: Envelope (from upstream route, may more than one frame)</li>
+<li>Frame 4: Empty</li>
+<li>Frame 5: Sequence, Timestamp, Expiry (msgpacked array)</li>
+<li>Frame 6: Method (printable string)</li>
+<li>Frame 7: Request body (msgpack(params))</li>
+</ul>
+
+
+<h4>REPLY</h4>
+
+<ul>
+<li>Frame 1: &#8220;APS10&#8221;</li>
+<li>Frame 2: 0x00</li>
+<li>Frame 3: Envelope (from upstream route, may more than one frame)</li>
+<li>Frame 4: Empty</li>
+<li>Frame 5: Sequence, Timestamp, Status (msgpacked array)</li>
+<li>Frame 6: Reply body (msgpack([result]))</li>
+</ul>
+
+
+<h2>Realibility</h2>
+
+<p>可靠性的控制不此描述，由客户程序和通用服务进程的具体实现负责可靠性。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">erning</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-16T22:22:00+08:00" pubdate data-updated="true">Jul 16<span>th</span>, 2011</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/aps/'>aps</a>, <a class='category' href='/blog/categories/spec/'>spec</a>, <a class='category' href='/blog/categories/zmq/'>zmq</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2010/06/10/code-swarm/" title="Previous Post: 代码大爆炸">&laquo; 代码大爆炸</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2011/10/09/zguide-cn-chapter1/" title="Next Post: ZMQ 指南 - 第一章 ZeroMQ基础">ZMQ 指南 - 第一章 ZeroMQ基础 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2011/07/16/aps/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2011/07/16/aps/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

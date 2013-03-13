@@ -1,0 +1,779 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: git | Anjuke Engineering]]></title>
+  <link href="http://arch.corp.anjuke.com/blog/categories/git/atom.xml" rel="self"/>
+  <link href="http://arch.corp.anjuke.com/"/>
+  <updated>2013-03-13T12:15:00+08:00</updated>
+  <id>http://arch.corp.anjuke.com/</id>
+  <author>
+    <name><![CDATA[Anjuke Inc.]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[GitCorp FAQ]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/04/24/gitcorp-faq/"/>
+    <updated>2012-04-24T14:12:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/04/24/gitcorp-faq</id>
+    <content type="html"><![CDATA[<h3>怎样获得自己的代码仓库目录?</h3>
+
+<p>首先以公司的域用户登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，找到<a href="http://git.corp.anjuke.com/account/public_keys">管理SSH公钥</a>的页面。然后根据提示增加你的SSH公钥。提交之后，系统将创建和域用户名相同名称的目录，作为你的代码仓库的根目录。</p>
+
+<p>GitCorp允许一个帐号拥有多个公钥，这样你可以在不同的机器上访问你的代码仓库而不需要共享私钥。</p>
+
+<h3>怎样新建用户代码仓库?</h3>
+
+<p>登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择"Repo"菜单，然后点击"New"按钮创建新的代码仓库。创建代码仓库名要求输入仓库名称($REPO)和描述，新的仓库将建立这你的个人目录($USER)下。</p>
+
+<p>之后可以通过以下命令，将代码仓库克隆到本地。</p>
+
+<pre><code>git clone git@git.corp.anjuke.com:($USER)/($REPO)
+</code></pre>
+
+<p>或者在本地已经有代码仓库了，就可以push到GitCorp的用户目录下。</p>
+
+<pre><code>git remote add origin git@git.corp.anjuke.com:($USER)/($REPO)
+git push origin master
+</code></pre>
+
+<!-- more -->
+
+
+<h3>怎样删除用户代码仓库?</h3>
+
+<p>登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择"Repo"菜单，然后进入要删除的仓库。选择"Admin"，可以看到"Delete"选项。</p>
+
+<p>只能删除自己目录下的代码仓库。</p>
+
+<h3>如何修改代码仓库在cgit/gitweb上的描述?</h3>
+
+<p>登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择"Repo"菜单，然后进入要删除的仓库。选择"Admin"，可以修改仓库的描述。</p>
+
+<h3>如何fork其他代码仓库?</h3>
+
+<p>这<a href="http://git.corp.anjuke.com">GitCorp</a>站点提供Fork功能之前，必须首先将其他代码仓库clone到本地，然后push到自己的代码仓库。</p>
+
+<pre><code>git clone --mirror ($GIT_REPO_URL) ($LOCAL_REPO)
+cd ($LOCAL_REPO)
+git remote add gitcorp git@git.corp.anjuke.com:($USER)/($REPO)
+git push --mirror gitcorp
+</code></pre>
+
+<p>注意：在push之前需要通过Web界面先创建一个空的仓库。</p>
+
+<h3>如何merge其他工程师的改进到自己的代码仓库?</h3>
+
+<p>假设自己的代码仓库在<code>git@git.corp.anjuke.com:my/repo.git</code>，另一工程师的代码仓库在<code>git@git.corp.anjuke.com:peer/repo.git</code>。</p>
+
+<p>首先将自己的代码仓库clone到本地</p>
+
+<pre><code>git clone git@git.corp.anjuke.com:my/repo.git
+cd repo.git
+</code></pre>
+
+<p>增加对方的代码仓库，并获取更新</p>
+
+<pre><code>git remote add peer git@git.corp.anjuke.com:peer/repo.git
+git fetch peer
+</code></pre>
+
+<p>然后就可以merge对方的代码，例如</p>
+
+<pre><code>git checkout master
+git merge --no-commit peer/master
+</code></pre>
+
+<p>最后将合并好的代码push到自己的代码仓库</p>
+
+<pre><code>git push origin master
+</code></pre>
+
+<h3>如何直接将改动push到其他人的代码仓库?</h3>
+
+<p>这需要对方用户代码仓库的写权限，因此要对方操作，开放该代码仓库的写权限。</p>
+
+<p>改变仓库的权限可以通过Web界面进行。登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择"Repo"菜单，然后进入要修改的仓库。选择"Admin"，可以给其他用户赋予写权限。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[GitCorp Flow - 安居客Git开发流程建议]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/02/28/gitcorp-flow-recommendation/"/>
+    <updated>2012-02-28T09:13:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/02/28/gitcorp-flow-recommendation</id>
+    <content type="html"><![CDATA[<p>这里我们说一下使用gitcorp来进行源代码管理的开发流程建议。在gitcorp里，每个工程师都可以创建自己的个人目录。除了个人目录外，有这么几个"官方"原始代码仓库</p>
+
+<ul>
+<li><a href="http://git.corp.anjuke.com/cgit/anjuke">anjuke</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/aifang">aifang</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/haozu">haozu</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/jinpu">jinpu</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/mobile">mobile</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/corp">corp</a></li>
+</ul>
+
+
+<h2>代码仓库 - Git Repositories</h2>
+
+<h3>原始代码仓库</h3>
+
+<p>在这篇文章的例子中，我们以<code>git@git.corp.anjuke.com:corp/flow-demo.git</code>为原始代码仓库。文章后面提到的origin都是指原始代码仓库。</p>
+
+<p>origin上只包含有正式的分支，例如: <strong>master</strong>，<strong>beta</strong>和<strong>ga</strong>。</p>
+
+<ul>
+<li><p><strong>master</strong>
+主要的开发分支，待发布的新功能都在这个分支上。通常对这个分支进行每日构建、集成测试等；新的功能开发也都在这个分支的基础上进行。</p></li>
+<li><p><strong>beta</strong>
+这个分支将发布到预发布环境，通常其HEAD指向当前的预发布版本。在确定需要发布代码到预发布环境时，将代码从master分支合并到beta分支。</p></li>
+<li><p><strong>ga</strong>
+这个分支将发布到对外公开的环境，通常其HEAD指向当前的对外公开版本。在确定预发布版本可以对外公开时，将代码从beta分支合并到ga分支。</p></li>
+</ul>
+
+
+<!-- more -->
+
+
+<h3>本地开发仓库</h3>
+
+<p>当我们进行项目开发的时候，需要将origin克隆到本地，这时我们称呼本地的git仓库为本地开发仓库。下面这个命令将原始的<code>flow-demo.git</code>克隆到本地。</p>
+
+<pre><code>$ git clone git@git.corp.anjuke.com:corp/flow-demo.git
+</code></pre>
+
+<p>在本地仓库查看所有分支</p>
+
+<pre><code>$ git branch -a
+</code></pre>
+
+<p>将显示</p>
+
+<pre><code>* master
+  remotes/origin/beta
+  remotes/origin/ga
+  remotes/origin/master
+</code></pre>
+
+<h3>共享开发仓库</h3>
+
+<p>当我们有项目需要多人共同开发时，又希望其他合作者可以直接push代码，可以设置共享仓库。</p>
+
+<h4>创建共享仓库</h4>
+
+<p>例如想要将的本地仓库推到服务器上，</p>
+
+<pre><code>$ git remote add enzhang git@git.corp.anjuke.com:enzhang/flow-demo.git
+$ git push enzhang master:master
+</code></pre>
+
+<p>者两个命令的格式是，</p>
+
+<ul>
+<li><code>git remote add (共享仓库的名字) (共享仓库的地址)</code></li>
+<li><code>git push (共享仓库的名字) (要推送的本地的分支):(推送到远程仓库上的分支)</code></li>
+</ul>
+
+
+<p>其中<strong>共享仓库名</strong>在GitCorp环境下建议使用开发者的用户名，或者开发者的用户名为前缀</p>
+
+<p>缺省情况下，这个共享仓库还只有创建者一个人有写权限，希望其他同事可以直接推送代码，还需要设置权限。可以先查看现有的用户权限</p>
+
+<pre><code>$ ssh git@git.corp.anjuke.com getperms enzhang/flow-demo.git
+</code></pre>
+
+<p>输出:</p>
+
+<pre><code>READERS @all
+</code></pre>
+
+<p>上面的<code>getperms</code>命令看到所有人有读权限。下面我们在原有权限的基础上给所有人增加写权限，</p>
+
+<pre><code>$ (ssh git@git.corp.anjuke.com getperms enzhang/flow-demo.git \
+    &amp;&amp; echo "WRITERS @all") | \
+    ssh git@git.corp.anjuke.com setperms enzhang/flow-demo.git
+</code></pre>
+
+<p>输出:</p>
+
+<pre><code>New perms are:
+READERS @all
+WRITERS @all
+</code></pre>
+
+<p>现在所有人对这个共享的代码仓库都拥有读写权限了。</p>
+
+<h4>使用共享仓库</h4>
+
+<p>当你需要加入别人创建的共享代码仓库时，只需要将其共享仓库加入git的remote里。</p>
+
+<pre><code>$ git remote add enzhang git@git.corp.anjuke.com:enzhang/flow-demo.git
+</code></pre>
+
+<p>建议使用对方的开发者目录名作为git的remote名称，这样同时加入多个开发者的共享仓库也不容易混淆。</p>
+
+<p>遵守我们之前的约定，<strong>origin都应该指向原始代码仓库</strong>。</p>
+
+<h2>项目开发 - Feature Development</h2>
+
+<p>已经准备好了本地代码仓库，现在看看项目开发的具体流程。</p>
+
+<h3>开发者信息</h3>
+
+<p>对于公司的项目，建议采用真实姓名和公司的邮箱地址作为git用户的信息。</p>
+
+<pre><code>$ git config user.name "张尔宁"
+$ git config user.email "enzhang@anjuke.com"
+</code></pre>
+
+<h3>项目开发分支</h3>
+
+<p>通常对代码的改进都应该在分支上进行，确认完成后再合并回去。特别是项目的开发，由于改动一般比较多，应该新建立一个对应该项目的分支。我们约定这个分支以PMT的编号开始，例如<code>pmt1001</code>。</p>
+
+<p>正常的项目分支从<code>master</code>分支拉出，(本地的<code>master</code>分支，跟踪<code>origin/master</code>的)</p>
+
+<pre><code>$ git checkout -b pmt1001 master
+</code></pre>
+
+<p>写代码，提交</p>
+
+<pre><code>$ echo "这是PMT1001的文件" &gt; pmt1001.txt
+$ git add pmt1001.txt
+$ git commit -m "增加某功能"
+</code></pre>
+
+<p>再写代码，提交</p>
+
+<pre><code>$ echo "增加了一项功能" &gt;&gt; pmt1001.txt
+$ git commit -a -m "又增加了一项功能"
+</code></pre>
+
+<p>项目完成，合并回master，注意<code>--no-ff</code>参数。</p>
+
+<pre><code>$ git checkout master
+$ git merge --no-ff pmt1001 -m '项目pmt1001完成，合并回master'
+</code></pre>
+
+<p>此时<code>pmt1001</code>这个分支已经不用，可以删除了。</p>
+
+<pre><code>$ git branch -d pmt1001
+</code></pre>
+
+<p>git的日志大致如下</p>
+
+<pre><code>$ git log --graph --abbrev-commit --pretty=format:'%h -%d %s'
+
+*   43fe646 - (HEAD, master) 项目pmt1001完成，合并回master
+|\
+| * 43a7407 - 增加了一项功能
+| * 757c89e - 增加某功能
+|/
+* 0774825 - (origin/master) GitCorp Flow Demo Initial Version
+</code></pre>
+
+<p>将改动push回原始仓库</p>
+
+<pre><code>$ git push origin master:master
+</code></pre>
+
+<h3>并行的项目</h3>
+
+<p>同一时候会有很多个项目在并行开发，假设现在有两个并行的项目<code>pmt1002</code>和<code>pmt1003</code>。我们先从<code>master</code>创建两个项目分支</p>
+
+<pre><code>$ git branch pmt1002 master
+$ git branch pmt1003 master
+</code></pre>
+
+<p>然后在<code>pmt1002</code>分支里进行开发</p>
+
+<pre><code>$ git checkout pmt1002
+$ echo "这是PMT1002的文件" &gt; pmt1002.txt
+$ git add pmt1002.txt
+$ git commit -m '增加pmt1002文件'
+$ echo "修改PMT1002的文件" &gt;&gt; pmt1002.txt
+$ git commit -a -m '修改pmt1002文件'
+</code></pre>
+
+<p>同时，在<code>pmt1003</code>分支里进行开发</p>
+
+<pre><code>$ git checkout pmt1003
+$ echo "这是PMT1003的文件" &gt; pmt1003.txt
+$ git add pmt1003.txt
+$ git commit -m '增加pmt1003文件'
+$ echo "修改PMT1003的文件" &gt;&gt; pmt1003.txt
+$ git commit -a -m '修改pmt1003文件'
+</code></pre>
+
+<p>看有下两个分支的情况，<code>pmt1003</code></p>
+
+<pre><code>$ git log pmt1003 --graph --abbrev-commit --pretty=format:'%h -%d %s'
+* dad3119 - (HEAD, pmt1003) 修改pmt1003文件
+* c69f390 - 增加pmt1003文件
+*   43fe646 - (origin/master, master) 项目pmt1001完成，合并回master
+|\
+| * 43a7407 - 又增加了一项功能
+| * 757c89e - 增加某功能
+|/
+* 0774825 - GitCorp Flow Demo Initial Version
+</code></pre>
+
+<p><code>pmt1002</code></p>
+
+<pre><code>$ git log pmt1002 --graph --abbrev-commit --pretty=format:'%h -%d %s'
+* e174508 - (pmt1002) 修改pmt1002文件
+* b2698ed - 增加pmt1002文件
+*   43fe646 - (origin/master, master) 项目pmt1001完成，合并回master
+|\
+| * 43a7407 - 又增加了一项功能
+| * 757c89e - 增加某功能
+|/
+* 0774825 -  GitCorp Flow Demo Initial Version
+</code></pre>
+
+<p>这时<code>pmt1003</code>开发完毕，我们按照之前的流程，将<code>pmt1003</code>分支合并回<code>master</code>。</p>
+
+<pre><code>$ git checkout master
+$ git merge --no-ff pmt1003 -m '项目pmt1003完成，合并回master'
+</code></pre>
+
+<p>将得到这样的<code>master</code>分支</p>
+
+<pre><code>$ git log --graph --abbrev-commit --pretty=format:'%h -%d %s'
+*   2110b32 - (HEAD, master) 项目pmt1003完成，合并回master
+|\
+| * dad3119 - (pmt1003) 修改pmt1003文件
+| * c69f390 - 增加pmt1003文件
+|/
+*   43fe646 - (origin/master) 项目pmt1001完成，合并回master
+|\
+| * 43a7407 - 又增加了一项功能
+| * 757c89e - 增加某功能
+|/
+* 0774825 - GitCorp Flow Demo Initial Version
+</code></pre>
+
+<p>然后<code>pmt1002</code>继续开发</p>
+
+<pre><code>$ git checkout pmt1002
+$ echo "这是PMT1002的文件" &gt; pmt1003.txt
+$ git add pmt1003.txt
+$ git commit -m '创建了一个和pmt1003冲突的文件'
+</code></pre>
+
+<p>同样，<code>pmt1002</code>开发完毕，将<code>pmt1002</code>分支合并回<code>master</code></p>
+
+<pre><code>$ git checkout master
+$ git merge --no-ff pmt1002 -m '项目pmt1002完成，合并回master'
+</code></pre>
+
+<p>这时合并遇到冲突了。解决冲突后再提交。</p>
+
+<pre><code>$ echo "这是PMT1003，PMT1002的共同文件" &gt; pmt1003.txt
+$ git add pmt1003.txt
+$ git commit -m '项目pmt1002完成，合并回master'
+</code></pre>
+
+<p>现在<code>master</code>分支的历史记录为</p>
+
+<pre><code>$ git log --graph --abbrev-commit --pretty=format:'%h -%d %s'
+*   f7c4c36 - (HEAD, master) 项目pmt1002完成，合并回master
+|\
+| * 6ec4909 - (pmt1002) 创建了一个和pmt1003冲突的文件
+| * e174508 - 修改pmt1002文件
+| * b2698ed - 增加pmt1002文件
+* |   2110b32 - 项目pmt1003完成，合并回master
+|\ \
+| |/
+|/|
+| * dad3119 - (pmt1003) 修改pmt1003文件
+| * c69f390 - 增加pmt1003文件
+|/
+*   43fe646 - (origin/master) 项目pmt1001完成，合并回master
+|\
+| * 43a7407 - 又增加了一项功能
+| * 757c89e - 增加某功能
+|/
+* 0774825 - GitCorp Flow Demo Initial Version
+</code></pre>
+
+<p>分支合并的线路图显示，<code>pmt1003</code>分支从<code>43fe646</code>开始，合并到<code>2110b32</code>；<code>pmt1002</code>分支也从<code>43fe646</code>开始，合并到<code>f7c4c36</code></p>
+
+<h3>rebase</h3>
+
+<p>除了直接合并回<code>master</code>，还可以选择在项目分支内先进行<strong>rebase</strong>再合并回去的方法。我们先将<code>master</code>分支回退到<code>pmt1002</code>合并前的状态</p>
+
+<pre><code>$ git reset --hard 2110b32
+</code></pre>
+
+<p>然后采用在分支<code>pmt1001</code>下执行rebase</p>
+
+<pre><code>$ git checkout pmt1002
+$ git rebase master
+</code></pre>
+
+<p>一样会遇到合并冲突，着手解决后继续</p>
+
+<pre><code>$ echo "这是PMT1003，PMT1002的共同文件" &gt; pmt1003.txt
+$ git add pmt1003.txt
+$ git rebase --continue
+</code></pre>
+
+<p>完成后<code>pmt1002</code>的分支成为</p>
+
+<pre><code>$ git log --graph --abbrev-commit --pretty=format:'%h -%d %s'
+* b0fe0ac - (HEAD, pmt1002) 创建了一个和pmt1003冲突的文件
+* e402ad1 - 修改pmt1002文件
+* 48faf83 - 增加pmt1002文件
+*   2110b32 - (master) 项目pmt1003完成，合并回master
+|\
+| * dad3119 - (pmt1003) 修改pmt1003文件
+| * c69f390 - 增加pmt1003文件
+|/
+*   43fe646 - (origin/master) 项目pmt1001完成，合并回master
+|\
+| * 43a7407 - 又增加了一项功能
+| * 757c89e - 增加某功能
+|/
+* 0774825 - GitCorp Flow Demo Initial Version
+</code></pre>
+
+<p>这时再将<code>pmt1002</code>分支合并回<code>master</code></p>
+
+<pre><code>$ git checkout master
+$ git merge --no-ff pmt1002 -m '项目pmt1002完成，合并回master'
+</code></pre>
+
+<p>此时，<code>master</code>分支为</p>
+
+<pre><code>$ git log --graph --abbrev-commit --pretty=format:'%h -%d %s'
+*   b42d61d - (HEAD, master) 项目pmt1002完成，合并回master
+|\
+| * b0fe0ac - (pmt1002) 创建了一个和pmt1003冲突的文件
+| * e402ad1 - 修改pmt1002文件
+| * 48faf83 - 增加pmt1002文件
+|/
+*   2110b32 - 项目pmt1003完成，合并回master
+|\
+| * dad3119 - (pmt1003) 修改pmt1003文件
+| * c69f390 - 增加pmt1003文件
+|/
+*   43fe646 - (origin/master) 项目pmt1001完成，合并回master
+|\
+| * 43a7407 - 又增加了一项功能
+| * 757c89e - 增加某功能
+|/
+* 0774825 - GitCorp Flow Demo Initial Version
+</code></pre>
+
+<p>这里rebase的优点是，冲突在项目的分支里解决，并且<code>master</code>上图看起来比较清晰。</p>
+
+<p>不再使用的分支应该删掉</p>
+
+<pre><code>$ git branch -d pmt1002 pmt1003
+</code></pre>
+
+<p><strong>注意</strong>: 已经push到服务器上的commits不应该再改动，否则再改动之前已经fetch这些commits的同事可能遇到麻烦。</p>
+
+<h3>多人共同开发一个项目</h3>
+
+<p>现在来说一下，多个人共同开发一个项目分支的情况。这在我们平时的项目开发中是最常见的一种情况。</p>
+
+<pre><code>        /------------\    +------------+      +------------+ +------------+
+        | origin     |    | enzhang    |      | bob        | | alice      |
+        |  * master  |    |  * master  |  ... |  * master  | |  * master  |
+        |  * beta    |    |  - pmt1004 |      |  - pmt1005 | |  - pmt1006 |
+        |  * ga      |    |            |      |            | |            |
+        \------------/    +------------+      +------------+ +------------+
+         origin repo \    / shared repo         shared repo    shared repo
+              |       \  /       |
+              |        \/        |
+              |        /\        |
+              |       /  \       |
+ local repo   |      /    \      |    local repo
++--------------------+    +---------------------+
+| enzhang            |    | liangshan           |
+|  * master          |    |   * master          |
+|  - pmt1004         |    |   - pmt1004         |
+|  * origin/master   |    |   * origin/master   |
+|  * enzhang/master  |    |   * enzhang/master  |
+|  * enzhang/pmt1004 |    |   * enzhang/pmt1004 |
++--------------------+    +---------------------+
+</code></pre>
+
+<p>举例开发项目<code>pmt1004</code>。</p>
+
+<p>enzhang首先开始。如果之前的例子，首先在本地仓库建立<code>pmt1004</code>分支</p>
+
+<pre><code>$ git checkout -b pmt1004 master
+</code></pre>
+
+<p>将需要共同开发的项目分支推送到共享代码仓库中 (假设共享的代码仓库之前已经设置好)</p>
+
+<pre><code>$ git push enzhang pmt1004:pmt1004
+</code></pre>
+
+<p>并通知合作伙伴liangshan，在共享仓库的<code>pmt1004</code>分支下一起开发。同时自己还在继续进行开发</p>
+
+<pre><code>$ echo "PMT1004" &gt; pmt1004.txt
+$ git add pmt1004.txt
+$ git commit -m '完成pmt1004第一个功能点'
+$ echo "PMT1004.balabala" &gt;&gt; pmt1004.txt
+$ git commit -a -m '完成pmt1004第二个功能点'
+</code></pre>
+
+<p>假设liangshan已经从原始仓库clone了一份代码，如果还没有需要执行</p>
+
+<pre><code>$ git clone git@git.corp.anjuke.com:corp/flow-demo.git
+</code></pre>
+
+<p>liangshan在接到共享的开发分支位置后，开始工作</p>
+
+<pre><code>$ git remote add enzhang git@git.corp.anjuke.com:enzhang/flow-demo.git
+$ git fetch enzhang
+$ git checkout -b pmt1004 enzhang/pmt1004
+$ echo "PMT1004" &gt; pmt1004.ls.txt
+$ git add pmt1004.ls.txt
+$ git commit -m '完成pmt1004第三个功能点'
+$ echo "PMT1004.balabala" &gt;&gt; pmt1004.ls.txt
+$ git commit -a -m '完成pmt1004第四个功能点'
+</code></pre>
+
+<p>这时，enzhang将本地的最新修改push到共享仓库</p>
+
+<pre><code>$ git push enzhang pmt1004
+</code></pre>
+
+<p>之后，liangshan也将最新的修改push到共享仓库</p>
+
+<pre><code>$ git push enzhang pmt1004
+</code></pre>
+
+<p>这时可以看到一窜错误提示，无法fast-forward合并</p>
+
+<pre><code>To git@git.corp.anjuke.com:enzhang/flow-demo.git
+ ! [rejected]        pmt1004 -&gt; pmt1004 (non-fast-forward)
+error: failed to push some refs to 'git@git.corp.anjuke.com:enzhang/flow-demo.git'
+To prevent you from losing history, non-fast-forward updates were rejected
+Merge the remote changes (e.g. 'git pull') before pushing again.  See the
+'Note about fast-forwards' section of 'git push --help' for details.
+</code></pre>
+
+<p>应该在本地先合并好再push到远程的共享仓库，并且建议使用rebase参数</p>
+
+<pre><code>$ git pull --rebase enzhang
+$ git push enzhang pmt1004
+</code></pre>
+
+<p>enzhang还继续在本来进行新的开发</p>
+
+<pre><code>$ echo "PMT1004.foobar" &gt;&gt; pmt1004.txt
+$ git commit -a -m '完成pmt1004第五个功能点'
+</code></pre>
+
+<p>当enzhang需要push代码到共享仓库的时候，同样需要pull再push</p>
+
+<pre><code>$ git pull --rebase enzhang
+$ git push enzhang
+</code></pre>
+
+<p>现在项目开发完成，由liangshan来负责合并代码到<code>master</code>分支</p>
+
+<pre><code>$ git fetch --all
+$ git checkout pmt1004
+$ git rebase enzhang/pmt1004
+$ git checkout master
+$ git rebase origin/master
+$ git merge pmt1004 --no-ff -m '项目pmt1004完成'
+$ git push origin
+</code></pre>
+
+<p>由于项目<code>pmt1004</code>已经开发完毕，而且已经合并入<code>master</code>分支，可以删除这个分支了</p>
+
+<pre><code>$ git branch -d pmt1004
+</code></pre>
+
+<p>enzhang的共享代码仓库里的pmt1004分支也可以删除</p>
+
+<pre><code>$ git push enzhang :pmt1004
+</code></pre>
+
+<p>看看此时<code>master</code>分支的情况</p>
+
+<pre><code>$ git log --graph --abbrev-commit --pretty=format:'%h -%d %s &lt;%an&gt;'
+*   6f6cb8f - (HEAD, origin/master, master) 项目pmt1004完成 &lt;梁山&gt;
+|\
+| * fe42061 - 完成pmt1004第五个功能点 &lt;张尔宁&gt;
+| * a581641 - 完成pmt1004第四个功能点 &lt;梁山&gt;
+| * 35a2cc4 - 完成pmt1004第三个功能点 &lt;梁山&gt;
+| * 3b92be2 - 完成pmt1004第二个功能点 &lt;张尔宁&gt;
+| * 74746a5 - 完成pmt1004第一个功能点 &lt;张尔宁&gt;
+|/
+*   b42d61d - 项目pmt1002完成，合并回master &lt;张尔宁&gt;
+|\
+| * b0fe0ac - 创建了一个和pmt1003冲突的文件 &lt;张尔宁&gt;
+| * e402ad1 - 修改pmt1002文件 &lt;张尔宁&gt;
+| * 48faf83 - 增加pmt1002文件 &lt;张尔宁&gt;
+|/
+*   2110b32 - 项目pmt1003完成，合并回master &lt;张尔宁&gt;
+|\
+| * dad3119 - 修改pmt1003文件 &lt;张尔宁&gt;
+| * c69f390 - 增加pmt1003文件 &lt;张尔宁&gt;
+|/
+*   43fe646 - 项目pmt1001完成，合并回master &lt;张尔宁&gt;
+|\
+| * 43a7407 - 又增加了一项功能 &lt;张尔宁&gt;
+| * 757c89e - 增加某功能 &lt;张尔宁&gt;
+|/
+* 0774825 - GitCorp Flow Demo Initial Version
+</code></pre>
+
+<p>也可以仅查看在<code>master</code>分支上的提交</p>
+
+<pre><code>$ git log --graph --abbrev-commit --pretty=format:'%h -%d %s &lt;%an&gt;' --first-parent
+* 6f6cb8f - (HEAD, origin/master, master) 项目pmt1004完成 &lt;梁山&gt;
+* b42d61d - 项目pmt1002完成，合并回master &lt;张尔宁&gt;
+* 2110b32 - 项目pmt1003完成，合并回master &lt;张尔宁&gt;
+* 43fe646 - 项目pmt1001完成，合并回master &lt;张尔宁&gt;
+* 0774825 - GitCorp Flow Demo Initial Version
+</code></pre>
+
+<h2>代码发布</h2>
+
+<p>各事业部具体代码发布的策略不尽相同。这里暂不描述发布的流程。</p>
+
+<h3>BETA预发布</h3>
+
+<p>BETA预发布我们定义为部署在正式的生成环境，由小部分可选择的真实用户访问的版本。</p>
+
+<h3>GA正式发布</h3>
+
+<p>GA版本我们定义为部署在正式的生成环境，对真实用户开发的版本。</p>
+
+<h3>自定义版本的发布</h3>
+
+<p>发布到正式环境以外的其他地方。一般为测试环境，例如功能测试环境等。</p>
+
+<h3>hotfix</h3>
+
+<p>hotfix一般为production bug，必须立即在非master分支(如beta/ga)上直接修改的。</p>
+
+<p>hotfix的修改还需要合并回master分支。ga版本的hotfix修改可能还需要合并回beta。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[GitCorp FAQ]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2011/12/30/gitcorp-faq/"/>
+    <updated>2011-12-30T14:12:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2011/12/30/gitcorp-faq</id>
+    <content type="html"><![CDATA[<p><a href="/blog/2012/04/24/gitcorp-faq/">FAQ更新，请访问新地址</a></p>
+
+<!-- more -->
+
+
+<hr />
+
+<h3>怎样获得自己的代码仓库目录?</h3>
+
+<p>首先以公司的域用户登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，找到<a href="http://git.corp.anjuke.com/account/ssh">管理SSH公钥</a>的页面。然后根据提示增加你的SSH公钥。提交之后，系统将创建和域用户名相同名称的目录，作为你的代码仓库的根目录。</p>
+
+<p>GitCorp允许一个帐号拥有多个公钥，这样你可以在不同的机器上访问你的代码仓库而不需要共享私钥。</p>
+
+<h3>怎样新建用户代码仓库?</h3>
+
+<p>直接从用户目录下clone的新的代码仓库即可。如果GitCorp的目录下还没有相应代码仓库的系统将自动创建。</p>
+
+<pre><code>git clone git@git.corp.anjuke.com:($USER)/($REPO)
+</code></pre>
+
+<p>或者在本地已经由代码仓库了，也可以直接push到GitCorp的用户目录下。</p>
+
+<pre><code>git remote add origin git@git.corp.anjuke.com:($USER)/($REPO)
+git push origin master
+</code></pre>
+
+<h3>怎样删除用户代码仓库?</h3>
+
+<p>用以下命令将代码仓库移到回收站。</p>
+
+<pre><code>ssh git@git.corp.anjuke.com trash ($USER)/($REPO)
+</code></pre>
+
+<p>如果永久的删除代码仓库可采用<code>unlock</code>和<code>rm</code>两个命令。为了减小误删除，所有需要先unlock。</p>
+
+<pre><code>ssh git@git.corp.anjuke.com unlock ($USER)/($REPO)
+ssh git@git.corp.anjuke.com rm ($USER)/($REPO)
+</code></pre>
+
+<p>只能删除自己目录下的代码仓库。</p>
+
+<h3>如何修改代码仓库在cgit/gitweb上的描述?</h3>
+
+<p>新建的代码仓库在<a href="http://git.corp.anjuke.com/cgit">cgit</a>/<a href="http://git.corp.anjuke.com/gitweb">gitweb</a>上描述显示为“Unnamed repository; edit this file 'description' to name the repository.”。我们希望显示正确和美观的描述，可以使用这个命令</p>
+
+<pre><code>echo "代码仓库的描述" | ssh git@git.corp.anjuke.com setdesc ($USER)/($REPO)
+</code></pre>
+
+<h3>如何fork其他代码仓库?</h3>
+
+<p>首先从其他代码仓库(例如github的)clone到本地，然后push到自己的代码仓库。</p>
+
+<pre><code>git clone --mirror ($GIT_REPO_URL) ($LOCAL_REPO)
+cd ($LOCAL_REPO)
+git remote add gitcorp git@git.corp.anjuke.com:($USER)/($REPO)
+git push --mirror gitcorp
+</code></pre>
+
+<p>如果需要fork的代码仓库也在GitCorp上，可以使用fork命令。这个操作类似github的fork。</p>
+
+<pre><code>ssh git@git.corp.anjuke.com fork ($SOURCE_REPO) ($USER)/($REPO)
+</code></pre>
+
+<h3>如何merge其他工程师的改进到自己的代码仓库?</h3>
+
+<p>假设自己的代码仓库在<code>git@git.corp.anjuke.com:my/repo.git</code>，另一工程师的代码仓库在<code>git@git.corp.anjuke.com:peer/repo.git</code>。</p>
+
+<p>首先将自己的代码仓库clone到本地</p>
+
+<pre><code>git clone git@git.corp.anjuke.com:my/repo.git
+cd repo.git
+</code></pre>
+
+<p>增加对方的代码仓库，并获取更新</p>
+
+<pre><code>git remote add peer git@git.corp.anjuke.com:peer/repo.git
+git fetch peer
+</code></pre>
+
+<p>然后就可以merge对方的代码，例如</p>
+
+<pre><code>git checkout master
+git merge --no-commit peer/master
+</code></pre>
+
+<p>最后将合并好的代码push到自己的代码仓库</p>
+
+<pre><code>git push origin master
+</code></pre>
+
+<h3>如何直接将改动push到其他人的代码仓库?</h3>
+
+<p>这需要对方用户代码仓库的写权限，因此要对方操作，开放该代码仓库的写权限。</p>
+
+<p>改变仓库的权限可以采用这样操作，首先编辑文件，设文件名为perms.txt，其内容如下，</p>
+
+<pre><code>R    @all
+RW    ($USER1) ($USER2)
+RW    ($USER3)
+</code></pre>
+
+<p>这表示该代码仓库对USER1, USER2, USER3有读写的权限，其他用户有读权限。然后执行命令</p>
+
+<pre><code>cat perms.txt | ssh git@git.corp.anjuke.com setperms ($USER)/($REPO)
+</code></pre>
+]]></content>
+  </entry>
+  
+</feed>

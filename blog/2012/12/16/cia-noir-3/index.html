@@ -1,0 +1,674 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Clojure实战(3)：使用Noir框架开发博客(下) - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="Session和Cookie 做网络编程的人肯定对这两个概念不陌生，因此这里就不介绍它们的定义和作用了。我们要实现的需求也很简单：用户通过一个表单登录，在当前窗口中保持登录状态，并可以选择“记住我”来免去关闭并新开窗口之后的重登录。显然，前者使用Session，后者使用Cookie。 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/12/16/cia-noir-3/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Clojure实战(3)：使用Noir框架开发博客(下)</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-16T20:20:00+08:00" pubdate data-updated="true">Dec 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>Session和Cookie</h2>
+
+<p>做网络编程的人肯定对这两个概念不陌生，因此这里就不介绍它们的定义和作用了。我们要实现的需求也很简单：用户通过一个表单登录，在当前窗口中保持登录状态，并可以选择“记住我”来免去关闭并新开窗口之后的重登录。显然，前者使用Session，后者使用Cookie。下面我们就来看Noir对这两者的支持。</p>
+
+<h3>Session</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">require</span> <span class="ss">&#39;noir.session</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/put!</span> <span class="ss">:username</span> <span class="s">&quot;john&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/get</span> <span class="ss">:username</span> <span class="s">&quot;nobody&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/clear!</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>很简单的API。注意<code>put!</code>函数中的<code>!</code>，和之前遇到的<code>?</code>一样，这种特殊字符是合法的函数名，但<code>!</code>习惯用来表示该方法会改变某个对象的状态，这里<code>put!</code>就表示会改变Session的状态。</p>
+
+<p>Noir还提供了一种“闪信（Flash）”机制，主要用于在页面跳转之间暂存消息。如用户登录后会跳转到首页，如果想在首页显示“登录成功”的信息，就需要用到闪信了。闪信的API也放置在<code>noir.session</code>命名空间下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">noir.session/flash-put!</span> <span class="s">&quot;登录成功&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/flash-get</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>闪信的生命周期是一次请求，即在设置了闪信后的下一个请求中，可以多次<code>flash-get</code>，但再下一次请求就获取不到值了。</p>
+
+<!-- more -->
+
+
+<h3>Cookie</h3>
+
+<p>Cookie的API示例如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">require</span> <span class="ss">&#39;noir.cookies</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.cookies/put!</span> <span class="ss">:user_id</span> <span class="p">(</span><span class="nb">str </span><span class="mi">1</span><span class="p">))</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.cookies/get</span> <span class="ss">:user_id</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.cookies/put!</span> <span class="ss">:tracker</span> <span class="p">{</span><span class="ss">:value</span> <span class="p">(</span><span class="nb">str </span><span class="mi">29649</span><span class="p">)</span> <span class="ss">:path</span> <span class="s">&quot;/&quot;</span> <span class="ss">:max-age</span> <span class="mi">3600</span><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需要注意的是，<code>put!</code>函数只支持字符串类型；对于Cookie超时时间的设置，一种是上面所写的多少秒过期，另一种是传入一个DateTime对象。对于时间日期的处理，Java自带的类库可能不太好用，这里推荐<a href="http://joda-time.sourceforge.net/">Joda Time</a>，它有更丰富的功能和更友善的API。</p>
+
+<h2>登录页面</h2>
+
+<p>这里我们跳过注册页面，因为它实现的功能和新建一篇文章很相近，所以读者可以自己完成。我们假定用户信息表的格式如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="o">`</span><span class="k">user</span><span class="o">`</span> <span class="p">(</span>
+</span><span class='line'>  <span class="o">`</span><span class="n">id</span><span class="o">`</span> <span class="nb">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+</span><span class='line'>  <span class="o">`</span><span class="n">username</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  <span class="o">`</span><span class="n">password</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="o">`</span><span class="n">id</span><span class="o">`</span><span class="p">)</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中password字段保存的是密码的MD5值（32位16进制字符串）。Clojure中没有提供专门的类库，因此需要调用Java来实现。下文会贴出它的实现代码。</p>
+
+<p>我们重点来看对登录页面表单的处理。新建<code>src/blog/views/login.clj</code>文件，添加对<code>/login</code>的路由，显示一个包含用户名、密码、以及“记住我”复选框的表单。用户提交后，若验证成功，会跳转至<code>/whoami</code>页面，用来显示保存在session或者cookie中的信息。以下是关键代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">defpage</span> <span class="p">[</span><span class="ss">:post</span> <span class="s">&quot;/login&quot;</span><span class="p">]</span> <span class="p">{</span><span class="ss">:as</span> <span class="nv">forms</span><span class="p">}</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">userid</span> <span class="p">(</span><span class="nf">model-user/get-id</span> <span class="p">(</span><span class="ss">:username</span> <span class="nv">forms</span><span class="p">)</span> <span class="p">(</span><span class="ss">:password</span> <span class="nv">forms</span><span class="p">))]</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">if </span><span class="nv">userid</span>
+</span><span class='line'>      <span class="p">(</span><span class="k">do </span><span class="p">(</span><span class="nf">session/put!</span> <span class="ss">:userid</span> <span class="nv">userid</span><span class="p">)</span>
+</span><span class='line'>          <span class="p">(</span><span class="nf">session/put!</span> <span class="ss">:username</span> <span class="p">(</span><span class="ss">:username</span> <span class="nv">forms</span><span class="p">))</span>
+</span><span class='line'>          <span class="p">(</span><span class="nb">when </span><span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="ss">:remember-me</span> <span class="nv">forms</span><span class="p">)</span> <span class="s">&quot;1&quot;</span><span class="p">)</span> <span class="c1">; “记住我”复选框</span>
+</span><span class='line'>            <span class="p">(</span><span class="nf">cookies/put!</span> <span class="ss">:userid</span> <span class="p">{</span><span class="ss">:value</span> <span class="p">(</span><span class="nb">str </span><span class="nv">userid</span><span class="p">)</span> <span class="ss">:max-age</span> <span class="mi">86400</span><span class="p">})</span> <span class="c1">; 保存登录状态，时限1天。</span>
+</span><span class='line'>            <span class="p">(</span><span class="nf">cookies/put!</span> <span class="ss">:username</span> <span class="p">{</span><span class="ss">:value</span> <span class="p">(</span><span class="ss">:username</span> <span class="nv">forms</span><span class="p">)</span> <span class="ss">:max-age</span> <span class="mi">86400</span><span class="p">}))</span>
+</span><span class='line'>          <span class="p">(</span><span class="nf">response/redirect</span> <span class="s">&quot;/whoami&quot;</span><span class="p">))</span> <span class="c1">; noir.response/redirect 302跳转</span>
+</span><span class='line'>      <span class="p">(</span><span class="nf">render</span> <span class="s">&quot;/login&quot;</span> <span class="nv">forms</span><span class="p">))))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nf">defpage</span> <span class="s">&quot;/whoami&quot;</span> <span class="p">[]</span> <span class="c1">; 先检测Session，再检测Cookie。</span>
+</span><span class='line'>  <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">userid</span> <span class="p">(</span><span class="nf">session/get</span> <span class="ss">:userid</span><span class="p">)]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">session/get</span> <span class="ss">:username</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">userid</span> <span class="p">(</span><span class="nf">cookies/get</span> <span class="ss">:userid</span><span class="p">)]</span>
+</span><span class='line'>      <span class="p">(</span><span class="nf">do</span>
+</span><span class='line'>        <span class="p">(</span><span class="nf">session/put!</span> <span class="ss">:userid</span> <span class="nv">userid</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">username</span> <span class="p">(</span><span class="nf">cookies/get</span> <span class="ss">:username</span><span class="p">)]</span>
+</span><span class='line'>          <span class="p">(</span><span class="nf">session/put!</span> <span class="ss">:username</span> <span class="nv">username</span><span class="p">)</span>
+</span><span class='line'>          <span class="nv">username</span><span class="p">))</span>
+</span><span class='line'>      <span class="s">&quot;unknown&quot;</span><span class="p">)))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中<code>if-let</code>和以下代码是等价的，类似的有<code>when-let</code>。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">userid</span> <span class="p">(</span><span class="nf">session/get</span> <span class="ss">:userid</span><span class="p">)]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">if </span><span class="nv">userid</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">do </span><span class="nv">...</span><span class="p">)</span>
+</span><span class='line'>    <span class="s">&quot;unkown&quot;</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>对用户表的操作我们放到<code>src/blog/models/user.clj</code>文件中：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">blog.models.user</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">clojure.java.jdbc</span> <span class="ss">:as</span> <span class="nv">sql</span><span class="p">]</span>
+</span><span class='line'>            <span class="p">[</span><span class="nv">blog.util</span> <span class="ss">:as</span> <span class="nv">util</span><span class="p">])</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:use</span> <span class="p">[</span><span class="nv">blog.database</span> <span class="ss">:only</span> <span class="p">[</span><span class="nv">db-spec</span><span class="p">]]))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">get-id</span> <span class="p">[</span><span class="nv">username</span> <span class="nv">password</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">password-md5</span> <span class="p">(</span><span class="nf">util/md5</span> <span class="nv">password</span><span class="p">)]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">sql/with-connection</span> <span class="nv">db-spec</span>
+</span><span class='line'>      <span class="p">(</span><span class="nf">sql/with-query-results</span> <span class="nv">rows</span>
+</span><span class='line'>        <span class="p">[</span><span class="s">&quot;SELECT `id` FROM `user` WHERE `username` = ? AND `password` = ?&quot;</span>
+</span><span class='line'>         <span class="nv">username</span> <span class="nv">password-md5</span><span class="p">]</span> <span class="c1">; 不要采用直接拼接字符串的方式，有SQL注入的危险。</span>
+</span><span class='line'>        <span class="p">(</span><span class="ss">:id</span> <span class="p">(</span><span class="nb">first </span><span class="nv">rows</span><span class="p">))))))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最后，我们将MD5加密这类的函数放到<code>src/blog/util.clj</code>文件中：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">blog.util</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:import</span> <span class="nv">java.security.MessageDigest</span>
+</span><span class='line'>           <span class="nv">java.math.BigInteger</span><span class="p">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">md5</span> <span class="p">[</span><span class="nv">s</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">algorithm</span> <span class="p">(</span><span class="nf">MessageDigest/getInstance</span> <span class="s">&quot;MD5&quot;</span><span class="p">)</span>
+</span><span class='line'>        <span class="nv">size</span> <span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="p">(</span><span class="nf">.getDigestLength</span> <span class="nv">algorithm</span><span class="p">))</span>
+</span><span class='line'>        <span class="nv">raw</span> <span class="p">(</span><span class="nf">.digest</span> <span class="nv">algorithm</span> <span class="p">(</span><span class="nf">.getBytes</span> <span class="nv">s</span><span class="p">))</span>
+</span><span class='line'>        <span class="nv">sig</span> <span class="p">(</span><span class="nf">.toString</span> <span class="p">(</span><span class="nf">BigInteger.</span> <span class="mi">1</span> <span class="nv">raw</span><span class="p">)</span> <span class="mi">16</span><span class="p">)</span>
+</span><span class='line'>        <span class="nv">padding</span> <span class="p">(</span><span class="nb">apply str </span><span class="p">(</span><span class="nb">repeat </span><span class="p">(</span><span class="nb">- </span><span class="nv">size</span> <span class="p">(</span><span class="nb">count </span><span class="nv">sig</span><span class="p">))</span> <span class="s">&quot;0&quot;</span><span class="p">))]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nb">str </span><span class="nv">padding</span> <span class="nv">sig</span><span class="p">)))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>padding</code>的作用是当计算得到的MD5字符串不足32位时做补零的操作。如何得到一个包含N个&#8221;0&#8221;的字符串？这就是<code>(apply...)</code>那串代码做的工作。简单来说，<code>repeat</code>函数会返回一个序列，<code>apply</code>函数首先使用第1、第2个元素作为参数调用<code>str</code>函数，然后将执行结果和第3个元素作为参数调用<code>str</code>，依此类推。因此，<code>(apply str [1 2 3])</code>等价于<code>(str (str 1 2) 3)</code>。<code>clojure.string/join</code>提供了将序列连接为字符串的功能，用法是<code>(clojure.string/join (repeat ...))</code>，查看它的源码<code>(source clojure.string/join)</code>可以发现，它实质上也是采用了<code>apply</code>函数。</p>
+
+<p>序列是Clojure的一个很重要的数据结构，有多种函数和惯用法，需要逐步积累这些知识。</p>
+
+<h2>中间件</h2>
+
+<p>如果需要在程序的多个地方获取用户的登录状态，可以将上述<code>/whoami</code>中的方法封装成函数，但是每次都要执行一次似乎有些冗余，因此我们可以将它放到中间件（Middleware）中。</p>
+
+<p>中间件是<a href="http://en.wikipedia.org/wiki/Web_Server_Gateway_Interface">WSGI</a>类的网站程序中很重要的特性。如果将用户的一次访问分解成<code>请求-&gt;处理1-&gt;处理2-&gt;应答</code>，那么中间件就是其中的“处理”部分，可以增加任意多个。Noir的很多功能，像路由、Session等，都是通过中间件的形式进行组织的。</p>
+
+<p>以下是一个空的中间件代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">...</span>
+</span><span class='line'>    <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">noir.server</span> <span class="ss">:as</span> <span class="nv">server</span><span class="p">]))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">my-middleware</span> <span class="p">[</span><span class="nv">handler</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">request</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">handler</span> <span class="nv">request</span><span class="p">)))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nf">erver/add-middleware</span> <span class="nv">my-middleware</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上述代码添加到<code>src/blog/server.clj</code>中可以直接运行，只是这个中间件没有做任何工作。中间件是一个函数，返回值是一个匿名函数（<code>defn</code>是基于<code>fn</code>的，详情可见<code>(doc defn)</code>）。<code>handler</code>参数则是前一个中间件返回的匿名函数，<code>request</code>是用户发送过来的请求（map形式）。这些中间件组合起来就成为了一条处理链。<code>add-middleware</code>则是Noir定义的函数，将用户自定义的中间件添加到处理链中。</p>
+
+<p>下面我们就写这样一个中间件，每次请求时都去检测Session和Cookie中是否包含用户的登录信息，并将该信息放到<code>request</code>的map中：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">authenticate</span> <span class="p">[</span><span class="nv">handler</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">request</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">user</span> <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">userid</span> <span class="p">(</span><span class="nf">session/get</span> <span class="ss">:userid</span><span class="p">)]</span>
+</span><span class='line'>                <span class="p">[</span><span class="nv">userid</span> <span class="p">(</span><span class="nf">session/get</span> <span class="ss">:username</span><span class="p">)]</span>
+</span><span class='line'>                <span class="p">(</span><span class="nb">when-let </span><span class="p">[</span><span class="nv">userid</span> <span class="p">(</span><span class="nf">cookies/get</span> <span class="ss">:userid</span><span class="p">)]</span>
+</span><span class='line'>                  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">username</span> <span class="p">(</span><span class="nf">cookies/get</span> <span class="ss">:username</span><span class="p">)]</span>
+</span><span class='line'>                    <span class="p">(</span><span class="nf">do</span>
+</span><span class='line'>                      <span class="p">(</span><span class="nf">session/put!</span> <span class="ss">:userid</span> <span class="nv">userid</span><span class="p">)</span>
+</span><span class='line'>                      <span class="p">(</span><span class="nf">session/put!</span> <span class="ss">:username</span> <span class="nv">username</span><span class="p">)</span>
+</span><span class='line'>                      <span class="p">[</span><span class="nv">userid</span> <span class="nv">username</span><span class="p">]))))</span>
+</span><span class='line'>          <span class="nv">req</span> <span class="p">(</span><span class="k">if </span><span class="nv">user</span>
+</span><span class='line'>                <span class="p">(</span><span class="nb">assoc </span><span class="nv">request</span> <span class="ss">:user</span> <span class="p">(</span><span class="nb">zipmap </span><span class="p">[</span><span class="ss">:userid</span> <span class="ss">:username</span><span class="p">]</span> <span class="nv">user</span><span class="p">))</span>
+</span><span class='line'>                <span class="nv">request</span><span class="p">)]</span>
+</span><span class='line'>      <span class="p">(</span><span class="nf">handler</span> <span class="nv">req</span><span class="p">))))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这段代码中对于session和cookies的调用和上面没有差异，比较陌生的可能是<code>assoc</code>和<code>zipmap</code>方法，他们都是用来操作map数据类型的：前者会向一个map对象添加键值，并返回一个新的map；后者则会接收两个序列作为参数，两两组合成一个map并返回。</p>
+
+<p>这样我们就能将<code>/whoami</code>的代码修改为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">...</span>
+</span><span class='line'>    <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">noir.request</span> <span class="ss">:as</span> <span class="nv">request</span><span class="p">]))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nf">defpage</span> <span class="s">&quot;/whoami&quot;</span> <span class="p">[]</span>
+</span><span class='line'>         <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">user</span> <span class="p">(</span><span class="ss">:user</span> <span class="p">(</span><span class="nf">request/ring-request</span><span class="p">))]</span>
+</span><span class='line'>           <span class="p">(</span><span class="ss">:username</span> <span class="nv">user</span><span class="p">)</span>
+</span><span class='line'>           <span class="s">&quot;unkown&quot;</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中，<code>ring-request</code>用来获得用户的<code>request</code>map对象。</p>
+
+<h2>程序发布</h2>
+
+<p>这里介绍三种Web应用程序的发布方式。</p>
+
+<h3>直接使用Leiningen</h3>
+
+<p>如果服务器上安装有<code>lein</code>环境，则可以直接调用它来启动程序。只有一点需要注意，因为在默认情况下，<code>lein run</code>启动的程序会被包装在Leiningen的JVM中，这样会占用一些额外的内存，同时引起一些<code>stdin</code>方面的问题。解决方法是使用<code>lein trampoline run</code>命令来启动程序，这样Leiningen为程序启动一个独立的JVM，并退出自己的JVM。</p>
+
+<h3>编译为独立Jar包</h3>
+
+<p><code>lein uberjar</code>命令可以将项目编译后的代码及其所有的依赖包打入一个Jar文件中，和Maven的assembly插件类似。需要注意的是，Clojure文件在默认情况下是不会生成类文件的，而是在运行时进行解析。这样一来，当使用<code>java -jar</code>命令执行时会提示找不到类定义的错误。解决方法是为包含入口函数的模块生成类文件，需要在<code>src/blog/server.clj</code>的<code>ns</code>声明中添加<code>gen-class</code>标识：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">blog.server</span>
+</span><span class='line'>    <span class="nv">...</span>
+</span><span class='line'>    <span class="p">(</span><span class="ss">:gen-class</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后就能打包运行了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>lein uberjar
+</span><span class='line'><span class="nv">$ </span>java -jar blog-0.1.0-SNAPSHOT-standalone.jar
+</span><span class='line'>2012-12-23 00:07:47.417:INFO::jetty-6.1.x
+</span><span class='line'>2012-12-23 00:07:47.430:INFO::Started SocketConnector@0.0.0.0:8080
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以在程序前部署一个Nginx代理做转发，配置方法就不在这里赘述了。</p>
+
+<h3>使用Tomcat</h3>
+
+<p>以上两种方法使用的都是Jetty这个Web容器，虽然比较方便，但在生产环境中我们更倾向于使用Tomcat。</p>
+
+<p>对于Tomcat的安装这里不做讲解，读者可以到<a href="http://tomcat.apache.org/">Tomcat官网</a>查阅。</p>
+
+<p>Clojure代码也需要做一些修改，我们需要提供一个接口供Tomcat调用，也就是<code>Handler</code>。在<code>src/blog/server.clj</code>中添加以下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="k">def </span><span class="nv">handler</span> <span class="p">(</span><span class="nf">server/gen-handler</span>
+</span><span class='line'>               <span class="p">{</span><span class="ss">:mode</span> <span class="ss">:prod</span>,
+</span><span class='line'>                <span class="ss">:ns</span> <span class="ss">&#39;blog</span><span class="p">}))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>gen-handler</code>是Noir的函数，用来生成一个<code>Handler</code>。<code>'blog</code>前的单引号大家应该还有印象，它表示命名空间。</p>
+
+<p><code>server.clj</code>还有一项内容需要修改：删除<code>load-views</code>，改为显式的<code>require</code>，这样才能保证在编译期间就加载路由配置，Tomcat才会认可。代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">...</span>
+</span><span class='line'>    <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">blog.views</span> <span class="nv">welcome</span> <span class="nv">article</span><span class="p">]))</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">; (server/load-views &quot;src/blog/views&quot;)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>和<code>uberjar</code>类似，我们需要使用<code>uberwar</code>来打包成一个包含所有依赖项的war包。不过这个工具是由一个Leiningen插件提供的：<code>lein-ring</code>，安装过程和<code>lein-noir</code>类似，首先在<code>project.clj</code>添加dev依赖，然后执行<code>lein deps</code>安装。要使上述<code>handler</code>生效，<code>project.clj</code>中还需要增加一项名为<code>:ring</code>的配置：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defproject </span><span class="nv">blog</span> <span class="nv">...</span>
+</span><span class='line'>            <span class="nv">...</span>
+</span><span class='line'>            <span class="ss">:dev-dependencies</span> <span class="p">[</span><span class="nv">...</span>
+</span><span class='line'>                               <span class="p">[</span><span class="nv">lein-ring</span> <span class="s">&quot;0.7.5&quot;</span><span class="p">]]</span>
+</span><span class='line'>            <span class="ss">:ring</span> <span class="p">{</span><span class="ss">:handler</span> <span class="nv">blog.server/handler</span><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>执行<code>lein ring uberwar</code>命令，将生成的war包放置到Tomcat的webapps目录中，命名为ROOT.war，也可以设置<a href="http://tomcat.apache.org/tomcat-7.0-doc/virtual-hosting-howto.html">Virtual Hosting</a>。片刻后，Tomcat会应用这个新的程序，我们就能在浏览器中访问了。</p>
+
+<h2>发布至云端Heroku</h2>
+
+<p>最后，我们来尝试将这个博客程序部署到线上环境中。如今云计算已经非常流行，有许多优秀的<a href="http://en.wikipedia.org/wiki/Platform_as_a_service">PaaS</a>平台，<a href="http://www.heroku.com">Heroku</a>就是其中之一。在Heroku上部署一个小型的应用是完全免费的，这里我们简述一下步骤，更详细的操作方法可以参考它的<a href="https://devcenter.heroku.com/articles/clojure">帮助文档</a>。</p>
+
+<ul>
+<li>登录Heroku网站并注册账号；</li>
+<li>安装<a href="https://toolbelt.heroku.com/">Tookbelt</a>，从而能在命令行中使用<code>heroku</code>命令；</li>
+<li>执行<code>heroku login</code>命令，输入账号密码，完成验证；</li>
+<li>新建<code>src/Procfile</code>文件，输入<code>web: lein trampoline run blog.server</code>；</li>
+<li>执行<code>foreman start</code>命令，可以在本地测试程序；</li>
+<li>执行<code>heroku create</code>，Heroku会为你分配一个空间；</li>
+<li>执行<code>git push heroku master</code>，将本地代码推送至云端，可以看到编译信息，并得到一个URL，通过它就能访问我们的应用程序了。</li>
+</ul>
+
+
+<p>以上步骤省略了数据库的配置，读者可以自行到<a href="https://addons.heroku.com/cleardb">Heroku ClearDB</a>页面查看配置方法。</p>
+
+<h2>小结</h2>
+
+<p>至此我们完成了对Noir网站开发框架的简介，也完成了对Clojure这门语言的入门介绍。不过《Clojure实战》系列还远没有结束，下一章开始我们会进入Clojure语言更擅长的领域——计算。我们会陆续介绍如何使用Clojure编写<a href="http://hadoop.apache.org">Hadoop</a> MapReduce脚本、编写<a href="http://www.storm-project.net">Storm</a> Topology、以及如何使用<a href="http://incanter.org/">Incanter</a>进行可视化数据分析。不过在此之前，我强烈建议读者能够回头看看第一章中提到的几个Clojure教程，这样能对Clojure语言的整体架构有一个印象，接下来的学习才会更为顺畅。</p>
+
+<h3>PS</h3>
+
+<p>在撰写这份Noir框架教程时，Noir作者宣布停止对Noir的开发和维护，鼓励开发者转而使用Ring+Compojure+lib-noir的方式进行开发。这对我们并无太大影响，毕竟我们只是利用Noir来学习Clojure，而且前文提过Noir本身就是基于Ring和Compojure这两个类库的，迁移起来非常方便，我会为此再写一篇博客的。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-16T20:20:00+08:00" pubdate data-updated="true">Dec 16<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/tutorial/'>Tutorial</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/12/08/cia-noir-2/" title="Previous Post: Clojure实战(2)：使用Noir框架开发博客(中)">&laquo; Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/12/23/nginx-live-upgrade/" title="Next Post: Nginx热升级">Nginx热升级 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/12/16/cia-noir-3/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/12/16/cia-noir-3/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

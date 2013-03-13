@@ -1,0 +1,318 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Readme驱动开发 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="中文翻译：陈磊 AReverie
+英文原文：Tom Preston-Werner 我最近听到很多关于测试驱动开发、行为驱动开发、极限编程和SCRUM 、站立会议 以及其他一切如何开发出更好的软件的各种方法论及技术，然而除非开发出来的软件满足使用者的需求，否则都是一纸空谈。我换种说法吧， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/07/09/readme-driven-development/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Readme驱动开发</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-07-09T14:36:00+08:00" pubdate data-updated="true">Jul 9<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
+
+<p>中文翻译：<a href="https://twitter.com/AReverie">陈磊</a> AReverie<br/>
+英文原文：<a href="http://tom.preston-werner.com/2010/08/23/readme-driven-development.html">Tom Preston-Werner</a></p>
+
+<p>我最近听到很多关于测试驱动开发、行为驱动开发、极限编程和<a href="http://zh.wikipedia.org/wiki/Scrum" title="SCRUM">SCRUM</a> 、<a href="http://zh.wikipedia.org/wiki/Scrum#Scrum.E4.BC.9A.E8.AE.AE" title="站立会议">站立会议</a> 以及其他一切如何开发出更好的软件的各种方法论及技术，然而除非开发出来的软件满足使用者的需求，否则都是一纸空谈。我换种说法吧，对于错误规格的完美实现毫无价值可言。基于同样的原则，一座没有书卷而华丽修缮的图书馆也近乎无用。如果你的软件没有解决正确的问题或者根本没人知道它到底干嘛的，那可就不好玩了。</p>
+
+<p>很好，那我们怎么解决这个问题呢？实际上比你想的要来的简单，并且其重要都足以单独列出一段。</p>
+
+<p><strong>先写Readme</strong></p>
+
+<p>首先，就像前面说的，在你动手写任何代码、测试、行为或者情景甚至任何东西前。别急别急，我明白我们都是程序猿，不是技术文枪手！但这就是你没想明白的地方。为一个软件写Readme着实非常有必要性。在给你的软件写点什么东西前，你根本不知道你要编写什么样的代码。在人人喊打的瀑布型设计和人见人爱的敏捷开发之间，我们似乎漏了点什么。别误会，瀑布型设计代价太大。它能把一个细致入微的庞大系统变成一个细致入微却全盘错误的系统。当初砍掉它是个正确的做法，但做法却矫枉过正。如今我们的项目里只有短小、糟糕的文档甚至完全不见踪影。你能想象有些项目完全没有Readme吗！</p>
+
+<p>简直难以接受！在成堆的技术规格和完全没规格之间，必然会有个平衡点。那个平衡点就是朴素简明的Readme。</p>
+
+<p>将Readme驱动开发（下文简称RDD）区别于文档驱动开发（下文简称DDD）十分重要。RDD可以理解成DDD的一个有限版本或子集。通过将你的设计文档精简成一个旨在介绍软件的单个文件，RDD能帮助你免于重蹈DDD而出现的瀑布型开发过程中出现冗长而过分细致的规格。同时，它能帮助你保持库的精简和模块化。这样一个简单的方法能帮助您免去繁琐的流程保证项目朝着正确的方向前进。</p>
+
+<p>通过写第一个Readme，您能受益于以下这些显著的优势:</p>
+
+<ul>
+<li><p>最为重要的一点是，您给于了自己一次重新审视项目，又无需每次为了改变主意而去修改代码而花去开销的机会，例如整体应该如何组织、公用API里到底应该包含哪些东西。还记得您第一次写自动化测试代码，意识到揪出全部的错误从而防止那些问题悄悄跑进代码里去吗？在项目真正编码前写一个Reame的感觉是如出一辙的。</p></li>
+<li><p>为了明确应该实现什么而去写Readme会产生一些副产品，您会得到一份写的非常棒的文档。当您在项目伊始，也就是兴奋度和动机处于最高的阶段，写一个文档会十分容易。事后再补Readme将是一种绝对的障碍，并且您会发现遗漏了许多重要的细节。</p></li>
+<li><p>如果您与一群开发者一起协同工作，将会发现会从Readme收益颇多。如果其他成员在您尚未完成项目前便可以读到这份Readme，他们将大可放心的在将与您项目有交互的代码上开始工作。如果没有预先定义好的接口，团队只能顺序地编码或者面临重新实现大量代码的窘境。</p></li>
+<li><p>基于白纸黑字的讨论将会容易的多，而在一个没有任何成文内容的讨论话题上，事情往往会演变成争论不休。把建议的解决方案写下来这样一个简单的行动，代表了一个具体的想法，从而能被讨论，迭代发展下去。</p></li>
+</ul>
+
+
+<p>把给您项目写Readme的过程当作一种真正的创造活动吧，这是您充满闪光的想法应该被表达的地方，这份文件的本意应当是阐述您的创造力和表现力。Readme应当是您代码中最为重要的一个文档，适当的做法就是首先写Readme。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">erning</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-07-09T14:36:00+08:00" pubdate data-updated="true">Jul 9<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/guide/'>guide</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/05/16/mogilefs-code-reading/" title="Previous Post: MogileFS源码学习分享">&laquo; MogileFS源码学习分享</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/08/27/use-supervisord-with-storm-and-zookeeper/" title="Next Post: Use Supervisord with Storm and ZooKeeper">Use Supervisord with Storm and ZooKeeper &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/07/09/readme-driven-development/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/07/09/readme-driven-development/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

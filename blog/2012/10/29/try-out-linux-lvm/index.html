@@ -1,0 +1,628 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>LVM 简单实践 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="为什么会想到要使用lvm呢，因为家里的主力下载机是一台PC，她又是我的主要平时使用的机子（除开mac外），经常要对下载那个分区进行整理，装个游戏，压制点视频音乐有时候分区会很紧张，然而跨分区是很复杂的操作。这就让我想到了linux下面的lvm功能。 什么是lvm &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/10/29/try-out-linux-lvm/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">LVM 简单实践</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-29T21:20:00+08:00" pubdate data-updated="true">Oct 29<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
+
+<p>为什么会想到要使用lvm呢，因为家里的主力下载机是一台PC，她又是我的主要平时使用的机子（除开mac外），经常要对下载那个分区进行整理，装个游戏，压制点视频音乐有时候分区会很紧张，然而跨分区是很复杂的操作。这就让我想到了linux下面的lvm功能。</p>
+
+<p><img class="center" src="http://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/LVM1.svg/500px-LVM1.svg.png"></p>
+
+<!-- more -->
+
+
+<h2>什么是lvm</h2>
+
+<p><a href="http://en.wikipedia.org/wiki/Logical_Volume_Manager_(Linux)">lvm</a>是Linux核心提供的逻辑卷轴管理功能，主要应用在磁盘分区上；传统的计算机使用磁盘主要通过管理分区，在常见的MBR磁盘上最多只可以使用4个主分区，或者任意个逻辑分区；虽然在GPT分区上可以实现使用任意分区数量，但是分区大小总是有限制的，即使很多文件系统工具提供了对分区大小进行热操作，仍旧不是很方便。lvm则可以通过让系统核心支持真正的逻辑卷管理，达到物理分区的虚拟化。可以随时对逻辑卷进行大小的修改。</p>
+
+<h2>使用</h2>
+
+<p>更加系统的讲解请参考<a href="http://tldp.org/HOWTO/LVM-HOWTO/">LVM-HOWTO</a>。</p>
+
+<p>注意我们使用的lvm2版本，主要区别，可以查看<a href="http://tldp.org/HOWTO/LVM-HOWTO/lvm2faq.html">这里</a>。</p>
+
+<p>我下面的演示，主要基于gentoo，安装的时候livecd里已经带了lvm工具。</p>
+
+<p>解释一些lvm里使用的名词，先给一张图</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>+-- Volume Group --------------------------------+
+</span><span class='line'>|                                                |
+</span><span class='line'>|    +----------------------------------------+    |
+</span><span class='line'>| PV | PE |  PE | PE | PE | PE | PE | PE | PE |    |
+</span><span class='line'>|    +----------------------------------------+    |
+</span><span class='line'>|      .            .          .        .          |
+</span><span class='line'>|      .          .            .        .          |
+</span><span class='line'>|    +----------------------------------------+    |
+</span><span class='line'>| LV | LE |  LE | LE | LE | LE | LE | LE | LE |    |
+</span><span class='line'>|    +----------------------------------------+    |
+</span><span class='line'>|            .          .        .           .     |
+</span><span class='line'>|            .            .        .         .     |
+</span><span class='line'>|    +----------------------------------------+    |
+</span><span class='line'>| PV | PE |  PE | PE | PE | PE | PE | PE | PE |    |
+</span><span class='line'>|    +----------------------------------------+    |
+</span><span class='line'>|                                                |
+</span><span class='line'>+------------------------------------------------+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>volume group (VG): lvm中使用的最高层次的抽象对象，它把(物理上的)逻辑和主分区划为管理单元</li>
+<li>physical volume (PV): 一个pv可以是一块磁盘，或者是看起来磁盘设备 (例如/dev/sda1)</li>
+<li>logical volume (LV): 和非lvm系统中的逻辑分区一样，一个lv看起来就像是普通的块设备，而它可以包含文件系统(例如/home)</li>
+<li>physical extend (PE): 每个pv都被分为几部分数据，它们就是pe，对于lvm来说，它们和le大小一样。</li>
+<li>logical extend (LE): 类似PE</li>
+</ul>
+
+
+<p>最后，更加直观地理解，可以看下图，</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>    hda1   hdc1      (PV:s on partitions or whole disks)
+</span><span class='line'>       \   /
+</span><span class='line'>        \ /
+</span><span class='line'>       diskvg        (VG)
+</span><span class='line'>       /  |  \
+</span><span class='line'>      /   |   \
+</span><span class='line'>  usrlv rootlv varlv (LV:s)
+</span><span class='line'>    |      |     |
+</span><span class='line'> ext2  reiserfs  xfs (filesystems)
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>要求</h2>
+
+<ol>
+<li>使用lvm，至少需要2.4.x的kernel</li>
+<li>安装了lvm</li>
+</ol>
+
+
+<h2>配置</h2>
+
+<h3>背景</h3>
+
+<p>这里解释的是在gentoo安装过程中将两块磁盘中的分区配置成使用lvm的过程。</p>
+
+<p>主要参考了<a href="http://www.gentoo.org/doc/en/lvm2.xml">gentoo的lvm手册</a>。</p>
+
+<p>假设，我现在有两块SATA硬盘，将其物理分区安排如下</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/dev/sda1  -&gt; /boot
+</span><span class='line'>/dev/sda2  -&gt; (swap)
+</span><span class='line'>/dev/sda3  -&gt; /
+</span><span class='line'>/dev/sda4  -&gt; 将使用lvm
+</span><span class='line'>/dev/sdb1  -&gt; 将使用lvm</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>请注意操作的安全性，一个错误的操作可能会导致整个分区的数据丢失!!</strong></p>
+
+<h3>安装</h3>
+
+<ul>
+<li>使用fdisk或者你喜欢的分区工具分区</li>
+<li>启动lvm服务，在gentoo下使用<code>/etc/init.d/lvm start</code>，livecd里默认已经启动</li>
+<li>配置lvm，打开<code>/etc/lvm/lvm.conf</code>，修改如下信息</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'># a表示add添加，r表示reject忽略
+</span><span class='line'># 语法类似正则，表示把/dev/sda与/dev/sdb里的分区都加入到lvm的识别里
+</span><span class='line'>filter = [ "a|/dev/sd[ab]|", "r/.*/" ]
+</span><span class='line'>
+</span><span class='line'># 使之前配置的vg都生效
+</span><span class='line'>vgscan
+</span><span class='line'>vgchange -a y</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>把分区准备好</h1>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>pvcreate /dev/sda4 /dev/sdb1</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们这个例子里，<code>/dev/sda1</code>，<code>/dev/sda2</code>，<code>/dev/sda3</code>分别是<code>/boot</code>,<code>swap</code>和<code>/</code></p>
+
+<p><strong>极其不推荐在/etc, /lib, /mnt, /proc, /sbin, /dev, and /root上使用lvm，可能会导致我些目录无法访问!!</strong></p>
+
+<ul>
+<li>创建并扩展一个vg</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>vgcreate vg /dev/sad4
+</span><span class='line'>vgextend vg /dev/sdb1</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>创建最终要使用的lv</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>lvcreate -L10G -nusr vg # 在vg里创建一个大小为10G的lv，名字是usr
+</span><span class='line'>lvcreate -L5G -nhome vg # 在vg里创建一个大小为5G的lv，名字是home
+</span><span class='line'>lvcreate -L10G -nvar vg # 在vg里创建一个大小为10G的lv，名字是var
+</span><span class='line'>
+</span><span class='line'>lvextend -L+5G /dev/vg/home # 举例，给home这个lv增加5G容量</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>在lv上创建文件系统，并挂载</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>mkfs.reiserfs /dev/vg/usr
+</span><span class='line'>mkfs.reiserfs /dev/vg/home
+</span><span class='line'>mkfs.reiserfs /dev/vg/var
+</span><span class='line'>
+</span><span class='line'># 在这之前先挂载必要分区，请参考gentoo安装手册
+</span><span class='line'>mkdir /mnt/gentoo/usr
+</span><span class='line'>mount /dev/vg/usr /mnt/gentoo/usr
+</span><span class='line'>mkdir /mnt/gentoo/home
+</span><span class='line'>mount /dev/vg/usr /mnt/gentoo/home
+</span><span class='line'>mkdir /mnt/gentoo/var
+</span><span class='line'>mount /dev/vg/usr /mnt/gentoo/var</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>下面继续gentoo的安装过程，chroot一直到配置kernel</li>
+<li>配置kernel，打开lvm的支持选项</li>
+<li>2.4.x的kernel</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Multi-device support (RAID and LVM)  ---&gt;
+</span><span class='line'>  [*] Multiple devices driver support (RAID and LVM)
+</span><span class='line'>  &lt; &gt;  RAID support
+</span><span class='line'>(注意这里不选择LVM是有意的，它的意思是支持LVM1)
+</span><span class='line'>  &lt; &gt;  Logical volume manager (LVM) support
+</span><span class='line'>  &lt;M&gt;  Device-mapper support
+</span><span class='line'>  &lt; &gt;   Mirror (RAID-1) support</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>2.6.x以及之后版本的kernel</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Device Drivers  ---&gt;
+</span><span class='line'> Multiple devices driver support (RAID and LVM) ---&gt;
+</span><span class='line'>   [*] Multiple devices driver support (RAID and LVM)
+</span><span class='line'>   &lt; &gt;   RAID support
+</span><span class='line'>   &lt;M&gt;   Device mapper support</span></code></pre></td></tr></table></div></figure>
+
+
+<p>编译完成后的模块名字叫<code>dm-mod.ko</code></p>
+
+<p><strong>请注意，务必让<code>/usr/src/linux</code>指向您正在使用的kernel核心源代码，因为lvm的ebuild会根据路径查找device-mapper的依赖性</strong></p>
+
+<ul>
+<li><p>配置chroot里的lvm.conf，和外层一致</p></li>
+<li><p>配置<code>/etc/fstab</code>，根据需要配置lvm的分区</p></li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/dev/sda1     /boot        ext2       defaults      1 2
+</span><span class='line'>/dev/sda2     none         swap       sw            0 0
+</span><span class='line'>/dev/sda3     /            reiserfs   noatime       0 1
+</span><span class='line'>/dev/cdrom    /mnt/cdrom   auto       noauto,ro     0 0
+</span><span class='line'># Logical Volumes
+</span><span class='line'>/dev/vg/usr   /usr         reiserfs   noatime       0 2
+</span><span class='line'>/dev/vg/home  /home        reiserfs   noatime       0 2
+</span><span class='line'>/dev/vg/var   /var         reiserfs   noatime       0 2</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>继续其他安装配置，一直到退出chroot前</li>
+<li>安装lvm，并将其设置为启动</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>emerge -v lvm2
+</span><span class='line'>rc-update add lvm boot</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>退出chroot，重启前，关闭所有lvm分区</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>vgchange -a n</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>如果中途有重启</h3>
+
+<p>如果在安装过程中因为我些原因需要重启，需要按以下操作重新激活lvm分区</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>vgscan --mknodes</span></code></pre></td></tr></table></div></figure>
+
+
+<p>而一些比较旧的安装CD里需要按照以下顺序激活</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'># 先关闭所有vg
+</span><span class='line'>vgchange -a n
+</span><span class='line'># 导出所有vg
+</span><span class='line'>vgexport -a
+</span><span class='line'># 导入所有vg
+</span><span class='line'>vgimport -a
+</span><span class='line'># 重新激活所有vg
+</span><span class='line'>vgchange -a y</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>使用</h3>
+
+<p>如果没有意外，那么重启后系统可以成功boot进入新安装的gentoo系统</p>
+
+<p>我的gentoo box的磁盘情况如下</p>
+
+<p><img src="/medias/20121029/lvm.jpeg" alt="lvm" /></p>
+
+<p>其实也是这个我才知道前阵子上线的一台服务器上<code>/dev/mapper</code>，原来其实就是lvm啊XDDD</p>
+
+<p>__END__</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-29T21:20:00+08:00" pubdate data-updated="true">Oct 29<span>th</span>, 2012</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/10/15/solr-guildeline/" title="Previous Post: 深入Solr实战">&laquo; 深入Solr实战</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/10/30/solr-guideline-in-action/" title="Next Post: 深入Solr实战 - 实例篇">深入Solr实战 - 实例篇 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/10/29/try-out-linux-lvm/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/10/29/try-out-linux-lvm/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

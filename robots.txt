@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: 
+
+Sitemap: http://arch.corp.anjuke.com/sitemap.xml 

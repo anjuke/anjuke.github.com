@@ -1,0 +1,1067 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Tutorial | Anjuke Engineering]]></title>
+  <link href="http://arch.corp.anjuke.com/blog/categories/tutorial/atom.xml" rel="self"/>
+  <link href="http://arch.corp.anjuke.com/"/>
+  <updated>2013-03-13T12:15:00+08:00</updated>
+  <id>http://arch.corp.anjuke.com/</id>
+  <author>
+    <name><![CDATA[Anjuke Inc.]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Clojure实战(3)：使用Noir框架开发博客(下)]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/12/16/cia-noir-3/"/>
+    <updated>2012-12-16T20:20:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/12/16/cia-noir-3</id>
+    <content type="html"><![CDATA[<h2>Session和Cookie</h2>
+
+<p>做网络编程的人肯定对这两个概念不陌生，因此这里就不介绍它们的定义和作用了。我们要实现的需求也很简单：用户通过一个表单登录，在当前窗口中保持登录状态，并可以选择“记住我”来免去关闭并新开窗口之后的重登录。显然，前者使用Session，后者使用Cookie。下面我们就来看Noir对这两者的支持。</p>
+
+<h3>Session</h3>
+
+<p><code>clojure
+(require 'noir.session)
+(noir.session/put! :username "john")
+(noir.session/get :username "nobody")
+(noir.session/clear!)
+</code></p>
+
+<p>很简单的API。注意<code>put!</code>函数中的<code>!</code>，和之前遇到的<code>?</code>一样，这种特殊字符是合法的函数名，但<code>!</code>习惯用来表示该方法会改变某个对象的状态，这里<code>put!</code>就表示会改变Session的状态。</p>
+
+<p>Noir还提供了一种“闪信（Flash）”机制，主要用于在页面跳转之间暂存消息。如用户登录后会跳转到首页，如果想在首页显示“登录成功”的信息，就需要用到闪信了。闪信的API也放置在<code>noir.session</code>命名空间下：</p>
+
+<p><code>clojure
+(noir.session/flash-put! "登录成功")
+(noir.session/flash-get)
+</code></p>
+
+<p>闪信的生命周期是一次请求，即在设置了闪信后的下一个请求中，可以多次<code>flash-get</code>，但再下一次请求就获取不到值了。</p>
+
+<!-- more -->
+
+
+<h3>Cookie</h3>
+
+<p>Cookie的API示例如下：</p>
+
+<p><code>clojure
+(require 'noir.cookies)
+(noir.cookies/put! :user_id (str 1))
+(noir.cookies/get :user_id)
+(noir.cookies/put! :tracker {:value (str 29649) :path "/" :max-age 3600})
+</code></p>
+
+<p>需要注意的是，<code>put!</code>函数只支持字符串类型；对于Cookie超时时间的设置，一种是上面所写的多少秒过期，另一种是传入一个DateTime对象。对于时间日期的处理，Java自带的类库可能不太好用，这里推荐<a href="http://joda-time.sourceforge.net/">Joda Time</a>，它有更丰富的功能和更友善的API。</p>
+
+<h2>登录页面</h2>
+
+<p>这里我们跳过注册页面，因为它实现的功能和新建一篇文章很相近，所以读者可以自己完成。我们假定用户信息表的格式如下：</p>
+
+<p><code>sql
+CREATE TABLE `user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(255) NOT NULL,
+  `password` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`)
+)
+</code></p>
+
+<p>其中password字段保存的是密码的MD5值（32位16进制字符串）。Clojure中没有提供专门的类库，因此需要调用Java来实现。下文会贴出它的实现代码。</p>
+
+<p>我们重点来看对登录页面表单的处理。新建<code>src/blog/views/login.clj</code>文件，添加对<code>/login</code>的路由，显示一个包含用户名、密码、以及“记住我”复选框的表单。用户提交后，若验证成功，会跳转至<code>/whoami</code>页面，用来显示保存在session或者cookie中的信息。以下是关键代码：</p>
+
+<p>```clojure
+(defpage [:post "/login"] {:as forms}
+  (let [userid (model-user/get-id (:username forms) (:password forms))]</p>
+
+<pre><code>(if userid
+  (do (session/put! :userid userid)
+      (session/put! :username (:username forms))
+      (when (= (:remember-me forms) "1") ; “记住我”复选框
+        (cookies/put! :userid {:value (str userid) :max-age 86400}) ; 保存登录状态，时限1天。
+        (cookies/put! :username {:value (:username forms) :max-age 86400}))
+      (response/redirect "/whoami")) ; noir.response/redirect 302跳转
+  (render "/login" forms))))
+</code></pre>
+
+<p>(defpage "/whoami" [] ; 先检测Session，再检测Cookie。
+  (if-let [userid (session/get :userid)]</p>
+
+<pre><code>(session/get :username)
+(if-let [userid (cookies/get :userid)]
+  (do
+    (session/put! :userid userid)
+    (let [username (cookies/get :username)]
+      (session/put! :username username)
+      username))
+  "unknown")))
+</code></pre>
+
+<p>```</p>
+
+<p>其中<code>if-let</code>和以下代码是等价的，类似的有<code>when-let</code>。</p>
+
+<p>```clojure
+(let [userid (session/get :userid)]
+  (if userid</p>
+
+<pre><code>(do ...)
+"unkown"))
+</code></pre>
+
+<p>```</p>
+
+<p>对用户表的操作我们放到<code>src/blog/models/user.clj</code>文件中：</p>
+
+<p>```clojure
+(ns blog.models.user
+  (:require [clojure.java.jdbc :as sql]</p>
+
+<pre><code>        [blog.util :as util])
+</code></pre>
+
+<p>  (:use [blog.database :only [db-spec]]))</p>
+
+<p>(defn get-id [username password]
+  (let [password-md5 (util/md5 password)]</p>
+
+<pre><code>(sql/with-connection db-spec
+  (sql/with-query-results rows
+    ["SELECT `id` FROM `user` WHERE `username` = ? AND `password` = ?"
+     username password-md5] ; 不要采用直接拼接字符串的方式，有SQL注入的危险。
+    (:id (first rows))))))
+</code></pre>
+
+<p>```</p>
+
+<p>最后，我们将MD5加密这类的函数放到<code>src/blog/util.clj</code>文件中：</p>
+
+<p>```clojure
+(ns blog.util
+  (:import java.security.MessageDigest</p>
+
+<pre><code>       java.math.BigInteger))
+</code></pre>
+
+<p>(defn md5 [s]
+  (let [algorithm (MessageDigest/getInstance "MD5")</p>
+
+<pre><code>    size (* 2 (.getDigestLength algorithm))
+    raw (.digest algorithm (.getBytes s))
+    sig (.toString (BigInteger. 1 raw) 16)
+    padding (apply str (repeat (- size (count sig)) "0"))]
+(str padding sig)))
+</code></pre>
+
+<p>```</p>
+
+<p><code>padding</code>的作用是当计算得到的MD5字符串不足32位时做补零的操作。如何得到一个包含N个"0"的字符串？这就是<code>(apply...)</code>那串代码做的工作。简单来说，<code>repeat</code>函数会返回一个序列，<code>apply</code>函数首先使用第1、第2个元素作为参数调用<code>str</code>函数，然后将执行结果和第3个元素作为参数调用<code>str</code>，依此类推。因此，<code>(apply str [1 2 3])</code>等价于<code>(str (str 1 2) 3)</code>。<code>clojure.string/join</code>提供了将序列连接为字符串的功能，用法是<code>(clojure.string/join (repeat ...))</code>，查看它的源码<code>(source clojure.string/join)</code>可以发现，它实质上也是采用了<code>apply</code>函数。</p>
+
+<p>序列是Clojure的一个很重要的数据结构，有多种函数和惯用法，需要逐步积累这些知识。</p>
+
+<h2>中间件</h2>
+
+<p>如果需要在程序的多个地方获取用户的登录状态，可以将上述<code>/whoami</code>中的方法封装成函数，但是每次都要执行一次似乎有些冗余，因此我们可以将它放到中间件（Middleware）中。</p>
+
+<p>中间件是<a href="http://en.wikipedia.org/wiki/Web_Server_Gateway_Interface">WSGI</a>类的网站程序中很重要的特性。如果将用户的一次访问分解成<code>请求-&gt;处理1-&gt;处理2-&gt;应答</code>，那么中间件就是其中的“处理”部分，可以增加任意多个。Noir的很多功能，像路由、Session等，都是通过中间件的形式进行组织的。</p>
+
+<p>以下是一个空的中间件代码：</p>
+
+<p>```clojure
+(ns ...</p>
+
+<pre><code>(:require [noir.server :as server]))
+</code></pre>
+
+<p>(defn my-middleware [handler]
+  (fn [request]</p>
+
+<pre><code>(handler request)))
+</code></pre>
+
+<p>(erver/add-middleware my-middleware)
+```</p>
+
+<p>上述代码添加到<code>src/blog/server.clj</code>中可以直接运行，只是这个中间件没有做任何工作。中间件是一个函数，返回值是一个匿名函数（<code>defn</code>是基于<code>fn</code>的，详情可见<code>(doc defn)</code>）。<code>handler</code>参数则是前一个中间件返回的匿名函数，<code>request</code>是用户发送过来的请求（map形式）。这些中间件组合起来就成为了一条处理链。<code>add-middleware</code>则是Noir定义的函数，将用户自定义的中间件添加到处理链中。</p>
+
+<p>下面我们就写这样一个中间件，每次请求时都去检测Session和Cookie中是否包含用户的登录信息，并将该信息放到<code>request</code>的map中：</p>
+
+<p>```clojure
+(defn authenticate [handler]
+  (fn [request]</p>
+
+<pre><code>(let [user (if-let [userid (session/get :userid)]
+            [userid (session/get :username)]
+            (when-let [userid (cookies/get :userid)]
+              (let [username (cookies/get :username)]
+                (do
+                  (session/put! :userid userid)
+                  (session/put! :username username)
+                  [userid username]))))
+      req (if user
+            (assoc request :user (zipmap [:userid :username] user))
+            request)]
+  (handler req))))
+</code></pre>
+
+<p>```</p>
+
+<p>这段代码中对于session和cookies的调用和上面没有差异，比较陌生的可能是<code>assoc</code>和<code>zipmap</code>方法，他们都是用来操作map数据类型的：前者会向一个map对象添加键值，并返回一个新的map；后者则会接收两个序列作为参数，两两组合成一个map并返回。</p>
+
+<p>这样我们就能将<code>/whoami</code>的代码修改为：</p>
+
+<p>```clojure
+(ns ...</p>
+
+<pre><code>(:require [noir.request :as request]))
+</code></pre>
+
+<p>(defpage "/whoami" []</p>
+
+<pre><code>     (if-let [user (:user (request/ring-request))]
+       (:username user)
+       "unkown"))
+</code></pre>
+
+<p>```</p>
+
+<p>其中，<code>ring-request</code>用来获得用户的<code>request</code>map对象。</p>
+
+<h2>程序发布</h2>
+
+<p>这里介绍三种Web应用程序的发布方式。</p>
+
+<h3>直接使用Leiningen</h3>
+
+<p>如果服务器上安装有<code>lein</code>环境，则可以直接调用它来启动程序。只有一点需要注意，因为在默认情况下，<code>lein run</code>启动的程序会被包装在Leiningen的JVM中，这样会占用一些额外的内存，同时引起一些<code>stdin</code>方面的问题。解决方法是使用<code>lein trampoline run</code>命令来启动程序，这样Leiningen为程序启动一个独立的JVM，并退出自己的JVM。</p>
+
+<h3>编译为独立Jar包</h3>
+
+<p><code>lein uberjar</code>命令可以将项目编译后的代码及其所有的依赖包打入一个Jar文件中，和Maven的assembly插件类似。需要注意的是，Clojure文件在默认情况下是不会生成类文件的，而是在运行时进行解析。这样一来，当使用<code>java -jar</code>命令执行时会提示找不到类定义的错误。解决方法是为包含入口函数的模块生成类文件，需要在<code>src/blog/server.clj</code>的<code>ns</code>声明中添加<code>gen-class</code>标识：</p>
+
+<p>```clojure
+(ns blog.server</p>
+
+<pre><code>...
+(:gen-class))
+</code></pre>
+
+<p>```</p>
+
+<p>然后就能打包运行了：</p>
+
+<p><code>bash
+$ lein uberjar
+$ java -jar blog-0.1.0-SNAPSHOT-standalone.jar
+2012-12-23 00:07:47.417:INFO::jetty-6.1.x
+2012-12-23 00:07:47.430:INFO::Started SocketConnector@0.0.0.0:8080
+</code></p>
+
+<p>可以在程序前部署一个Nginx代理做转发，配置方法就不在这里赘述了。</p>
+
+<h3>使用Tomcat</h3>
+
+<p>以上两种方法使用的都是Jetty这个Web容器，虽然比较方便，但在生产环境中我们更倾向于使用Tomcat。</p>
+
+<p>对于Tomcat的安装这里不做讲解，读者可以到<a href="http://tomcat.apache.org/">Tomcat官网</a>查阅。</p>
+
+<p>Clojure代码也需要做一些修改，我们需要提供一个接口供Tomcat调用，也就是<code>Handler</code>。在<code>src/blog/server.clj</code>中添加以下代码：</p>
+
+<p>```clojure
+(def handler (server/gen-handler</p>
+
+<pre><code>           {:mode :prod,
+            :ns 'blog}))
+</code></pre>
+
+<p>```</p>
+
+<p><code>gen-handler</code>是Noir的函数，用来生成一个<code>Handler</code>。<code>'blog</code>前的单引号大家应该还有印象，它表示命名空间。</p>
+
+<p><code>server.clj</code>还有一项内容需要修改：删除<code>load-views</code>，改为显式的<code>require</code>，这样才能保证在编译期间就加载路由配置，Tomcat才会认可。代码如下：</p>
+
+<p>```clojure
+(ns ...</p>
+
+<pre><code>(:require [blog.views welcome article]))
+</code></pre>
+
+<p>; (server/load-views "src/blog/views")
+```</p>
+
+<p>和<code>uberjar</code>类似，我们需要使用<code>uberwar</code>来打包成一个包含所有依赖项的war包。不过这个工具是由一个Leiningen插件提供的：<code>lein-ring</code>，安装过程和<code>lein-noir</code>类似，首先在<code>project.clj</code>添加dev依赖，然后执行<code>lein deps</code>安装。要使上述<code>handler</code>生效，<code>project.clj</code>中还需要增加一项名为<code>:ring</code>的配置：</p>
+
+<p>```clojure
+(defproject blog ...</p>
+
+<pre><code>        ...
+        :dev-dependencies [...
+                           [lein-ring "0.7.5"]]
+        :ring {:handler blog.server/handler})
+</code></pre>
+
+<p>```</p>
+
+<p>执行<code>lein ring uberwar</code>命令，将生成的war包放置到Tomcat的webapps目录中，命名为ROOT.war，也可以设置<a href="http://tomcat.apache.org/tomcat-7.0-doc/virtual-hosting-howto.html">Virtual Hosting</a>。片刻后，Tomcat会应用这个新的程序，我们就能在浏览器中访问了。</p>
+
+<h2>发布至云端Heroku</h2>
+
+<p>最后，我们来尝试将这个博客程序部署到线上环境中。如今云计算已经非常流行，有许多优秀的<a href="http://en.wikipedia.org/wiki/Platform_as_a_service">PaaS</a>平台，<a href="http://www.heroku.com">Heroku</a>就是其中之一。在Heroku上部署一个小型的应用是完全免费的，这里我们简述一下步骤，更详细的操作方法可以参考它的<a href="https://devcenter.heroku.com/articles/clojure">帮助文档</a>。</p>
+
+<ul>
+<li>登录Heroku网站并注册账号；</li>
+<li>安装<a href="https://toolbelt.heroku.com/">Tookbelt</a>，从而能在命令行中使用<code>heroku</code>命令；</li>
+<li>执行<code>heroku login</code>命令，输入账号密码，完成验证；</li>
+<li>新建<code>src/Procfile</code>文件，输入<code>web: lein trampoline run blog.server</code>；</li>
+<li>执行<code>foreman start</code>命令，可以在本地测试程序；</li>
+<li>执行<code>heroku create</code>，Heroku会为你分配一个空间；</li>
+<li>执行<code>git push heroku master</code>，将本地代码推送至云端，可以看到编译信息，并得到一个URL，通过它就能访问我们的应用程序了。</li>
+</ul>
+
+
+<p>以上步骤省略了数据库的配置，读者可以自行到<a href="https://addons.heroku.com/cleardb">Heroku ClearDB</a>页面查看配置方法。</p>
+
+<h2>小结</h2>
+
+<p>至此我们完成了对Noir网站开发框架的简介，也完成了对Clojure这门语言的入门介绍。不过《Clojure实战》系列还远没有结束，下一章开始我们会进入Clojure语言更擅长的领域——计算。我们会陆续介绍如何使用Clojure编写<a href="http://hadoop.apache.org">Hadoop</a> MapReduce脚本、编写<a href="http://www.storm-project.net">Storm</a> Topology、以及如何使用<a href="http://incanter.org/">Incanter</a>进行可视化数据分析。不过在此之前，我强烈建议读者能够回头看看第一章中提到的几个Clojure教程，这样能对Clojure语言的整体架构有一个印象，接下来的学习才会更为顺畅。</p>
+
+<h3>PS</h3>
+
+<p>在撰写这份Noir框架教程时，Noir作者宣布停止对Noir的开发和维护，鼓励开发者转而使用Ring+Compojure+lib-noir的方式进行开发。这对我们并无太大影响，毕竟我们只是利用Noir来学习Clojure，而且前文提过Noir本身就是基于Ring和Compojure这两个类库的，迁移起来非常方便，我会为此再写一篇博客的。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Clojure实战(2)：使用Noir框架开发博客(中)]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/12/08/cia-noir-2/"/>
+    <updated>2012-12-08T12:09:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/12/08/cia-noir-2</id>
+    <content type="html"><![CDATA[<h2>在Eclipse中编写Clojure代码</h2>
+
+<p>从这章起我们就要开始真正的编码了。Vim可能是很多程序员的选择，但如果你像我一样更喜欢GUI界面，那就来看看如何在Eclipse中编写Clojure代码吧。</p>
+
+<h3>安装Eclipse插件</h3>
+
+<p>Eclipse提供了一个Clojure插件：CounterClockwise，可以用来编写Clojure代码，进行语法高亮、调试等操作。打开Eclipse的Market Place，搜索counterclockwise关键字，点击Install即可。</p>
+
+<h3>将Leiningen项目导入Eclipse</h3>
+
+<p>由于CounterClockwise插件并没有默认使用Leiningen来管理项目，因此需要做一些额外的工作。</p>
+
+<p>在使用<code>lein new</code>命令创建项目后，在project.clj文件中增加如下一行：</p>
+
+<p>```clojure
+(defproject ...</p>
+
+<pre><code>        :dev-dependencies [[lein-eclipse "1.0.0"]]
+        ...)
+</code></pre>
+
+<p>```</p>
+
+<p>然后依次执行<code>lein deps</code>和<code>lein eclipse</code>，会看到项目根目录下生成了.project和.classpath文件。然后就可以进入Eclipse导入这个项目了。如果使用Git进行版本控制，<code>lein</code>已经为你生成好了.gitignore文件。执行了<code>git init</code>后，就能在Eclilpse中选择Share Project菜单项，进行可视化的版本控制。</p>
+
+<h2>使用表单</h2>
+
+<p>我们现在需要编写一个新建文章的功能，它是一个简单的页面，页面上有“标题”和“内容”两个文本框，并有一个“提交”按钮。</p>
+
+<p>在src/blog/views目录下新建一个文件article.clj，输入以下内容：</p>
+
+<p>```clojure
+(ns blog.views.article
+  (:require [blog.views.common :as common])
+  (:use [noir.core]</p>
+
+<pre><code>    [hiccup.form-helpers]))
+</code></pre>
+
+<p>(defpage "/blog/add" []
+  (common/layout</p>
+
+<pre><code>[:h1 "新建文章"]
+(form-to [:post "/blog/add"]
+         (label "title" "标题：")
+         (text-field {:size 50} "title") [:br]
+         (label "content" "内容：")
+         (text-area {:rows 20 :cols 50} "content") [:br]
+         (submit-button "提交"))))
+</code></pre>
+
+<p>```</p>
+
+<p><code>defpage</code>和<code>common/layout</code>我们之前已经见到过，前者定义了URL<code>/blog/add</code>指向的页面，后者则是套用了一个模板。<code>[:h1 ...]</code>和<code>[:br]</code>也应该熟悉，它们是Hiccup的语法，分别生成<code>&lt;h1&gt;...&lt;/h1&gt;</code>和<code>&lt;br&gt;</code>标签。</p>
+
+<!-- more -->
+
+
+<p><code>form-to</code>是一个新的语法，不过从名字上也可以猜到，它用来生成一个<code>&lt;form&gt;</code>标签，结合<code>[:post "/blog/add"]</code>一起来看就是<code>&lt;form action="/blog/add" method="post"&gt;...&lt;/form&gt;</code>。至于<code>label</code>、<code>text-field</code>、<code>text-area</code>、以及<code>submit-button</code>都是用来生成相应的表单标签的，它们包含在hiccup.form-helpers命名空间中，具体用法可以到REPL中查看它们的文档，如：（在项目目录中执行<code>lein repl</code>）</p>
+
+<p>```clojure
+blog.server=> (use 'hiccup.form-helpers)
+nil</p>
+
+<h2>blog.server=> (doc label)</h2>
+
+<p>hiccup.form-helpers/label
+([name text]) ; 这个函数接受两个参数，第一个参数是for属性，第二个是它的文本，即<label for="name">text</label>。
+  Creates a label for an input field with the supplied name.
+nil</p>
+
+<h2>blog.server=> (doc text-field)</h2>
+
+<p>hiccup.form-helpers/text-field
+([name] [name value]) ; 这个函数可以传一个或两个参数，第一个参数是name属性，第二个参数是value，即<input type="text" name="name" value="value">。
+  Creates a new text input field.
+nil
+```</p>
+
+<p><code>{:size 50}</code>是个很特别的地方，虽然从字面上就能猜出它是<code>&lt;input&gt;</code>标签的<code>size</code>属性，用来设置文本框的长度的，但为什么会是这样的语法呢？这是Clojure定义的吗？当然不是。还记得我们之前提过的宏吗？开发者可以用宏来定义新的语法，Hiccup就定义了这样的语法，可以用map的形式传入额外的HTML属性。尝试在REPL中执行<code>(html [:font {:color "red"} "hi"])</code>，看看结果是什么吧。</p>
+
+<h3>接收表单信息</h3>
+
+<p>接下来我们再创建一个页面来接收表单信息。Noir可以按照HTTP方式的不同（GET、POST、DELETE等）来进行路由，比如同样是<code>/blog/add</code>这个URL，我们可以为它创建一个独立的页面，响应POST请求：</p>
+
+<p><code>clojure
+(defpage [:post "/blog/add"] []
+  "添加成功")
+</code></p>
+
+<p>尝试提交刚才的页面，会发现得到了预期结果：添加成功。那如何接收表单信息呢？</p>
+
+<p><code>clojure
+(defpage [:post "/blog/add"] {:as forms}
+  (str "添加成功，文章标题是：" (:title forms)))
+</code></p>
+
+<p>似乎又多了几个新奇的语法，我们一一来解释：</p>
+
+<p><code>{:as forms}</code>是一种解构（destructuring）语法，解构的对象是list或map，将它们包含的元素拆解出来。Noir在调用页面函数时（defpage实质上是创建了一个函数）会将接收到的参数以map的形式传递给该函数，如<code>title=greeting&amp;content=helloworld</code>会以`{:title "greeting", :content "helloworld"}的形式传递过来，函数可以通过以下几种方式对map类型进行解构：</p>
+
+<ul>
+<li>不接收参数，使用<code>[]</code>来表示。</li>
+<li>接收指定名称的参数，如<code>{title :title, content :content}</code>，它会将map中键名为:title的值赋给title变量，:content的内容赋给content变量，其他的键名会丢弃。如果键名很多，可以用这种缩写形式：<code>{:keys [title content]}</code>。</li>
+<li>接收整个map，使用<code>{:as forms}</code>，其中forms是自定义的，这样就能从forms变量中获取某个键的值。</li>
+<li>将以上两者结合，即<code>{title :title, content :content, :as forms}</code>，需要注意的是forms中还是包含:title和:content的，不会因为它们已经被赋值给其他变量了而从map中剔除掉。</li>
+</ul>
+
+
+<p>你可以将上面这段代码中的<code>{:as forms}</code>替换成其他形式来进行实验，看看是否真的掌握了解构的用法。至于对list对象的解构，我们以后会遇到。</p>
+
+<p>如何获取map中某个键的值？之前我们在与Java交互时提过有两种方法：<code>(get forms :title)</code>和<code>(.get forms :title)</code>，这里展示的是第三种：<code>(:title forms)</code>，即用关键字作为一个函数，获取map中的值。如果键不存在则返回nil，可以提供默认值：<code>(:title forms "Default Title")</code>。</p>
+
+<p><code>str</code>则是一个函数，会将它所接收到的所有参数转换成字符串并拼接起来（中间不会添加空格）。</p>
+
+<h3>表单验证</h3>
+
+<p>“永远不要相信用户输入的信息”，我们必须对表单内容进行验证，比如标题为空时我们应该显示错误信息，并让用户重新填写。Noir提供了表单验证的相关函数，位于noir.validation命名空间下。下面我们就来添加简单的验证功能：</p>
+
+<p>```clojure
+(ns ...
+  (:require [noir.validation :as vali]))</p>
+
+<p>(defn valid? [{:keys [title content]}]
+  (vali/rule (vali/has-value? title)</p>
+
+<pre><code>         [:title "标题不能为空。"])
+</code></pre>
+
+<p>  (vali/rule (vali/min-length? title 10)</p>
+
+<pre><code>         [:title "标题不能少于10个字符。"])
+</code></pre>
+
+<p>  (vali/rule (vali/has-value? content)</p>
+
+<pre><code>         [:content "内容不能为空。"])
+</code></pre>
+
+<p>  (not (vali/errors? :title :content)))</p>
+
+<p>(defpage [:post "/blog/add"] {:as forms}
+  (if (valid? forms)</p>
+
+<pre><code>(str "添加成功，文章标题是：" (:title forms))
+(str (vali/get-errors :title) (vali/get-errors :content))))
+</code></pre>
+
+<p>```</p>
+
+<p>这段代码的运行效果是：如果提交的表单中标题和内容都有值，则显示“添加成功”，否则提示“标题不为空”、“内容不为空”等。我们来分析一下这段代码。</p>
+
+<p><code>defn</code>定义一个函数，它的参数使用了前面提到的解构，函数体则是由三条语句构成。<code>valid?</code>是合法的函数名吗？前面提过Clojure的变量可以包含特殊字符，所以函数名中是可以存在<code>?</code>、<code>!</code>等字符的。当然我们也有一些习惯，比如以<code>?</code>结尾的函数名一般会返回布尔型。</p>
+
+<p><code>vali/rule</code>函数用来描述一个验证规则，它的第一个参数是一个能够返回布尔型的表达式，第二个参数是一个向量（vector），包含两个元素，分别是字段名和错误提示信息，用于生成一个包含所有错误信息的map。以上面这段代码为例，如果三条验证都不通过，那生成的错误信息会是<code>{:title ["标题不能为空。" "标题不能少于10个字符。"], :content ["内容不能为空。"]}</code>。不过，这个map是由<code>noir.validation</code>维护的，我们不能直接获取到。</p>
+
+<p><code>vali/errors?</code>接收一个字段列表，如果有一个字段验证不通过（产生了错误信息）则返回真，<code>not</code>函数自然就是将这个“真”转换为“假”，从而和<code>valid?</code>的语义一致，即不合法（验证不通过）。</p>
+
+<p>最后，<code>vali/get-errors</code>函数可以将验证过程中生成的错误信息按照字段名提取出来。</p>
+
+<p>这里我们还第一次遇到了流程控制语句：<code>if</code>，它和<code>let</code>一样是一种“特殊形式(Special Form)”。它的一般格式是<code>(if 布尔型 语句1 语句2)</code>，如<code>(if (&gt; 1 2) (println true) (println false))</code>。如果语句包含多行怎么办？可以使用<code>do</code>函数。如果条件分支只有一个，则可以使用<code>when</code>和<code>when-not</code>，这时可以直接包含多行语句，不需要使用<code>do</code>。以下是一些示例：</p>
+
+<p>```clojure
+(if (> 1 2)
+  (do</p>
+
+<pre><code>(println 1)
+(println 2))
+</code></pre>
+
+<p>  (println 3)) ;-> 3</p>
+
+<p>(when (&lt; 1 2)
+  (println 1)
+  (println 2)) ;-> 1 \n 2
+```</p>
+
+<h3>错误提示</h3>
+
+<p>那如何实现这样的需求：如果表单验证不通过，则重新显示表单，加入用户之前提交的内容，并显示出错信息。要做到这一点，就需要使用两个新的函数，<code>vali/on-error</code>和<code>noir.core/render</code>，并对<code>/blog/add</code>页面做一些修改。</p>
+
+<p>```clojure
+(defpartial error-item [[first-error]]
+  [:span.error first-error])</p>
+
+<p>(defpage "/blog/add" {:as forms}
+  (common/layout</p>
+
+<pre><code>[:h1 "新建文章"]
+(form-to [:post "/blog/add"]
+         (label "title" "标题：")
+         (text-field {:size 50} "title" (:title forms))
+         (vali/on-error :title error-item) [:br]
+         (label "content" "内容：")
+         (text-area {:rows 20 :cols 50} "content" (:content forms))
+         (vali/on-error :content error-item) [:br]
+         (submit-button "提交"))))
+</code></pre>
+
+<p>; 此处省略valid?函数，它没有变化</p>
+
+<p>(defpage [:post "/blog/add"] {:as forms}
+  (if (valid? forms)</p>
+
+<pre><code>(str "添加成功，文章标题是：" (:title forms))
+(render "/blog/add" forms)))
+</code></pre>
+
+<p>```</p>
+
+<p>先看<code>render</code>，它是Noir提供的一个函数，能够在页面中渲染另一个页面的内容，就像调用一个函数一样。这里我们则是在表单提交的页面里渲染了“新建文章”页面的内容，并将表单参数传递了过去。</p>
+
+<p>对“新建文章”页面我们做了以下修改：</p>
+
+<ul>
+<li>接收参数，并作为<code>forms</code>变量保存这个map。</li>
+<li>为<code>text-field</code>和<code>text-area</code>两个表单控件添加了默认值。</li>
+<li>调用了<code>vali/on-error</code>函数，当某个字段包含错误信息时，它会调用第二个参数所指向的函数（这里是<code>error-item</code>），并将该字段的错误信息作为参数传递给这个函数。</li>
+</ul>
+
+
+<p><code>error-item</code>函数的功能很简单，将接受到的错误信息渲染成一个<code>&lt;span&gt;</code>标签展示出来。这里的<code>[:span.error ...]</code>会被解析成<code>&lt;span class="error"&gt;...&lt;/span&gt;</code>。至于<code>[[first-error]]</code>，它是一种对list对象的解构操作。前面我们看到在错误信息中，某个字段即使只有一条错误信息，也会以向量的形式保存。我们这里只需要每个字段的第一条错误信息，所以使用了这种形式。你可以这样重写<code>error-item</code>，效果是一样的：</p>
+
+<p><code>clojure
+(defpartial error-item [errors]
+  [:span.error (first errors)])
+</code></p>
+
+<h2>操作数据库</h2>
+
+<p>Clojure程序连接数据库可以使用<code>clojure.java.jdbc</code>这个类库，它能够操作MySQL、PostgreSQL、SQLite、MSSQL等。这里我们将演示如何连接MySQL数据库，因此除了<code>clojure.java.jdbc</code>外，还需要添加MySQL Connector依赖项：</p>
+
+<p>```clojure
+(defproject ...</p>
+
+<pre><code>        :dependencies [...
+                       [org.clojure/java.jdbc "0.2.3"]
+                       [mysql/mysql-connector-java "5.1.6"]]
+        ...)
+</code></pre>
+
+<p>```</p>
+
+<p>为了保存博客文章，我们在本地MySQL服务中新建一个<code>blog_db</code>数据库，并赋予用户<code>blog_db</code>（密码相同）该库的所有权限。然后我们会建立一张article表，用于保存文章：</p>
+
+<p><code>``mysql
+$ mysql -uroot -p
+mysql&gt; create database blog_db collate utf8_general_ci;
+mysql&gt; grant all on blog_db.* to 'blog_db'@'localhost' identified by 'blog_db';
+mysql&gt; CREATE TABLE</code>article` (</p>
+
+<pre><code>-&gt;   `id` int(11) NOT NULL AUTO_INCREMENT,
+-&gt;   `title` varchar(500) NOT NULL,
+-&gt;   `content` text NOT NULL,
+-&gt;   `user_id` int(11) NOT NULL,
+-&gt;   `created` datetime NOT NULL,
+-&gt;   PRIMARY KEY (`id`)
+-&gt; ) ENGINE=InnoDB;
+</code></pre>
+
+<p>```</p>
+
+<p>我们新建一个<code>src/blog/database.clj</code>文件，用来存放数据库连接信息：</p>
+
+<p>```clojure
+(ns blog.database)</p>
+
+<p>(def db-spec {:classname "com.mysql.jdbc.Driver"</p>
+
+<pre><code>          :subprotocol "mysql"
+          :subname "//127.0.0.1:3306/blog_db?useUnicode=true&amp;characterEncoding=UTF-8"
+          :user "blog_db"
+          :password "blog_db"})
+</code></pre>
+
+<p>```</p>
+
+<p>接着新建<code>src/blog/models/blog.clj</code>文件，编写插入记录的函数：</p>
+
+<p>```clojure
+(ns blog.models.blog
+  (:require [clojure.java.jdbc :as sql])
+  (:use [blog.database :only [db-spec]])
+  (:import java.sql.Timestamp))</p>
+
+<p>(defn add! [forms]
+  (sql/with-connection db-spec</p>
+
+<pre><code>(sql/insert-records "article"
+  {:title (:title forms)
+   :content (:content forms)
+   :user_id 0
+   :created (Timestamp. (System/currentTimeMillis))})))
+</code></pre>
+
+<p>```</p>
+
+<p>最后，我们只需要在<code>src/blog/views/article.clj</code>中调用这个函数即可：</p>
+
+<p>```clojure
+(ns ...
+  (:require ...</p>
+
+<pre><code>        [blog.models.blog :as model-blog]))
+</code></pre>
+
+<p>(defpage [:post "/blog/add"] {:as forms}
+  (if (valid? forms)</p>
+
+<pre><code>(str "添加成功，文章编号是："
+     (:generated_key (first (model-blog/add! forms))))
+(render "/blog/add" forms)))
+</code></pre>
+
+<p>```</p>
+
+<p>这里我们见到了<code>clojure.java.jdbc</code>命名空间下的两个函数：<code>with-connection</code>和<code>insert-records</code>。前者用来打开一个数据库连接，它的第一个参数可以是一个map，表示数据库的连接信息，也可以是字符串，还可以直接传递一个DataSource对象，这点我们会在如何使用连接池时讲解。当<code>with-connection</code>执行完毕时，数据库连接也会随之关闭。<code>insert-record</code>则用于插入一条或多条数据，第一个参数是数据表名，第二个参数开始则是将要插入的记录。这个函数的返回值你应该可以从<code>(:generated_key ...)</code>这段代码中猜出来。</p>
+
+<p>注意，我们的数据表中有一个DATETIME类型的字段，它需要使用<code>java.sql.Timestamp</code>类型来赋值。Clojure中引入一个类可以使用<code>import</code>函数，<code>ns</code>宏提供了便捷的方式<code>:import</code>。当需要一次导入多个类时，可以使用<code>(:import (java.sql Timestamp Date Time))</code>。</p>
+
+<h3>使用C3P0连接池</h3>
+
+<p>在高性能网站中，频繁开关数据库连接不是个好主意，通常的方式是使用连接池。这里我们演示如何使用C3P0连接池。</p>
+
+<ul>
+<li>添加依赖项：<code>[c3p0 "0.9.1.2"]</code></li>
+<li>修改<code>src/blog/database.clj</code>，添加以下代码：</li>
+</ul>
+
+
+<p>```clojure
+(ns blog.database
+  (:import com.mchange.v2.c3p0.ComboPooledDataSource))</p>
+
+<p>(def db-spec ...) ; db-spec没有变化，此处省略</p>
+
+<p>(def pool
+  (let [cpds (doto (ComboPooledDataSource.)</p>
+
+<pre><code>           (.setDriverClass (:classname db-spec))
+           (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname db-spec)))
+           (.setUser (:user db-spec))
+           (.setPassword (:password db-spec)))]
+{:datasource cpds}))
+</code></pre>
+
+<p>```</p>
+
+<ul>
+<li>更换<code>src/blog/models/blog.clj</code>中<code>with-connection</code>的参数：</li>
+</ul>
+
+
+<p>```clojure
+(ns ...
+  (:use [blog.database :only [pool]]))</p>
+
+<p>(defn add! [forms]
+  (sql/with-connection pool</p>
+
+<pre><code>...))
+</code></pre>
+
+<p>```</p>
+
+<p><code>with-connection</code>接收到的参数形式是<code>{:datasource DataSource接口的实例}</code>，<code>(ComboPooledDataSource.)</code>就是这样的一个实例，这种语法和<code>(new ComboPooledDataSource)</code>等价。<code>doto</code>函数表示连续调用第一个参数所指向的对象的方法，最后返回这个对象。这段代码可以有不同的写法，如<code>(def pool {:datasource (doto (Combo...))})</code>。</p>
+
+<h2>小结</h2>
+
+<p>这一章我们学习了如何配置Eclipse以编写Leiningen项目；如何使用表单和接受参数，特别是表单验证和错误信息的提示；最后我们演示了如何将数据保存到MySQL中，并使用连接池来优化项目。下一节我们将为博客增加用户登录的功能，以讲解Cookie和Session的使用。我们还会学习如何对Leiningen项目进行打包和发布，并尝试将我们的博客发布到PaaS平台Heroku上去。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Clojure实战(1)：使用Noir框架开发博客(上)]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/11/25/cia-noir-1/"/>
+    <updated>2012-11-25T16:58:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/11/25/cia-noir-1</id>
+    <content type="html"><![CDATA[<h2>前言</h2>
+
+<p>为什么要学习一门新的语言？我的想法很简单，平时OO、PO代码写多了，却从未接触过函数式编程，不免有些遗憾。考察下来，Clojure可以用来尝尝鲜，所以就决定学一学。为了给自己的学习留下些记录，就有了这样一份教程。</p>
+
+<p>Clojure已经有一些不错的教程，如<a href="http://java.ociweb.com/mark/">Mark Volkmann</a>的<a href="http://java.ociweb.com/mark/clojure/article.html">Clojure - Functional Programming for the JVM</a>，Storm的主要贡献者<a href="http://xumingming.sinaapp.com/">徐明明</a>也对这个教程做了<a href="http://xumingming.sinaapp.com/302/clojure-functional-programming-for-the-jvm-clojure-tutorial/">全文翻译</a>。还有一些不错的书籍，像<a href="http://oreilly.com/">O'Reilly</a>的<a href="http://www.amazon.com/Clojure-Programming-Chas-Emerick/dp/1449394701">Clojure Programming</a>，都值得一读。我是从Mark的教程开始学起的，对其中没有提到的部分则是参考了Clojure Programming这本书。Clojure的<a href="http://clojure.org/">官方网站</a>上有详尽的<a href="http://clojure.github.com/clojure/">API参考</a>，可以作为工具书查阅。</p>
+
+<p>但是，上面提到的教程都是针对Clojure语言本身的，从 <em>Hello, world!</em> 开始，讲解Clojure的各种语法，关键字，结构等等。虽然Clojure的语法已经足够吸引你的眼球，在<a href="http://en.wikipedia.org/wiki/Read-eval-print_loop">REPL</a>中敲击Clojure代码已经是一种莫大的乐趣了，但似乎还有些不够，我们想看到一个用Clojure编写的应用程序！</p>
+
+<p>因为平时都是做Web开发，所以先从一个Web框架入手会是不错的选择，因此这份教程会从使用<a href="http://webnoir.org/">Noir</a>框架搭建一个博客开始，带你领略Clojure的魅力。</p>
+
+<!-- more -->
+
+
+<h2>一句话概述Clojure</h2>
+
+<p><strong>Clojure是一种运行在JVM平台上的函数式编程语言。</strong></p>
+
+<ul>
+<li><a href="http://en.wikipedia.org/wiki/Jvm">JVM平台</a>：历史悠久，应用广泛，成熟稳定。Clojure可以和Java程序交互，调用各种类库，与现有系统整合。</li>
+<li><a href="http://en.wikipedia.org/wiki/Functional_programming">函数式编程</a>：<a href="http://en.wikipedia.org/wiki/LISP">Lisp</a>的一种方言，表达力强，是解决高并发问题的利器。</li>
+</ul>
+
+
+<h2>安装Clojure</h2>
+
+<p>Clojure是以一个Jar包发行的，可以到<a href="http://clojure.org/getting_started">官网下载</a>后使用<code>java -jar</code>命令运行。而在实际开发中，我们会选择使用<a href="https://github.com/technomancy/leiningen">Leiningen</a>或<a href="http://maven.apache.org/">Maven</a>来管理Clojure项目，本教程将以Leiningen（命令行是<code>lein</code>）作为项目管理工具进行讲解。</p>
+
+<h3>安装Leiningen</h3>
+
+<p><code>lein</code>目前有1.x和2.x两个版本，后者还在alpha阶段。使用以下命令安装<code>lein</code> 1.x版本：</p>
+
+<p><code>bash
+$ cd ~/bin # 假设$HOME/bin目录在系统的$PATH中
+$ wget https://raw.github.com/technomancy/leiningen/stable/bin/lein
+$ chmod 755 lein
+$ lein self-install
+$ lein repl
+REPL started; server listening on localhost port 1096
+user=&gt;
+</code></p>
+
+<p>这样就已经安装好了<code>lein</code>和Clojure环境，并启动了一个REPL，可以直接运行Clojure代码：</p>
+
+<p><code>clojure
+user=&gt; (+ 1 2)
+3
+user=&gt;
+</code></p>
+
+<p>这里出现了Clojure的两个特点：圆括号和前缀表达式。Clojure的基本语法是<code>(fn1 arg1 (fn2 arg2 arg3))</code>。函数是Clojure中的“一等公民”，它即是可执行的代码，又是一种数据（类似闭包的概念）。以后我们会慢慢熟悉。</p>
+
+<h3>新建项目</h3>
+
+<p><code>bash
+$ lein new proj
+$ find proj
+proj
+proj/project.clj
+proj/src/proj/core.clj
+$ cat proj/project.clj
+(defproject proj "1.0.0-SNAPSHOT"
+  :description "FIXME: write description"
+  :dependencies [[org.clojure/clojure "1.3.0"]])
+</code></p>
+
+<p><code>lein new</code>命令用来创建一个Clojure项目骨架，最重要的文件是<code>project.clj</code>，它声明了项目的基本属性以及依赖包。</p>
+
+<p><code>lein plugin</code>命令可以用来管理lein的插件，我们可以通过安装lein-noir插件来生成基于Noir的项目骨架：</p>
+
+<p><code>bash
+$ lein plugin install lein-noir 1.2.1
+$ lein noir new blog
+$ find blog
+blog
+blog/project.clj
+blog/resources/public/css/reset.css
+blog/resources/public/img
+blog/resources/public/js
+blog/src/blog/models
+blog/src/blog/server.clj
+blog/src/blog/views/common.clj
+blog/src/blog/views/welcome.clj
+</code></p>
+
+<p>我们可以直接运行这个项目：</p>
+
+<p><code>bash
+$ cd blog
+$ lein run
+Starting server...
+2012-11-29 22:34:39.174:INFO::jetty-6.1.25
+2012-11-29 22:34:39.237:INFO::Started SocketConnector@0.0.0.0:8080
+</code></p>
+
+<p>浏览http://localhost:8080，就能看到项目的页面了。</p>
+
+<h2>Noir项目的基本结构</h2>
+
+<h3>项目基本信息：project.clj</h3>
+
+<p>Clojure文件都是以<code>.clj</code>为扩展名的。项目根目录下的project.clj文件包含了一些基本信息，我们逐一分析：</p>
+
+<p>```clojure
+(defproject blog "0.1.0-SNAPSHOT"</p>
+
+<pre><code>        :description "FIXME: write this!"
+        :dependencies [[org.clojure/clojure "1.3.0"]
+                       [noir "1.2.1"]]
+        :main blog.server)
+</code></pre>
+
+<p>```</p>
+
+<p><a href="http://clojuredocs.org/leiningen/leiningen.core/defproject">defproject</a>是Leiningen定义的一个<a href="http://clojure.org/macros">宏</a>，用来描述项目的基本信息。宏在Clojure中是一个很重要的语言特性，简单地说，开发者可以用宏创造出新的语法。</p>
+
+<p>:description、:main等是一种直接量(literal)，我们称之为关键字(keyword)，通常以<code>:</code>开头，主要用来作为哈希表(map)中的键名，这里则用来表示项目的某种信息，从名称上应该很好理解。</p>
+
+<p><code>[1 ["b", false]]</code>中的<code>[...]</code>表示一个向量(vector)，它的元素可以是任意类型，元素之间以空格或逗号分隔。这行代码也展示了Clojure中其他几种直接量：数值型、字符串、布尔型。</p>
+
+<p>依赖项的描述也很直观，<code>[groupId/artifactId "version"]</code>。Clojure使用了和Maven相似的包命名方式，当groupId和artifactId相同时，可以进行简写，如<code>[noir "1.2.1"]</code>等价于<code>[noir/noir "1.2.1"]</code>，这也是Clojure鼓励的做法。对依赖项进行修改后，可以运行<code>lein deps</code>命令进行安装。lein会先从<a href="https://clojars.org">Clojars</a>上查找和下载，不存在时再到<a href="http://search.maven.org/">Maven中央仓库</a>中搜索。</p>
+
+<p>最后，:main顾名思义指向的是程序入口，它配置的是一个命名空间，其中会包含一个<code>-main</code>方法（注意方法名中的<code>-</code>）。Leiningen项目的目录结构也是按照命名空间来的，这点和Java一致。</p>
+
+<h3>入口文件：src/blog/server.clj</h3>
+
+<p>```clojure
+(ns blog.server
+  (:require [noir.server :as server]))</p>
+
+<p>(server/load-views "src/blog/views/")</p>
+
+<p>(defn -main [&amp; m]
+  (let [mode (keyword (or (first m) :dev))</p>
+
+<pre><code>    port (Integer. (get (System/getenv) "PORT" "8080"))]
+(server/start port {:mode mode
+                    :ns 'blog})))
+</code></pre>
+
+<p>```</p>
+
+<p>ns宏用于定义当前的命名空间，:require表示导入其它命名空间，:as则是将为导入的命名空间设置别名。注意这些关键字及其用法都是在ns宏中定义的，这也是为什么说宏可以用来创造新的语法。</p>
+
+<p>关于命名空间，你在执行<code>lein repl</code>的时候可能会注意到，当在blog项目下执行时，提示符是<code>blog.server=&gt;</code>，而在其他目录下执行时是<code>user=&gt;</code>，因为user是Clojure默认的命名空间，可以通过<code>(ns myspace)</code>来切换成<code>myspace=&gt;</code>。</p>
+
+<p><code>server/load-views</code>表示调用<code>server</code>命名空间下的<code>load-views</code>函数，后面的<code>src/blog/views/</code>则是函数的参数。在大多数语言中，函数名称不能包含特殊字符，如<code>-</code>，但Clojure中的变量名、函数名、关键字等都可以包含诸如*、+、!、>这样的特殊字符。其中一些字符是有特定含义的，如关键字必须以<code>:</code>开头，以<code>::</code>开头的则表示仅在当前命名空间中有效。这些约定需要注意。</p>
+
+<p>defn宏用来定义一个函数，基本用法是<code>(defn 函数名 [参数列表] 语句1 语句2)</code>。如果参数数量不定，可以使用这样的语法<code>[arg1 arg2 &amp; args]</code>，这样当函数接收四个参数时，后两个参数会作为一个向量赋值给args变量。</p>
+
+<p>关于let，它是继“宏”和“函数”之后出现的第三个术语，“特殊形式”(Special Form)。我们暂时不去了解它们之间的关系，先来看看let的作用。设想这样一个场景，我们在调用一个函数之前会准备一些参数传送给它，这些参数仅在函数内部可见，函数处理完后就会销毁。let则是将参数准备和函数调用这两步整合了起来。它的语法是<code>(let [变量1 表达式1 变量2 表达式2] 语句1 语句2)</code>，举例来说，尝试在REPL中执行以下命令，思考一下结果是如何得出的：</p>
+
+<p><code>clojure
+user=&gt; (let [x 1 y (+ 2 3)] (+ x y))
+6
+user=&gt;
+</code></p>
+
+<p>入口文件中的表达式看起来有些复杂，但逐步拆解后就会明白：</p>
+
+<p><code>clojure
+user=&gt; (def m []) ; 定义一个变量，它是一个空向量，正如不带参数调用-main函数时一样。Clojure中分号表示注释。
+user=&gt; (first m) ; 获取向量（序列）的第一个元素，这里为空。
+nil
+user=&gt; (or (first m) :dev) ; 从左往右执行参数，若结果不为空(nil)则停止执行，并返回该结果。
+:dev
+user=&gt; (keyword (or (first m) :dev)) ; 获取关键字。由于传入的参数可能是一个关键字、一个变量、或一个字符串，因此使用keyword函数返回一个关键字类型。
+:dev
+</code></p>
+
+<p>经过处理，mode变量包含了:dev这个关键字，且作用域仅在(let ...)中有效。</p>
+
+<p>再来看看port变量，这里涉及到了与Java类的交互：</p>
+
+<p><code>clojure
+user=&gt; (System/getenv) ; 这里的System不是一个命名空间，而是Java的一个类。通过这种方式我们调用了System类的静态方法getenv，并返回了一个Map类实例。
+java.util.Collections$UnmodifiableMap
+user=&gt; (get (System/getenv) "PORT" "8080") ; 这里的get不是Map实例的get方法，而是Clojure中的一个函数，用于返回哈希表(map)中的值，不存在则返回一个默认值。
+"8080"
+user=&gt; (.get (System/getenv) "PORT") ; 这才是调用Map实例的get方法，注意点号和函数的参数。
+nil
+user=&gt; (Integer. (get (System/getenv) "PORT" "8080")) ; 又是一个和Java交互的语法：创建实例。它和以下语法等价：
+8080
+user=&gt; (new Integer (get (System/getenv) "PORT" "8080"))
+8080
+</code></p>
+
+<p>关于map再补充一点，它虽然是Clojure的一种数据类型，但底层其实是Map接口一个实现，因此以下语法是合法的。类似的情况在Clojure中还有很多。</p>
+
+<p><code>clojure
+user=&gt; (def m {:a 1, :b 2}) ; map的语法是{键1 值1 键2 值2}，为了加强可读性，这里使用了逗号分隔了两组键值，Clojure在编译时会将逗号转换成空格。
+user=&gt; (&lt; (get m :a) (.get m :b)) ; 1 &lt; 2
+true
+</code></p>
+
+<p>参数的赋值就结束了，后面的代码也很好理解：调用server命名空间下的start函数，参数是监听端口和一组由map表示的参数。这里blog之前的单引号需要注意，表示其后的代码不需要进行解析(evaluate)，在表示命空间名时都需要加上（ns宏除外），如：</p>
+
+<p><code>clojure
+user=&gt; (require 'noir.server) ; 引入一个命名空间，使用noir.server/start调用方法。
+user=&gt; (alias 'server 'noir.server) ; 设置别名。
+user=&gt; (refer 'noir.server) ; 将该命名空间下的变量导入当当前命名空间中，即可以直接使用(start ...)调用。
+user=&gt; (use 'noir.server) ; 同时完成require和refer。
+</code></p>
+
+<p><strong>小贴士</strong></p>
+
+<p>这一节中我们引入了不少Clojure的函数、宏、特殊形式，有时会需要查阅这些函数的用法。除了上网查找API文档，还可以在REPL中使用<code>doc</code>和<code>source</code>函数来返回某个函数或宏的文档和源码：</p>
+
+<p>```clojure</p>
+
+<h2>user=> (doc first)</h2>
+
+<p>clojure.core/first
+([coll])
+  Returns the first item in the collection. Calls seq on its</p>
+
+<pre><code>argument. If coll is nil, returns nil.
+</code></pre>
+
+<p>```</p>
+
+<h3>基本页面：src/blog/views/welcome.clj</h3>
+
+<p>入口文件中的<code>load-views</code>函数会将指定目录下的所有文件都包含进来，这些文件中定义的是URL路由以及页面内容，以welcome.clj为例：</p>
+
+<p>```clojure
+(ns blog.views.welcome
+  (:require [blog.views.common :as common]</p>
+
+<pre><code>        [noir.content.getting-started])
+</code></pre>
+
+<p>  (:use [noir.core :only [defpage]]</p>
+
+<pre><code>    [hiccup.core :only [html]]))
+</code></pre>
+
+<p>(defpage "/welcome" []</p>
+
+<pre><code>     (common/layout
+       [:p "Welcome to blog"]))
+</code></pre>
+
+<p>```</p>
+
+<p>我们先跳过这些代码，来看看如何定义一个新的页面。将以下代码添加到welcome.clj尾部，然后执行<code>lein run</code>。</p>
+
+<p>```clojure
+(defpage "/greeting" []</p>
+
+<pre><code>     (html
+       [:h1 "Hello, world!"]))
+</code></pre>
+
+<p>```</p>
+
+<p>访问 http://127.0.0.1:8080/greeting 就能看到一个新的页面了，页面源码是<code>&lt;h1&gt;Hello, world!&lt;/h1&gt;</code>。</p>
+
+<p>defpage是Noir的一个宏，用来定义URL和它返回的页面内容。URL的定义有很多其他用法，如POST方式、截取参数等，我们稍后都会用到。页面内容方面，可以直接返回字符串，如<code>(defpage "/greeting" [] "Hello, world!")</code>，也可以使用Hiccup构建HTML页面。<a href="https://github.com/weavejester/hiccup">Hiccup</a>是Noir默认的模板引擎，简单来说就是用Clojure来写HTML。一个完整的页面示例如下：</p>
+
+<p>```clojure
+(ns ...
+  (:use ...</p>
+
+<pre><code>    [hiccup.page-helpers :only [html4]]))
+</code></pre>
+
+<p>(defpage "/greeting" []</p>
+
+<pre><code>     (html4
+       [:head
+         [:title "Greeting"]]
+       [:body
+         [:h1 "Hello, world!"]]))
+</code></pre>
+
+<p>```</p>
+
+<p>生成的HTML是：</p>
+
+<p>```html
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head></p>
+
+<pre><code>&lt;title&gt;Greeting&lt;/title&gt;
+</code></pre>
+
+<p>  </head>
+  <body></p>
+
+<pre><code>&lt;h1&gt;Hello, world!&lt;/h1&gt;
+</code></pre>
+
+<p>  </body>
+</html>
+```</p>
+
+<p>其中，html和html4都是Hiccup定义的宏。html仅将接收到的参数转换为HTML代码，html4则是会添加相应版本的<code>&lt;!DOCTYPE&gt;</code>和<code>&lt;html&gt;</code>标签。要使用这些宏需要引入相应的命名空间。:only则表示只引入命名空间中特定的宏。</p>
+
+<p>关于命名空间中出现的<code>-</code>，Clojure在编译时会自动转换成<code>_</code>，从而确保程序在JVM中运行时不会出现问题。</p>
+
+<h3>页面模板：src/blog/views/common.clj</h3>
+
+<p>回到系统生成的welcome.clj文件，它并没有使用html或html4，而是调用了一个<code>common/layout</code>函数。那么让我们看看common.clj中这个函数的定义：</p>
+
+<p>```clojure
+(ns blog.views.common
+  (:use [noir.core :only [defpartial]]</p>
+
+<pre><code>    [hiccup.page-helpers :only [include-css html5]]))
+</code></pre>
+
+<p>(defpartial layout [&amp; content]</p>
+
+<pre><code>        (html5
+          [:head
+           [:title "blog"]
+           (include-css "/css/reset.css")]
+          [:body
+           [:div#wrapper
+            content]]))
+</code></pre>
+
+<p>```</p>
+
+<p>defpartial是Noir的一个宏，用来定义一段可复用的HTML代码。当然我们也可以将其定义为一个函数（用<code>defn</code>替换掉<code>defpartial</code>），不会有什么区别。官方文档的解释是使用defpartial会比较容易辨认。</p>
+
+<p><code>include-css</code>是一个函数，用来生成<code>&lt;link&gt;</code>标签。<code>[:div#wrapper ...]</code>会生成<code>&lt;div id="wrapper"&gt;...&lt;/div&gt;</code>。更多Hiccup的语法可以到<a href="http://www.webnoir.org/tutorials/html">这个页面</a>浏览一下。</p>
+
+<h3>默认首页：noir.content.getting-started</h3>
+
+<p>我们在代码中并没有看到<code>(defpage "/" [] ...)</code>这样的定义，那为什么网站根目录会出现一个默认页面呢？答案在<code>noir.content.getting-started</code>这个命名空间中，可以<a href="https://github.com/noir-clojure/noir/blob/master/src/noir/content/getting_started.clj">点击这里</a>查看它的源码。要取消这个默认页面，可以在welcome.clj的:require中将其删除。</p>
+
+<h3>静态资源：src/resources/public</h3>
+
+<p>Noir默认对src/resources/public目录下的文件做了路由，因此当有一个资源文件位于src/resources/public/css/reset.css时，可以通过http://127.0.0.1:8080/css/reset.css访问。</p>
+
+<p>值得一提的是，Noir项目本身依赖于两个开源项目：<a href="https://github.com/ring-clojure/ring">ring</a>和<a href="https://github.com/weavejester/compojure/tree/master/src">compojure</a>，前者对HTTP请求进行了封装，提供了一套类似Python WSGI的API；后者则是专门提供URL路由功能的类库。如对静态资源的路由，实质上Noir是调用了compojure提供的resources函数，函数中又调用ring提供的GET、wrap-file-info等函数响应请求。</p>
+
+<h2>小结</h2>
+
+<p>本章讲述了Clojure环境的搭建，特别是项目管理工具<code>lein</code>的一般使用。通过对Noir项目骨架的分析，我们一窥Clojure的语法，接触了变量、直接量、函数、宏、命名空间的一些用法，并能结合Noir和Hiccup写出简单的页面来。下一章我们将讲解如何使用Noir编写表单页面进行交互，以及Clojure如何连接数据库，对博文进行增删改查等操作。</p>
+]]></content>
+  </entry>
+  
+</feed>

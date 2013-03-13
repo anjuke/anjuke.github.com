@@ -1,0 +1,367 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>GitCorp FAQ - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="怎样获得自己的代码仓库目录? 首先以公司的域用户登录GitCorp站点，找到管理SSH公钥的页面。然后根据提示增加你的SSH公钥。提交之后，系统将创建和域用户名相同名称的目录，作为你的代码仓库的根目录。 GitCorp允许一个帐号拥有多个公钥， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/04/24/gitcorp-faq/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">GitCorp FAQ</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-04-24T14:12:00+08:00" pubdate data-updated="true">Apr 24<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h3>怎样获得自己的代码仓库目录?</h3>
+
+<p>首先以公司的域用户登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，找到<a href="http://git.corp.anjuke.com/account/public_keys">管理SSH公钥</a>的页面。然后根据提示增加你的SSH公钥。提交之后，系统将创建和域用户名相同名称的目录，作为你的代码仓库的根目录。</p>
+
+<p>GitCorp允许一个帐号拥有多个公钥，这样你可以在不同的机器上访问你的代码仓库而不需要共享私钥。</p>
+
+<h3>怎样新建用户代码仓库?</h3>
+
+<p>登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择&#8221;Repo&#8221;菜单，然后点击&#8221;New&#8221;按钮创建新的代码仓库。创建代码仓库名要求输入仓库名称($REPO)和描述，新的仓库将建立这你的个人目录($USER)下。</p>
+
+<p>之后可以通过以下命令，将代码仓库克隆到本地。</p>
+
+<pre><code>git clone git@git.corp.anjuke.com:($USER)/($REPO)
+</code></pre>
+
+<p>或者在本地已经有代码仓库了，就可以push到GitCorp的用户目录下。</p>
+
+<pre><code>git remote add origin git@git.corp.anjuke.com:($USER)/($REPO)
+git push origin master
+</code></pre>
+
+<!-- more -->
+
+
+<h3>怎样删除用户代码仓库?</h3>
+
+<p>登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择&#8221;Repo&#8221;菜单，然后进入要删除的仓库。选择&#8221;Admin&#8221;，可以看到&#8221;Delete&#8221;选项。</p>
+
+<p>只能删除自己目录下的代码仓库。</p>
+
+<h3>如何修改代码仓库在cgit/gitweb上的描述?</h3>
+
+<p>登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择&#8221;Repo&#8221;菜单，然后进入要删除的仓库。选择&#8221;Admin&#8221;，可以修改仓库的描述。</p>
+
+<h3>如何fork其他代码仓库?</h3>
+
+<p>这<a href="http://git.corp.anjuke.com">GitCorp</a>站点提供Fork功能之前，必须首先将其他代码仓库clone到本地，然后push到自己的代码仓库。</p>
+
+<pre><code>git clone --mirror ($GIT_REPO_URL) ($LOCAL_REPO)
+cd ($LOCAL_REPO)
+git remote add gitcorp git@git.corp.anjuke.com:($USER)/($REPO)
+git push --mirror gitcorp
+</code></pre>
+
+<p>注意：在push之前需要通过Web界面先创建一个空的仓库。</p>
+
+<h3>如何merge其他工程师的改进到自己的代码仓库?</h3>
+
+<p>假设自己的代码仓库在<code>git@git.corp.anjuke.com:my/repo.git</code>，另一工程师的代码仓库在<code>git@git.corp.anjuke.com:peer/repo.git</code>。</p>
+
+<p>首先将自己的代码仓库clone到本地</p>
+
+<pre><code>git clone git@git.corp.anjuke.com:my/repo.git
+cd repo.git
+</code></pre>
+
+<p>增加对方的代码仓库，并获取更新</p>
+
+<pre><code>git remote add peer git@git.corp.anjuke.com:peer/repo.git
+git fetch peer
+</code></pre>
+
+<p>然后就可以merge对方的代码，例如</p>
+
+<pre><code>git checkout master
+git merge --no-commit peer/master
+</code></pre>
+
+<p>最后将合并好的代码push到自己的代码仓库</p>
+
+<pre><code>git push origin master
+</code></pre>
+
+<h3>如何直接将改动push到其他人的代码仓库?</h3>
+
+<p>这需要对方用户代码仓库的写权限，因此要对方操作，开放该代码仓库的写权限。</p>
+
+<p>改变仓库的权限可以通过Web界面进行。登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择&#8221;Repo&#8221;菜单，然后进入要修改的仓库。选择&#8221;Admin&#8221;，可以给其他用户赋予写权限。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">erning</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-04-24T14:12:00+08:00" pubdate data-updated="true">Apr 24<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/git/'>git</a>, <a class='category' href='/blog/categories/guide/'>guide</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/03/01/problem-spider-requests/" title="Previous Post: Problem: spider requests">&laquo; Problem: spider requests</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/05/09/the-twelve-factor-app/" title="Next Post: The Twelve-Factor App">The Twelve-Factor App &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/04/24/gitcorp-faq/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/04/24/gitcorp-faq/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

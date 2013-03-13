@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: python | Anjuke Engineering]]></title>
+  <link href="http://arch.corp.anjuke.com/blog/categories/python/atom.xml" rel="self"/>
+  <link href="http://arch.corp.anjuke.com/"/>
+  <updated>2013-03-13T12:15:00+08:00</updated>
+  <id>http://arch.corp.anjuke.com/</id>
+  <author>
+    <name><![CDATA[Anjuke Inc.]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[使用Thrift API监控Storm集群]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/"/>
+    <updated>2012-10-31T18:00:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun</id>
+    <content type="html"><![CDATA[<p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
+
+<p>Storm UI提供了基本的监控界面，可以查看当前时点集群内脚本的运行情况，其中比较重要的是消息吞吐量（Transferred）和处理延迟（Process latency）。不足的是，这套系统没有记录时序数据，因此想看一段时间内的趋势图，或是做脚本上下线的负载监控，Storm UI就无能为力了。</p>
+
+<p>不过，Storm Nimbus开放了一套Thrift API，可以使用他获取各类信息。下面就介绍一下如何使用Python编写监控程序，定时获取脚本运行状态（吞吐量和延迟），并在监控系统中出图。</p>
+
+<h3>安装Thrift API</h3>
+
+<p><a href="http://thrift.apache.org/">Thrift</a>是Apache基金会下的一个项目，定义了一套面向服务程序的通信协议。它使用Thrift的<a href="http://thrift.apache.org/docs/idl/">IDL</a>定义接口，通过一个工具转换成不同语言的客户端，供其他程序调用。</p>
+
+<p>可以<a href="http://archive.apache.org/dist/thrift/0.7.0/">点此下载Thrift源码包</a>，因为Storm使用的Thrift版本是0.7.0，所以建议安装该版本。</p>
+
+<p>安装过程即 ./configure &amp;&amp; make &amp;&amp; sudo make install，安装完成后PATH会多出thrift这个命令。</p>
+
+<h3>生成Storm Thrift API代码文件</h3>
+
+<p>Storm Thrift API的定义文件在源码中提供，可以从Github中克隆相应的分支，并执行thrift命令：</p>
+
+<p><code>
+$ git clone -b 0.7.0 git://github.com/nathanmarz/storm.git
+$ cd storm/src
+$ thrift --gen py storm.thrift
+$ cd gen-py
+</code></p>
+
+<p>源码中似乎已经提供了py这个文件夹，也可以直接使用。</p>
+
+<h3>获取某个Topology的吞吐量和延迟</h3>
+
+<p>首先在Python项目中添加如下依赖：</p>
+
+<p><code>
+setup(install_requires=['thrift==0.7.0'])
+</code></p>
+
+<p>以下代码会找到集群中名为access_log的脚本，记录filter（Bolt）的吞吐量和延迟数。由于Storm Thrift API返回值的组织方式比较复杂，所以需要多多参考刚才生成的gen-py包中的内容。</p>
+
+<p>```python</p>
+
+<h1>连接到Storm Nimbus Thrift Server：</h1>
+
+<p>socket = TSocket.TSocket(self.args.nimbus_host, self.args.nimbus_port)
+transport = TTransport.TFramedTransport(socket)
+protocol = TBinaryProtocol.TBinaryProtocol(transport)
+nimbus = Nimbus.Client(protocol)
+transport.open()</p>
+
+<h1>获取集群内脚本信息，得到脚本ID：</h1>
+
+<p>cluster_info = nimbus.getClusterInfo()
+topology_id = None
+for topology in cluster_info.topologies:
+if topology.name == 'access_log':</p>
+
+<pre><code>topology_id = topology.id
+</code></pre>
+
+<h1>获取脚本信息，计算吞吐量和延迟毫秒数</h1>
+
+<p>topology_info = nimbus.getTopologyInfo(topology_id)</p>
+
+<p>transferred = 0
+filter_latencies = []
+for executor_info in topology_info.executors:</p>
+
+<pre><code># 600表示10分钟内的均值
+for k, v in executor_info.stats.transferred['600'].iteritems():
+    transferred += v
+
+if executor_info.component_id == 'filter':
+    latencies = []
+    for k, v in executor_info.stats.specific.bolt.process_ms_avg['600'].iteritems():
+        latencies.append(v)
+    filter_latencies.append(sum(latencies) / len(latencies))
+</code></pre>
+
+<p>filter_latency = sum(filter_latencies) / len(filter_latencies)
+```</p>
+
+<p>然后就可以将计算得到的transferred和filter_latency输出到监控系统中绘图了。</p>
+
+<h3>注意事项</h3>
+
+<p>在调试的过程中，有时会尝试用telnet查看Storm Thrift Server是否存活，一旦这样操作就会导致Nimbus挂起，无法自动退出。和作者确认过，这是Thrift自身的Bug，目前还没有解决方法。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[zc.buildout Workflow]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/10/02/zc-dot-buildout-workflow/"/>
+    <updated>2012-10-02T14:44:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/10/02/zc-dot-buildout-workflow</id>
+    <content type="html"><![CDATA[<p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
+
+<p>This article aims to provide a concrete workflow of using zc.buildout to deploy development and production environment.</p>
+
+<h2>Project Structure (BuildOut SKELeton)</h2>
+
+<p>Here is a minimum application structure with zc.buildout.</p>
+
+<p><code>bash
+$ git clone git@github.com:jizhang/boskel.git
+$ find boskel
+boskel
+boskel/.gitignore
+boskel/bootstrap.py
+boskel/buildout.cfg
+boskel/offline.cfg
+boskel/setup.py
+boskel/src
+boskel/src/boskel
+boskel/src/boskel/__init__.py
+</code></p>
+
+<h2>Development Environment</h2>
+
+<p>To initiate the application:</p>
+
+<p><code>bash
+$ cd boskel
+$ python bootstrap.py --distribute
+$ bin/buildout
+</code></p>
+
+<p>Now, a fully functional and isolated python environment has been built. Try the following commands:</p>
+
+<p>```bash
+$ bin/python</p>
+
+<blockquote><blockquote><blockquote><p>import boskel</p>
+
+<p>```</p></blockquote></blockquote></blockquote>
+
+<p>It shows the bin/python interpreter is able to find the newly created boskel package.</p>
+
+<p>Here are something you may want to catch up:</p>
+
+<ul>
+<li><p><strong>bootstrap.py</strong> Since not everyone has installed zc.buildout locally (by pip install zc.buildout), an initiation script is included. It will download the latest distribute package (it defaults to use setuptools, but distribute package is a replacement and better choice) and zc.buildout packages. It'll generate bin/buildout script, which is the hero of this article.</p></li>
+<li><p><strong>buildout.cfg</strong> A typical buildout configuration file. In detail, the 'develop = .' tells buildout to find pakcage in the current directory, which must includes a setup.py script. And 'interpreter = python' indicates that a new interpreter bin/python should be generated. This special interpreter is made capable of finding all the dependencies of this application.</p></li>
+</ul>
+
+
+<p>```bash
+$ cat buildout.cfg
+[buildout]
+parts = python
+develop = .</p>
+
+<p>[python]
+recipe = zc.recipe.egg
+interpreter = python
+eggs =</p>
+
+<pre><code>boskel
+</code></pre>
+
+<p>```</p>
+
+<ul>
+<li><strong>setup.py</strong> A standard package setup script. 'packages' and 'package_dir' option should be written as is shown, since it's a convention of buildout to put all source code in an 'src' folder.</li>
+</ul>
+
+
+<p>```bash
+$ cat setup.py
+from setuptools import setup, find_packages</p>
+
+<p>setup(</p>
+
+<pre><code>name='boskel',
+version='0.1.0',
+packages=find_packages('src'),
+package_dir={'': 'src'},
+zip_safe=False,
+install_requires=[
+]
+</code></pre>
+
+<p>)
+```</p>
+
+<ul>
+<li><strong>offline.cfg</strong> This file will be used to run buildout in a remote server without internet access.</li>
+</ul>
+
+
+<p><code>bash
+$ cat offline.cfg
+[buildout]
+extends = buildout.cfg
+download-cache = downloads
+install-from-cache = true
+</code></p>
+
+<h2>Production Environment</h2>
+
+<p>When deploying to a production environment, dependency isolation is very important, unless one plans to deploy only one application per server, then he may install all the packages globally. Otherwise, an environment isolation tool should be chosen, and virtualenv is a good one.</p>
+
+<p>A typical procedure is as below:</p>
+
+<p><code>bash
+local $ python setup.py sdist
+local $ scp xxx-0.1.tar.gz user@remote:/path/to/dist
+remote $ source venv/bin/activate
+remote $ python setup.py install
+</code></p>
+
+<p>The dependencies need to be uploaded and installed into the venv first.</p>
+
+<p>As for buildout, we can also use the above approach, deploying with virtualenv. But what if our new distribution's dependency tree is conflict with the previous package. Or I have to setup different virtual environments for production and staging release. So, a better solution is to use buildout for every distribution.</p>
+
+<p>The main problem of building-out application on remote servers is dependency handling, since most of the time, there won't be internet accessibility in those servers.</p>
+
+<p>There're two solutions, one is setting up a pypi repository with <a href="http://pypi.python.org/pypi/collective.eggproxy">eggproxy</a>. It will cache the eggs downloaded from internet for further use.</p>
+
+<p>Another approach is to install from local cache, as is described below.</p>
+
+<p>zc.buildout has an offline mode (bin/buildout -o, which is also useful when developing, since it will not try to checkout the latest packages, making the building much faster). We can trigger this behavior in configuration file, as is shown in the offline.cfg. The 'download-cache' option indicates where to find the packages. Obviously there should be only one download-cache per server, and whether to use absolute path or a symbolic link to the path is your call.</p>
+
+<p>How about the zc.buildout package itself? In development environment, we use bootstrap.py to install it, but there's not offline-mode bootstrap.py available. So my answer to it is setting up a virtualenv which includes a zc.buildout package. To setup this venv:</p>
+
+<p><code>bash
+$ cd virtualenv-x.x.x
+$ python setup.py install
+$ virtualenv venv --distribute
+$ source venv/bin/activate
+$ cd zc.buildout-x.x.x
+$ python setup.py install
+</code></p>
+
+<p>Later, we can use the venv/bin/buildout script to run buildout (no activation needed).</p>
+
+<p>Here's the deploying procedure:</p>
+
+<ol>
+<li>Export the source code from git repository, and rsync it to remote server.</li>
+<li>Make a symbolic link to the download cache.</li>
+<li>Execute venv/bin/buildout -c offline.cfg</li>
+</ol>
+
+
+<p>We can use <a href="http://docs.fabfile.org/en/1.4.3/index.html">Fabric</a> to do the job. Here's an example task:</p>
+
+<p>```python
+from fabric.api import lcd, local, cd, run
+from fabric.contrib.project import rsync_project</p>
+
+<p>@task
+def deploy(rev='master')</p>
+
+<pre><code>with lcd('~/boskel'):
+    local('git clone --mirror git@github.com:jizhang/boskel.git')
+    local('git remote update')
+    rev = local('git rev-parse %s' % rev)
+    prefix = 'boskel-%s' % rev[:7]
+    local('git archive --prefix=%s/ --format=tar %s | tar xf - -C %s' %\
+          (prefix, rev, '~/boskel/dist'))
+
+rsync_project('/path/to/boskel/dist', '~/boskel/%s' % prefix)
+
+with cd('/path/to/boskel/dist/%s' % prefix):
+    run('ln -s -n -f %s downloads' % '/path/to/download-cache')
+    run('/path/to/venv/bin/buildout -c offline.cfg')
+</code></pre>
+
+<p>```</p>
+
+<h2>Conclusion</h2>
+
+<p>Here we combined buildout and virtualenv to setup isolated environment for every distribution. But two things need to be improved:</p>
+
+<ol>
+<li>collective.eggproxy is better than local cache.</li>
+<li>It's unnecessary to build application in every server. We should use a dedicated server to build the pakcage and rsync these files to other servers.</li>
+</ol>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[A Workaround for Flask Werkzeug's Incompatibility With Buildout]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/09/08/a-workaround-for-flask-werkzeugs-incompatibility-with-buildout/"/>
+    <updated>2012-09-08T21:13:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/09/08/a-workaround-for-flask-werkzeugs-incompatibility-with-buildout</id>
+    <content type="html"><![CDATA[<p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
+
+<p>Normally, we can use the following snippet to run a flask application:</p>
+
+<p>$ cat index.py
+```python
+from flask import Flask</p>
+
+<p>app = Flask(<strong>name</strong>)
+app.config.from_object('myproject.default_settings')</p>
+
+<p>@app.route('/')
+def index():</p>
+
+<pre><code>return 'Hello, world!'
+</code></pre>
+
+<p>if <strong>name</strong> == '<strong>main</strong>':</p>
+
+<pre><code>app.run()
+</code></pre>
+
+<p>```
+$ python index.py</p>
+
+<p>But when it comes to buildout, things go wrong:</p>
+
+<p>$ cat buildout.cfg
+```
+[buildout]
+parts = myproject
+develop = .</p>
+
+<p>[myproject]
+recipe = zc.recipe.egg
+interpreter = python
+eggs =</p>
+
+<pre><code>myproject
+</code></pre>
+
+<p><code>
+$ cat src/myproject/__init__.py
+</code>python
+from flask import Flask</p>
+
+<p>app = Flask(<strong>name</strong>)
+app.config.from_object('myproject.default_settings')</p>
+
+<p>@app.route('/')
+def index():</p>
+
+<pre><code>return 'Hello, world!'
+</code></pre>
+
+<p><code>
+$ cat index.py
+</code>python
+from myproject import app</p>
+
+<p>if <strong>name</strong> == '<strong>main</strong>':</p>
+
+<pre><code>app.run()
+</code></pre>
+
+<p>```
+$ bin/python index.py</p>
+
+<pre>
+ * Running on http://127.0.0.1:5000/
+ * Restarting with reloader
+Traceback (most recent call last):
+  File "index.py", line 1, in <module>
+    from myproject import app
+ImportError: No module named myproject
+</pre>
+
+
+<p>The problem is triggered by "app.config.from_object...". When running this line (or a file is changed during development), Werkzeug will restart the application using the default python interpreter, not the one generated by buildout (i.e. bin/python), because bin/python removed itself from the sys.argv list while Werkzeug uses this to do reloading, which at last results in an ImportError.</p>
+
+<p>The solution is to generate a custom script to run the server. zc.recipe.egg:scripts recipe is ready for use. We specify an 'entry-points' option, like the following:
+(actually scripts is the default recipe of zc.recipe.egg, so you can simply omit it)</p>
+
+<p>```
+[buildout]
+parts = myproject
+develop = .</p>
+
+<p>[myproject]
+recipe = zc.recipe.egg
+interpreter = python
+entry-points = serve=myproject:main
+eggs =</p>
+
+<pre><code>myproject
+</code></pre>
+
+<p>```</p>
+
+<p>And we need to add a main function to the package's <strong>init</strong>.py:</p>
+
+<p>```python
+def main():</p>
+
+<pre><code>app.run()
+</code></pre>
+
+<p>```</p>
+
+<p>Execute bin/buildout again, and a script named serve will be generated in bin directory. Run it away:</p>
+
+<p>$ bin/serve</p>
+
+<pre>
+ * Running on http://127.0.0.1:5000/
+ * Restarting with reloader
+</pre>
+
+
+<p>It'll work. Also the index.py is no longer necessary.</p>
+
+<p>You can totally customize the script, like:</p>
+
+<pre>
+entry-points = script_name=project_name.module_name:function_name
+</pre>
+
+
+<p>For more information on zc.recipe.egg:scripts, visit:</p>
+
+<p><a href="http://pypi.python.org/pypi/zc.recipe.egg/1.3.2#specifying-entry-points">http://pypi.python.org/pypi/zc.recipe.egg/1.3.2#specifying-entry-points</a></p>
+
+<p>The original question can be found in the mailing list:</p>
+
+<p><a href="http://flask.pocoo.org/mailinglist/archive/2011/7/18/flask-with-buildout/">http://flask.pocoo.org/mailinglist/archive/2011/7/18/flask-with-buildout/</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Use Supervisord with Storm and ZooKeeper]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/08/27/use-supervisord-with-storm-and-zookeeper/"/>
+    <updated>2012-08-27T21:25:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/08/27/use-supervisord-with-storm-and-zookeeper</id>
+    <content type="html"><![CDATA[<p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
+
+<p>Since both 'bin/storm (nimbus|supervisor|ui)' and 'bin/zkServer.sh start' tend to fork a new process to start the JVM, it's difficult to use 'supervisorctl stop ...' to control the processes.</p>
+
+<p>There're two solutions:</p>
+
+<ol>
+<li><p>Use supervisord 3.0a13 (current version is 3.0a12), which provides two options 'stopasgroup, killasgroup' in [program:x] section, making it possible to stop or kill the process group. But the new release doesn't seem to come up soon.</p></li>
+<li><p>Configure the full command to supervisord. bin/storm and bin/zkServer.sh are both control scripts. The essential part is the JVM command. For Storm, when we startup one the components (nimbus, etc.), it'll print the full command. For ZooKeeper, use 'bin/zkServer.sh print-cmd'. Remember to check whether the command includes the full path to the binaries. If not, use the 'directory' option in [program:x] section.</p></li>
+</ol>
+
+
+<p>Here is a sample configuration of supervisord.conf:</p>
+
+<p>```
+[supervisord]
+logfile = /tmp/supervisord.log</p>
+
+<p>[supervisorctl]
+serverurl = unix:///tmp/supervisor.sock</p>
+
+<p>[unix_http_server]
+file = /tmp/supervisor.sock</p>
+
+<p>[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface</p>
+
+<p>[program:zookeeper]
+command = /usr/lib/jvm/java-1.7.0-openjdk.x86_64/bin/java -Dzookeeper.log.dir="." ...
+stdout_logfile = /home/jizhang/Applications/zookeeper/zookeeper.out
+stderr_logfile = /home/jizhang/Applications/zookeeper/zookeeper.err
+autorestart = true</p>
+
+<p>[program:storm-nimbus]
+command = java -server -Dstorm.home=/home/jizhang/Applications/storm -Dstorm.options= -Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib...
+autorestart = true</p>
+
+<p>[program:storm-superviosr]
+command = java -server -Dstorm.home=/home/jizhang/Applications/storm -Dstorm.options= -Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib ...
+autorestart = true</p>
+
+<p>[program:storm-ui]
+command = java -server -Dstorm.home=/home/jizhang/Applications/storm -Dstorm.options= -Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib ...
+autorestart = true
+```</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[The Zen of Python]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/02/27/the-zen-of-python/"/>
+    <updated>2012-02-27T12:23:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/02/27/the-zen-of-python</id>
+    <content type="html"><![CDATA[<pre><code>&gt;&gt;&gt; import this
+</code></pre>
+
+<blockquote><p>The Zen of Python, by Tim Peters</p>
+
+<p><strong>Beautiful</strong> is better than ugly.<br/>
+Explicit is better than implicit.<br/>
+Simple is better than complex.<br/>
+Complex is better than complicated.<br/>
+Flat is better than nested.<br/>
+Sparse is better than dense.<br/>
+Readability counts.<br/>
+Special cases aren't special enough to break the rules.<br/>
+Although practicality beats purity.<br/>
+Errors should never pass silently.<br/>
+Unless explicitly silenced.<br/>
+In the face of ambiguity, refuse the temptation to guess.<br/>
+There should be one-- and preferably only one --obvious way to do it.<br/>
+Although that way may not be obvious at first unless you're Dutch.<br/>
+Now is better than never.<br/>
+Although never is often better than <em>right</em> now.<br/>
+If the implementation is hard to explain, it's a bad idea.<br/>
+If the implementation is easy to explain, it may be a good idea.<br/>
+Namespaces are one honking great idea -- let's do more of those!</p></blockquote>
+]]></content>
+  </entry>
+  
+</feed>

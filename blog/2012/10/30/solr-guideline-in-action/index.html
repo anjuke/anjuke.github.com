@@ -1,0 +1,405 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>深入Solr实战 - 实例篇 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="之前我们有提到Solr的使用的一些规范，这次我们深入实例。 我们从access log中找出一些查询耗时比较高的查询,跟去&#8221;深入solr实战&#8221;中提到的修改方式,做了一些更改,查询结果没有变化但是速度出现下降 测试环境:在cloud中不对外服务的solr instance, &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/10/30/solr-guideline-in-action/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">深入Solr实战 - 实例篇</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-30T10:29:00+08:00" pubdate data-updated="true">Oct 30<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/084c149bb5a1769082ef794c6dcd1a91"></p>
+
+<p>之前我们有提到<a href="/blog/2012/10/15/solr-guildeline/">Solr的使用的一些规范</a>，这次我们深入实例。</p>
+
+<p>我们从access log中找出一些查询耗时比较高的查询,跟去&#8221;深入solr实战&#8221;中提到的修改方式,做了一些更改,查询结果没有变化但是速度出现下降</p>
+
+<!-- more -->
+
+
+<p>测试环境:在cloud中不对外服务的solr instance,关闭filtercache，测试以下查询：</p>
+
+<p>96ms左右</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>http://10.10.6.34:7731/solr/select/?
+</span><span class='line'>start=0&
+</span><span class='line'>q=commid:51087&
+</span><span class='line'>qt=standard&
+</span><span class='line'>fq=city_id:14&
+</span><span class='line'>fq=hpstarttime:[0+TO+1347292898]&
+</span><span class='line'>fq=hpendtime:[1347292898+TO++2147483647+]&
+</span><span class='line'>fq=%28chpratio:3897.99871+AND+hpplanid:[0+TO+689944]%29+OR+one_chpratio:[3897.99872+TO+2147483647]&
+</span><span class='line'>rows=0&
+</span><span class='line'>version=2.2</span></code></pre></td></tr></table></div></figure>
+
+
+<p>改成</p>
+
+<p>40ms左右</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>http://10.10.6.34:7731/solr/select/?
+</span><span class='line'>start=0&
+</span><span class='line'>q=\*:\*&
+</span><span class='line'>qt=standard&
+</span><span class='line'>fq=commid:51087&
+</span><span class='line'>fq=hpstarttime:[0+TO+1347292898]%20AND%20hpendtime:[1347292898+TO++2147483647+]%20AND%20%28%28chpratio:3897.99871+AND+hpplanid:[0+TO+689944]%29+OR+one_chpratio:[3897.99872+TO+2147483647+]%29&
+</span><span class='line'>rows=0&
+</span><span class='line'>version=2.2</span></code></pre></td></tr></table></div></figure>
+
+
+<p>解析:</p>
+
+<ol>
+<li>这个instance存放的都是北京房源,所以拿掉了city_id:14的fq</li>
+<li>hp的一系列fq首先不是term查询,其次相关的参数几乎时刻都在变化无法吃出cache,所以进行了合并</li>
+<li>不需要计算score,所以让q=<em>:</em></li>
+<li>commid相对固定,容易吃住cache,所以放在fq而没有合并到hp的查询条件中</li>
+<li>hp的fq过滤后没有文档,所以commid是否合并如hp的fq对速度没有影响</li>
+</ol>
+
+
+<p>169ms左右</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>http://10.10.6.34:7731/solr/select/?
+</span><span class='line'>fl=score,*&
+</span><span class='line'>sort=order_string+desc,rank_level+asc,score+desc,rank_sub_level+asc,rank_score+desc&start=0&
+</span><span class='line'>q=_val_:%22map%28rank_score2,4683.3,10000,0,1%29%22&
+</span><span class='line'>qt=standard&
+</span><span class='line'>hl=false&
+</span><span class='line'>fq=city_id:14&
+</span><span class='line'>fq=commid:50815&
+</span><span class='line'>fq=islist:1&
+</span><span class='line'>fq=hpendtime:[0+TO+1347292823]+OR+hpstarttime:[1347292823+TO+*]</span></code></pre></td></tr></table></div></figure>
+
+
+<p>改成</p>
+
+<p>35ms左右</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>http://10.10.6.34:7731/solr/select/?
+</span><span class='line'>fl=score,*&
+</span><span class='line'>sort=order_string+desc,rank_level+asc,score+desc,rank_sub_level+asc,rank_score+desc&
+</span><span class='line'>start=0&
+</span><span class='line'>q=_val_:%22map%28rank_score2,4683.3,10000,0,1%29%22&
+</span><span class='line'>qt=standard&
+</span><span class='line'>hl=false&
+</span><span class='line'>fq=commid:50815%20AND%20islist:1%20AND%20hpendtime:[0+TO+1347292823]+OR+hpstarttime:[1347292823+TO+2147483647]</span></code></pre></td></tr></table></div></figure>
+
+
+<p>解析</p>
+
+<ol>
+<li>同上1,去掉city_id:14的fq</li>
+<li>同上2,合并fq</li>
+<li>hp的fq过滤后有大量文档,所以合并commid可以明显提升速度</li>
+</ol>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-30T10:29:00+08:00" pubdate data-updated="true">Oct 30<span>th</span>, 2012</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/10/29/try-out-linux-lvm/" title="Previous Post: LVM 简单实践">&laquo; LVM 简单实践</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/" title="Next Post: 使用Thrift API监控Storm集群">使用Thrift API监控Storm集群 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/10/30/solr-guideline-in-action/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/10/30/solr-guideline-in-action/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

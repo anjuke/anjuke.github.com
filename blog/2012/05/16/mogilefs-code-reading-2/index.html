@@ -1,0 +1,1275 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>MogileFS读取文件的过程 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="看了几天mogilefs源码，分享一下王惠达, blog-wanghuida.rhcloud.com/&hellip; 客户端读取文件代码 定义好domain和key就能获取文件内容 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+#!/usr/bin/perl use &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-2/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">MogileFS读取文件的过程</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-16T10:12:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><!-- more -->
+
+
+<blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=mogilefs-read'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote>
+
+
+<h2>客户端读取文件代码</h2>
+
+<blockquote><p>定义好domain和key就能获取文件内容</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="c1">#!/usr/bin/perl</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">use</span> <span class="n">strict</span><span class="p">;</span>
+</span><span class='line'><span class="k">use</span> <span class="n">warnings</span><span class="p">;</span>
+</span><span class='line'><span class="k">use</span> <span class="nn">MogileFS::</span><span class="n">Client</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">my</span> <span class="nv">%new_opt</span> <span class="o">=</span> <span class="p">(</span>
+</span><span class='line'>    <span class="n">hosts</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s">&quot;127.0.0.1:7001&quot;</span><span class="p">],</span>
+</span><span class='line'>    <span class="n">domain</span> <span class="o">=&gt;</span> <span class="s">&quot;127.0.0.1::test&quot;</span><span class="p">,</span>
+</span><span class='line'><span class="p">);</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$mogc</span> <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">Client</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">%new_opt</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&quot;test_key_2&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$fd</span> <span class="o">=</span> <span class="nv">$mogc</span><span class="o">-&gt;</span><span class="n">read_file</span><span class="p">(</span><span class="nv">$key</span><span class="p">);</span>
+</span><span class='line'><span class="k">print</span> <span class="k">while</span><span class="sr">&lt;$fd&gt;</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>MogileFS::Client与MogileFS::Server通信</h2>
+
+<blockquote><p>通过get_paths取得文件的url路径</p>
+
+<p>MogileFS::ClientHTTPFile通过HTTP获取文件句柄</p>
+
+<blockquote><p>IO::WrapTie可以让返回的内容当文件句柄使用</p></blockquote></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">read_file</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nn">MogileFS::</span><span class="n">Client</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@paths</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">get_paths</span><span class="p">(</span><span class="nv">@_</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$path</span> <span class="o">=</span> <span class="nb">shift</span> <span class="nv">@paths</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="k">if</span> <span class="o">!</span><span class="nv">$path</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@backup_dests</span> <span class="o">=</span> <span class="nb">map</span> <span class="p">{</span> <span class="p">[</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$_</span> <span class="p">]</span> <span class="p">}</span> <span class="nv">@paths</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nn">IO::WrapTie::</span><span class="n">wraptie</span><span class="p">(</span><span class="s">&#39;MogileFS::ClientHTTPFile&#39;</span><span class="p">,</span>
+</span><span class='line'>                                <span class="n">path</span>         <span class="o">=&gt;</span> <span class="nv">$path</span><span class="p">,</span>
+</span><span class='line'>                                <span class="n">backup_dests</span> <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@backup_dests</span><span class="p">,</span>
+</span><span class='line'>                                <span class="n">readonly</span>     <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span>
+</span><span class='line'>                                <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>get_paths调用MogileFS::Backend的do_request方法</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">my</span> <span class="nv">$res</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">backend</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">do_request</span>
+</span><span class='line'>        <span class="p">(</span><span class="s">&quot;get_paths&quot;</span><span class="p">,</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">domain</span> <span class="o">=&gt;</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">domain</span><span class="p">},</span>
+</span><span class='line'>            <span class="n">key</span>    <span class="o">=&gt;</span> <span class="nv">$key</span><span class="p">,</span>
+</span><span class='line'>            <span class="n">noverify</span> <span class="o">=&gt;</span> <span class="nv">$noverify</span> <span class="p">?</span> <span class="mi">1</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>            <span class="n">zone</span>   <span class="o">=&gt;</span> <span class="nv">$zone</span><span class="p">,</span>
+</span><span class='line'>        <span class="nv">%extra_args</span><span class="p">,</span>
+</span><span class='line'>        <span class="p">})</span> <span class="ow">or</span> <span class="k">return</span> <span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>MogileFS::Backend发送信息</p>
+
+<p>消息的内容是get_paths *****</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">my</span> <span class="nn">MogileFS::</span><span class="n">Backend</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'><span class="k">my</span> <span class="p">(</span><span class="nv">$cmd</span><span class="p">,</span> <span class="nv">$args</span><span class="p">)</span> <span class="o">=</span> <span class="nv">@_</span><span class="p">;</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$argstr</span> <span class="o">=</span> <span class="n">_encode_url_string</span><span class="p">(</span><span class="nv">%$args</span><span class="p">);</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$req</span> <span class="o">=</span> <span class="s">&quot;$cmd $argstr\r\n&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$rv</span> <span class="o">=</span> <span class="nb">send</span><span class="p">(</span><span class="nv">$sock</span><span class="p">,</span> <span class="nv">$req</span><span class="p">,</span> <span class="nv">$FLAG_NOSIGNAL</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>服务器端接收消息</h2>
+
+<blockquote><p>$code->($state);是关键，主进程监听到了事件去执行回调</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="c1"># Fetch handles with read events</span>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="nv">@poll</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="p">(</span><span class="nv">$fd</span><span class="p">,</span> <span class="nv">$state</span><span class="p">)</span> <span class="o">=</span> <span class="nb">splice</span><span class="p">(</span><span class="nv">@poll</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">next</span> <span class="k">unless</span> <span class="nv">$state</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nv">$pob</span> <span class="o">=</span> <span class="nv">$DescriptorMap</span><span class="p">{</span><span class="nv">$fd</span><span class="p">};</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$pob</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$code</span> <span class="o">=</span> <span class="nv">$OtherFds</span><span class="p">{</span><span class="nv">$fd</span><span class="p">})</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$code</span><span class="o">-&gt;</span><span class="p">(</span><span class="nv">$state</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">next</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nv">$pob</span><span class="o">-&gt;</span><span class="n">event_read</span>   <span class="k">if</span> <span class="nv">$state</span> <span class="o">&amp;</span> <span class="n">POLLIN</span> <span class="o">&amp;&amp;</span> <span class="o">!</span> <span class="nv">$pob</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">closed</span><span class="p">};</span>
+</span><span class='line'>    <span class="nv">$pob</span><span class="o">-&gt;</span><span class="n">event_write</span>  <span class="k">if</span> <span class="nv">$state</span> <span class="o">&amp;</span> <span class="n">POLLOUT</span> <span class="o">&amp;&amp;</span> <span class="o">!</span> <span class="nv">$pob</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">closed</span><span class="p">};</span>
+</span><span class='line'>    <span class="nv">$pob</span><span class="o">-&gt;</span><span class="n">event_err</span>    <span class="k">if</span> <span class="nv">$state</span> <span class="o">&amp;</span> <span class="n">POLLERR</span> <span class="o">&amp;&amp;</span> <span class="o">!</span> <span class="nv">$pob</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">closed</span><span class="p">};</span>
+</span><span class='line'>    <span class="nv">$pob</span><span class="o">-&gt;</span><span class="n">event_hup</span>    <span class="k">if</span> <span class="nv">$state</span> <span class="o">&amp;</span> <span class="n">POLLHUP</span> <span class="o">&amp;&amp;</span> <span class="o">!</span> <span class="nv">$pob</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">closed</span><span class="p">};</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>这就是回调函数，主进程接收请求，创建个MogileFS::Connection::Client</p>
+
+<p>MogileFS::Connection::Client会继承于Danga::Socket,会加到%DescriptorMap里,所以事件循环可以读取到</p>
+
+<p>$pob->event_read   if $state &amp; POLLIN &amp;&amp; ! $pob->{closed};开始读取</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">AddOtherFds</span><span class="p">(</span> <span class="nb">fileno</span><span class="p">(</span><span class="nv">$server</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$csock</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nb">accept</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nn">MogileFS::Connection::</span><span class="n">Client</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$csock</span><span class="p">);</span><span class="c1">#也会被加到%DescriptorMap</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>MogileFS::Connection::Client接收消息和处理</h2>
+
+<blockquote><p>调用handle_request</p>
+
+<blockquote><p>tips:$self->{read_buf} =~ reg 取得需要的东西，并清空</p></blockquote></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="c1"># Client</span>
+</span><span class='line'><span class="k">sub </span><span class="nf">event_read</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nn">MogileFS::Connection::</span><span class="n">Client</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$bref</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="nb">read</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="nb">close</span> <span class="k">unless</span> <span class="nb">defined</span> <span class="nv">$bref</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">read_buf</span><span class="p">}</span> <span class="o">.=</span> <span class="nv">$$bref</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">read_buf</span><span class="p">}</span> <span class="o">=~</span> <span class="sr">s/^(.*?)\r?\n//</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">next</span> <span class="k">unless</span> <span class="nb">length</span> <span class="nv">$1</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">handle_request</span><span class="p">(</span><span class="nv">$1</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>调用MogileFS::ProcManager->EnqueueCommandRequest来处理get_paths指令</p>
+
+<blockquote><p>tips:看到可以使用telnet 127.0.0.1 7001连接上server使用!h来获取帮助!stat可以查看服务器状态</p></blockquote></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">handle_request</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$line</span><span class="p">)</span> <span class="o">=</span> <span class="nv">@_</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># if it&#39;s just &#39;help&#39;, &#39;h&#39;, &#39;?&#39;, or something, do that</span>
+</span><span class='line'>    <span class="c1">#if ((substr($line, 0, 1) eq &#39;?&#39;) || ($line eq &#39;help&#39;)) {</span>
+</span><span class='line'>    <span class="c1">#    MogileFS::ProcManager-&gt;SendHelp($_[1]);</span>
+</span><span class='line'>    <span class="c1">#    return;</span>
+</span><span class='line'>    <span class="c1">#}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$line</span> <span class="o">=~</span><span class="sr"> /^!(\S+)(?:\s+(.+))?$/</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">my</span> <span class="p">(</span><span class="nv">$cmd</span><span class="p">,</span> <span class="nv">$args</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$1</span><span class="p">,</span> <span class="nv">$2</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">handle_admin_command</span><span class="p">(</span><span class="nv">$cmd</span><span class="p">,</span> <span class="nv">$args</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">EnqueueCommandRequest</span><span class="p">(</span><span class="nv">$line</span><span class="p">,</span> <span class="nv">$self</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>加到待处理等列里，并开始处理</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">EnqueueCommandRequest</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="p">(</span><span class="nv">$class</span><span class="p">,</span> <span class="nv">$line</span><span class="p">,</span> <span class="nv">$client</span><span class="p">)</span> <span class="o">=</span> <span class="nv">@_</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">push</span> <span class="nv">@PendingQueries</span><span class="p">,</span> <span class="p">[</span>
+</span><span class='line'>                           <span class="nv">$client</span><span class="p">,</span>
+</span><span class='line'>                           <span class="p">(</span><span class="nv">$client</span><span class="o">-&gt;</span><span class="n">peer_ip_string</span> <span class="o">||</span> <span class="s">&#39;0.0.0.0&#39;</span><span class="p">)</span> <span class="o">.</span> <span class="s">&quot; $line&quot;</span>
+</span><span class='line'>                           <span class="p">];</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">ProcessQueues</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>如果有空闲的query-worker和待处理的队列，那就开始行动</p>
+
+<p>所以queryworker的数量决定了，MogileFS的处理能力，当然加大数量也会加大DB压力，memcache能缓解部分压力</p>
+
+<p>$Mappings{$worker->{fd}} = $clref;设置Mappings，等下返回结果时，这个client句柄还要用的</p>
+
+<p>$worker->write(&#8220;$worker->{pid}-$worker->{reqid} $clref->[1]\r\n&#8221;);向真正的worker发送消息，让他干活</p>
+
+<blockquote><p>tips:例子123-455 10.2.3.123 get_paths foo=bar&amp;blah=bar\r\n</p></blockquote>
+
+<p>$Stats都是存储当前服务器状态的，times_out_of_qworkers可以看出worker是不是处理不过来</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">ProcessQueues</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="k">if</span> <span class="nv">$IsChild</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># try to match up a client with a worker</span>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="nv">@IdleQueryWorkers</span> <span class="o">&amp;&amp;</span> <span class="nv">@PendingQueries</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1"># get client that isn&#39;t closed</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$clref</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="nv">$clref</span> <span class="o">&amp;&amp;</span> <span class="nv">@PendingQueries</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$clref</span> <span class="o">=</span> <span class="nb">shift</span> <span class="nv">@PendingQueries</span>
+</span><span class='line'>                <span class="ow">or</span> <span class="k">next</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$clref</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">closed</span><span class="p">})</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nv">$clref</span> <span class="o">=</span> <span class="nb">undef</span><span class="p">;</span>
+</span><span class='line'>                <span class="k">next</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">next</span> <span class="k">unless</span> <span class="nv">$clref</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1"># get worker and make sure it&#39;s not closed already</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nn">MogileFS::Connection::</span><span class="n">Worker</span> <span class="nv">$worker</span> <span class="o">=</span> <span class="nb">shift</span> <span class="nv">@IdleQueryWorkers</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">defined</span> <span class="nv">$worker</span> <span class="o">||</span> <span class="nv">$worker</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">closed</span><span class="p">})</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nb">unshift</span> <span class="nv">@PendingQueries</span><span class="p">,</span> <span class="nv">$clref</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">next</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1"># put in mapping and send data to worker</span>
+</span><span class='line'>        <span class="nb">push</span> <span class="nv">@$clref</span><span class="p">,</span> <span class="nn">Time::HiRes::</span><span class="n">time</span><span class="p">();</span>
+</span><span class='line'>        <span class="nv">$Mappings</span><span class="p">{</span><span class="nv">$worker</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">fd</span><span class="p">}}</span> <span class="o">=</span> <span class="nv">$clref</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$Stats</span><span class="p">{</span><span class="n">queries</span><span class="p">}</span><span class="o">++</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1"># increment our counter so we know what request counter this is going out</span>
+</span><span class='line'>        <span class="nv">$worker</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">reqid</span><span class="p">}</span><span class="o">++</span><span class="p">;</span>
+</span><span class='line'>        <span class="c1"># so we&#39;re writing a string of the form:</span>
+</span><span class='line'>        <span class="c1">#     123-455 10.2.3.123 get_paths foo=bar&amp;blah=bar\r\n</span>
+</span><span class='line'>        <span class="nv">$worker</span><span class="o">-&gt;</span><span class="nb">write</span><span class="p">(</span><span class="s">&quot;$worker-&gt;{pid}-$worker-&gt;{reqid} $clref-&gt;[1]\r\n&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">@PendingQueries</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1"># Don&#39;t like the name. Feel free to change if you find better.</span>
+</span><span class='line'>        <span class="nv">$Stats</span><span class="p">{</span><span class="n">times_out_of_qworkers</span><span class="p">}</span><span class="o">++</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>真正的QueryWorker开始干活，MogileFS::Worker::Query</h2>
+
+<blockquote><p>select判断是否可以读取</p>
+
+<blockquote><p>tips:vec($rin, fileno($psock), 1) = 1; 设置2进制数值，如果fileno=5那么返回的数值就是00010000</p></blockquote>
+
+<p>sysread取得socket内容</p>
+
+<p>process_line处理get_paths命令</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">work</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$psock</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">psock</span><span class="p">};</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$rin</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">vec</span><span class="p">(</span><span class="nv">$rin</span><span class="p">,</span> <span class="nb">fileno</span><span class="p">(</span><span class="nv">$psock</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$buf</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$rout</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">unless</span> <span class="p">(</span><span class="nb">select</span><span class="p">(</span><span class="nv">$rout</span><span class="o">=</span><span class="nv">$rin</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">still_alive</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">next</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$newread</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$rv</span> <span class="o">=</span> <span class="nb">sysread</span><span class="p">(</span><span class="nv">$psock</span><span class="p">,</span> <span class="nv">$newread</span><span class="p">,</span> <span class="mi">1024</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$rv</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nb">defined</span> <span class="nv">$rv</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nb">die</span> <span class="s">&quot;While reading pipe from parent, got EOF.  Parent&#39;s gone.  Quitting.\n&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nb">die</span> <span class="s">&quot;Error reading pipe from parent: $!\n&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="nv">$buf</span> <span class="o">.=</span> <span class="nv">$newread</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">while</span> <span class="p">(</span><span class="nv">$buf</span> <span class="o">=~</span> <span class="sr">s/^(.+?)\r?\n//</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">my</span> <span class="nv">$line</span> <span class="o">=</span> <span class="nv">$1</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="n">process_generic_command</span><span class="p">(</span><span class="o">\</span><span class="nv">$line</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">still_alive</span><span class="p">;</span>  <span class="c1"># no-op for watchdog</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">validate_dbh</span><span class="p">;</span>
+</span><span class='line'>                <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">process_line</span><span class="p">(</span><span class="o">\</span><span class="nv">$line</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>MogileFS::Worker::Query处理命令</h2>
+
+<p>process_line调用cmd_get_paths方法</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="c1">#设置符号表</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$cmd_handler</span> <span class="o">=</span> <span class="o">*</span><span class="p">{</span><span class="s">&quot;cmd_$cmd&quot;</span><span class="p">}{</span><span class="n">CODE</span><span class="p">};</span>
+</span><span class='line'><span class="nv">$cmd_handler</span><span class="o">-&gt;</span><span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$args</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>MogileFS::Config->memcache_client 取得memcache</p>
+
+<p>my $mogfid_memkey = &#8220;mogfid:$args->{dmid}:$key&#8221;;这是存fidid的key</p>
+
+<p>my $devid_memkey = &#8220;mogdevids:&#8221; . $fid->id;这是文件存在哪里的缓存key</p>
+
+<blockquote><p>tips:如果没有就查询数据库SELECT devid FROM file_on WHERE fid=?</p></blockquote>
+
+<p>万事具备，就差拼url了，执行MogileFS::DevFID->new($dev, $fid); my $path = $dfid->get_url;</p>
+
+<p>return $self->ok_line($ret);最终返回带有OK字样的结果</p>
+
+<blockquote><p>tips:ok_line里 $self->send_to_parent(&#8220;${id}${delay}OK $argline&#8221;);通过ipc告诉父进程</p></blockquote></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">cmd_get_paths</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nn">MogileFS::Worker::</span><span class="n">Query</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$args</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># memcache mappings are as follows:</span>
+</span><span class='line'>    <span class="c1">#  mogfid:&lt;dmid&gt;:&lt;dkey&gt; -&gt; fidid</span>
+</span><span class='line'>    <span class="c1">#  mogdevids:&lt;fidid&gt;    -&gt; \@devids  (and TODO: invalidate when the replication or deletion is run!)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># if you specify &#39;noverify&#39;, that means a correct answer isn&#39;t needed and memcache can</span>
+</span><span class='line'>    <span class="c1"># be used.</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$memc</span>          <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">Config</span><span class="o">-&gt;</span><span class="n">memcache_client</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$get_from_memc</span> <span class="o">=</span> <span class="nv">$memc</span> <span class="o">&amp;&amp;</span> <span class="nv">$args</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">noverify</span><span class="p">};</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$memcache_ttl</span>  <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">Config</span><span class="o">-&gt;</span><span class="n">server_setting_cached</span><span class="p">(</span><span class="s">&quot;memcache_ttl&quot;</span><span class="p">)</span> <span class="o">||</span> <span class="mi">3600</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># validate domain for plugins</span>
+</span><span class='line'>    <span class="nv">$args</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">dmid</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">check_domain</span><span class="p">(</span><span class="nv">$args</span><span class="p">)</span>
+</span><span class='line'>        <span class="ow">or</span> <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">err_line</span><span class="p">(</span><span class="s">&#39;domain_not_found&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># now invoke the plugin, abort if it tells us to</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$rv</span> <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">run_global_hook</span><span class="p">(</span><span class="s">&#39;cmd_get_paths&#39;</span><span class="p">,</span> <span class="nv">$args</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">err_line</span><span class="p">(</span><span class="s">&#39;plugin_aborted&#39;</span><span class="p">)</span>
+</span><span class='line'>        <span class="k">if</span> <span class="nb">defined</span> <span class="nv">$rv</span> <span class="o">&amp;&amp;</span> <span class="o">!</span> <span class="nv">$rv</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># validate parameters</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$dmid</span> <span class="o">=</span> <span class="nv">$args</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">dmid</span><span class="p">};</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="nv">$args</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">key</span><span class="p">}</span> <span class="ow">or</span> <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">err_line</span><span class="p">(</span><span class="s">&quot;no_key&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># We default to returning two possible paths.</span>
+</span><span class='line'>    <span class="c1"># but the client may ask for more if they want.</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$pathcount</span> <span class="o">=</span> <span class="nv">$args</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">pathcount</span><span class="p">}</span> <span class="o">||</span> <span class="mi">2</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$pathcount</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="nv">$pathcount</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># get DB handle </span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$fid</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$need_fid_in_memcache</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$mogfid_memkey</span> <span class="o">=</span> <span class="s">&quot;mogfid:$args-&gt;{dmid}:$key&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$get_from_memc</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$fidid</span> <span class="o">=</span> <span class="nv">$memc</span><span class="o">-&gt;</span><span class="n">get</span><span class="p">(</span><span class="nv">$mogfid_memkey</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$fid</span> <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">FID</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$fidid</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$need_fid_in_memcache</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">unless</span> <span class="p">(</span><span class="nv">$fid</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nn">Mgd::</span><span class="n">get_store</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">slaves_ok</span><span class="p">(</span><span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>            <span class="nv">$fid</span> <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">FID</span><span class="o">-&gt;</span><span class="n">new_from_dmid_and_key</span><span class="p">(</span><span class="nv">$dmid</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>        <span class="nv">$fid</span> <span class="ow">or</span> <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">err_line</span><span class="p">(</span><span class="s">&quot;unknown_key&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># add to memcache, if needed.  for an hour. </span>
+</span><span class='line'>    <span class="nv">$memc</span><span class="o">-&gt;</span><span class="n">set</span><span class="p">(</span><span class="nv">$mogfid_memkey</span><span class="p">,</span> <span class="nv">$fid</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">,</span> <span class="nv">$memcache_ttl</span> <span class="p">)</span> <span class="k">if</span> <span class="nv">$need_fid_in_memcache</span> <span class="o">||</span> <span class="p">(</span><span class="nv">$memc</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nv">$get_from_memc</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$dmap</span> <span class="o">=</span> <span class="nn">Mgd::</span><span class="n">device_factory</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">map_by_id</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$ret</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">paths</span> <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># find devids that FID is on in memcache or db.</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@fid_devids</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$need_devids_in_memcache</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$devid_memkey</span> <span class="o">=</span> <span class="s">&quot;mogdevids:&quot;</span> <span class="o">.</span> <span class="nv">$fid</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$get_from_memc</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$list</span> <span class="o">=</span> <span class="nv">$memc</span><span class="o">-&gt;</span><span class="n">get</span><span class="p">(</span><span class="nv">$devid_memkey</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">@fid_devids</span> <span class="o">=</span> <span class="nv">@$list</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$need_devids_in_memcache</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">unless</span> <span class="p">(</span><span class="nv">@fid_devids</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nn">Mgd::</span><span class="n">get_store</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">slaves_ok</span><span class="p">(</span><span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>            <span class="nv">@fid_devids</span> <span class="o">=</span> <span class="nv">$fid</span><span class="o">-&gt;</span><span class="n">devids</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>        <span class="nv">$memc</span><span class="o">-&gt;</span><span class="n">set</span><span class="p">(</span><span class="nv">$devid_memkey</span><span class="p">,</span> <span class="o">\</span><span class="nv">@fid_devids</span><span class="p">,</span> <span class="nv">$memcache_ttl</span> <span class="p">)</span> <span class="k">if</span> <span class="nv">$need_devids_in_memcache</span> <span class="o">||</span> <span class="p">(</span><span class="nv">$memc</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nv">$get_from_memc</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@devices</span> <span class="o">=</span> <span class="nb">map</span> <span class="p">{</span> <span class="nv">$dmap</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$_</span><span class="p">}</span> <span class="p">}</span> <span class="nv">@fid_devids</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@sorted_devs</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">unless</span> <span class="p">(</span><span class="nn">MogileFS::</span><span class="n">run_global_hook</span><span class="p">(</span><span class="s">&#39;cmd_get_paths_order_devices&#39;</span><span class="p">,</span> <span class="o">\</span><span class="nv">@devices</span><span class="p">,</span> <span class="o">\</span><span class="nv">@sorted_devs</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">@sorted_devs</span> <span class="o">=</span> <span class="n">sort_devs_by_utilization</span><span class="p">(</span><span class="nv">@devices</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># keep one partially-bogus path around just in case we have nothing else to send. </span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$backup_path</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># construct result paths </span>
+</span><span class='line'>    <span class="k">foreach</span> <span class="k">my</span> <span class="nv">$dev</span> <span class="p">(</span><span class="nv">@sorted_devs</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">next</span> <span class="k">unless</span> <span class="nv">$dev</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nv">$dev</span><span class="o">-&gt;</span><span class="n">can_read_from</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$host</span> <span class="o">=</span> <span class="nv">$dev</span><span class="o">-&gt;</span><span class="n">host</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">next</span> <span class="k">unless</span> <span class="nv">$dev</span> <span class="o">&amp;&amp;</span> <span class="nv">$host</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$dfid</span> <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">DevFID</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$dev</span><span class="p">,</span> <span class="nv">$fid</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$path</span> <span class="o">=</span> <span class="nv">$dfid</span><span class="o">-&gt;</span><span class="n">get_url</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$currently_down</span> <span class="o">=</span>
+</span><span class='line'>            <span class="nv">$host</span><span class="o">-&gt;</span><span class="n">observed_unreachable</span> <span class="o">||</span> <span class="nv">$dev</span><span class="o">-&gt;</span><span class="n">observed_unreachable</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$currently_down</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$backup_path</span> <span class="o">=</span> <span class="nv">$path</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">next</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1"># only verify size one first one, and never verify if they&#39;ve asked not to </span>
+</span><span class='line'>        <span class="k">next</span> <span class="k">unless</span>
+</span><span class='line'>            <span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">paths</span><span class="p">}</span>        <span class="o">||</span>
+</span><span class='line'>            <span class="nv">$args</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">noverify</span><span class="p">}</span>    <span class="o">||</span>
+</span><span class='line'>            <span class="nv">$dfid</span><span class="o">-&gt;</span><span class="n">size_matches</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$n</span> <span class="o">=</span> <span class="o">++</span><span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">paths</span><span class="p">};</span>
+</span><span class='line'>        <span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&quot;path$n&quot;</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$path</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">last</span> <span class="k">if</span> <span class="nv">$n</span> <span class="o">==</span> <span class="nv">$pathcount</span><span class="p">;</span>   <span class="c1"># one verified, one likely seems enough for now.  time will tell. </span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># use our backup path if all else fails</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$backup_path</span> <span class="o">&amp;&amp;</span> <span class="o">!</span> <span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">paths</span><span class="p">})</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">paths</span><span class="p">}</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">path1</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$backup_path</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">ok_line</span><span class="p">(</span><span class="nv">$ret</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">sub </span><span class="nf">ok_line</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nn">MogileFS::Worker::</span><span class="n">Query</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$delay</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">querystarttime</span><span class="p">})</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$delay</span> <span class="o">=</span> <span class="nb">sprintf</span><span class="p">(</span><span class="s">&quot;%.4f &quot;</span><span class="p">,</span> <span class="nn">Time::HiRes::</span><span class="n">tv_interval</span><span class="p">(</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">querystarttime</span><span class="p">}</span> <span class="p">));</span>
+</span><span class='line'>        <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">querystarttime</span><span class="p">}</span> <span class="o">=</span> <span class="nb">undef</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$id</span> <span class="o">=</span> <span class="nb">defined</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">reqid</span><span class="p">}</span> <span class="p">?</span> <span class="s">&quot;$self-&gt;{reqid} &quot;</span> <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$args</span> <span class="o">=</span> <span class="nb">shift</span> <span class="o">||</span> <span class="p">{};</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$argline</span> <span class="o">=</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;&amp;&#39;</span><span class="p">,</span> <span class="nb">map</span> <span class="p">{</span> <span class="n">eurl</span><span class="p">(</span><span class="nv">$_</span><span class="p">)</span> <span class="o">.</span> <span class="s">&quot;=&quot;</span> <span class="o">.</span> <span class="n">eurl</span><span class="p">(</span><span class="nv">$args</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$_</span><span class="p">})</span> <span class="p">}</span> <span class="nb">keys</span> <span class="nv">%$args</span><span class="p">);</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">send_to_parent</span><span class="p">(</span><span class="s">&quot;${id}${delay}OK $argline&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>主进程还在事件循环，MogileFS::Connection::Worker接受刚才的OK数据</h2>
+
+<blockquote><p>因为是queryworker所以调用HandleQueryWorkerResponse</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">event_read</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nn">MogileFS::Connection::</span><span class="n">Worker</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># if we read data from it, it&#39;s not blocked on something else.</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">note_alive</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$bref</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="nb">read</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="nb">close</span><span class="p">()</span> <span class="k">unless</span> <span class="nb">defined</span> <span class="nv">$bref</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">read_buf</span><span class="p">}</span> <span class="o">.=</span> <span class="nv">$$bref</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">read_buf</span><span class="p">}</span> <span class="o">=~</span> <span class="sr">s/^(.+?)\r?\n//</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$line</span> <span class="o">=</span> <span class="nv">$1</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="n">job</span> <span class="ow">eq</span> <span class="s">&#39;queryworker&#39;</span> <span class="o">&amp;&amp;</span> <span class="nv">$line</span> <span class="o">!~</span> <span class="sr">/^(?:\:|error|debug)/</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">HandleQueryWorkerResponse</span><span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$line</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">HandleChildRequest</span><span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$line</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>真正的返回数据</h2>
+
+<blockquote><p>my ($client, $jobstr, $starttime) = @{ $Mappings{$worker->{fd}} };还记得Mappings吗，就是这里用</p>
+
+<p>$client->write(&#8220;$res\r\n&#8221;);写入数据，客户端接受</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="c1"># called when we get a response from a worker.  this reenqueues the</span>
+</span><span class='line'><span class="c1"># worker so it can handle another response as well as passes the answer</span>
+</span><span class='line'><span class="c1"># back on to the client.</span>
+</span><span class='line'><span class="k">sub </span><span class="nf">HandleQueryWorkerResponse</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1"># got a response from a worker</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nn">MogileFS::Connection::</span><span class="n">Worker</span> <span class="nv">$worker</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$line</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">(</span><span class="nb">undef</span><span class="p">,</span> <span class="nv">$worker</span><span class="p">,</span> <span class="nv">$line</span><span class="p">)</span> <span class="o">=</span> <span class="nv">@_</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nn">Mgd::</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;ASSERT: ProcManager (Child) got worker response: $line&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nv">$IsChild</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="k">unless</span> <span class="nv">$worker</span> <span class="o">&amp;&amp;</span> <span class="nv">$Mappings</span><span class="p">{</span><span class="nv">$worker</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">fd</span><span class="p">}};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># get the client we&#39;re working with (if any)</span>
+</span><span class='line'>    <span class="k">my</span> <span class="p">(</span><span class="nv">$client</span><span class="p">,</span> <span class="nv">$jobstr</span><span class="p">,</span> <span class="nv">$starttime</span><span class="p">)</span> <span class="o">=</span> <span class="nv">@</span><span class="p">{</span> <span class="nv">$Mappings</span><span class="p">{</span><span class="nv">$worker</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">fd</span><span class="p">}}</span> <span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># if we have no client, then we just got a standard message from</span>
+</span><span class='line'>    <span class="c1"># the queryworker and need to pass it up the line</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">HandleChildRequest</span><span class="p">(</span><span class="nv">$worker</span><span class="p">,</span> <span class="nv">$line</span><span class="p">)</span> <span class="k">if</span> <span class="o">!</span><span class="nv">$client</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># at this point it was a command response, but if the client has gone</span>
+</span><span class='line'>    <span class="c1"># away, just reenqueue this query worker</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">NoteIdleQueryWorker</span><span class="p">(</span><span class="nv">$worker</span><span class="p">)</span> <span class="k">if</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">closed</span><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># &lt;numeric id&gt; [client-side time to complete] &lt;response&gt;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="p">(</span><span class="nv">$time</span><span class="p">,</span> <span class="nv">$id</span><span class="p">,</span> <span class="nv">$res</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$line</span> <span class="o">=~</span><span class="sr"> /^(\d+-\d+)\s+(\-?\d+\.\d+)\s+(.+)$/</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1"># save time and response for use later</span>
+</span><span class='line'>        <span class="c1"># Note the optional negative sign in the regexp.  Somebody</span>
+</span><span class='line'>        <span class="c1"># on the mailing list was getting a time of -0.0000, causing</span>
+</span><span class='line'>        <span class="c1"># broken connections.</span>
+</span><span class='line'>        <span class="p">(</span><span class="nv">$id</span><span class="p">,</span> <span class="nv">$time</span><span class="p">,</span> <span class="nv">$res</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$1</span><span class="p">,</span> <span class="nv">$2</span><span class="p">,</span> <span class="nv">$3</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># now, if it doesn&#39;t match</span>
+</span><span class='line'>    <span class="k">unless</span> <span class="p">(</span><span class="nv">$id</span> <span class="o">&amp;&amp;</span> <span class="nv">$id</span> <span class="ow">eq</span> <span class="s">&quot;$worker-&gt;{pid}-$worker-&gt;{reqid}&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$id</span>   <span class="o">=</span> <span class="s">&quot;&lt;undef&gt;&quot;</span> <span class="k">unless</span> <span class="nb">defined</span> <span class="nv">$id</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$line</span> <span class="o">=</span> <span class="s">&quot;&lt;undef&gt;&quot;</span> <span class="k">unless</span> <span class="nb">defined</span> <span class="nv">$line</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$line</span> <span class="o">=~</span> <span class="sr">s/\n/\\n/g</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$line</span> <span class="o">=~</span> <span class="sr">s/\r/\\r/g</span><span class="p">;</span>
+</span><span class='line'>        <span class="nn">Mgd::</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;Worker responded with id $id (line: [$line]), but expected id $worker-&gt;{pid}-$worker-&gt;{reqid}, killing&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$client</span><span class="o">-&gt;</span><span class="nb">close</span><span class="p">(</span><span class="s">&#39;worker_mismatch&#39;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">AskWorkerToDie</span><span class="p">(</span><span class="nv">$worker</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># now time this interval and add to @RecentQueries</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$tinterval</span> <span class="o">=</span> <span class="nn">Time::HiRes::</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="nv">$starttime</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">push</span> <span class="nv">@RecentQueries</span><span class="p">,</span> <span class="nb">sprintf</span><span class="p">(</span><span class="s">&quot;%s %.4f %s&quot;</span><span class="p">,</span> <span class="nv">$jobstr</span><span class="p">,</span> <span class="nv">$tinterval</span><span class="p">,</span> <span class="nv">$time</span><span class="p">);</span>
+</span><span class='line'>    <span class="nb">shift</span> <span class="nv">@RecentQueries</span> <span class="k">if</span> <span class="nb">scalar</span><span class="p">(</span><span class="nv">@RecentQueries</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># send text to client, put worker back in queue</span>
+</span><span class='line'>    <span class="nv">$client</span><span class="o">-&gt;</span><span class="nb">write</span><span class="p">(</span><span class="s">&quot;$res\r\n&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">NoteIdleQueryWorker</span><span class="p">(</span><span class="nv">$worker</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>绕了一大圈终于回来了</h2>
+
+<blockquote><p>_wait_for_readability等待socket有返回数据</p>
+
+<p>如果OK就返回decode的引用</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="c1"># wait up to 3 seconds for the socket to come to life</span>
+</span><span class='line'><span class="k">unless</span> <span class="p">(</span><span class="n">_wait_for_readability</span><span class="p">(</span><span class="nb">fileno</span><span class="p">(</span><span class="nv">$sock</span><span class="p">),</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">timeout</span><span class="p">}))</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nb">close</span><span class="p">(</span><span class="nv">$sock</span><span class="p">);</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">run_hook</span><span class="p">(</span><span class="s">&#39;do_request_read_timeout&#39;</span><span class="p">,</span> <span class="nv">$cmd</span><span class="p">,</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">last_host_connected</span><span class="p">});</span>
+</span><span class='line'>    <span class="nb">undef</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">sock_cache</span><span class="p">};</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">_fail</span><span class="p">(</span><span class="s">&quot;timed out after $self-&gt;{timeout}s against $self-&gt;{last_host_connected} when sending command: [$req]&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$line</span> <span class="o">=</span> <span class="sr">&lt;$sock&gt;</span><span class="p">;</span>
+</span><span class='line'><span class="c1"># OK &lt;arg_len&gt; &lt;response&gt;</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="nv">$line</span> <span class="o">=~</span><span class="sr"> /^OK\s+\d*\s*(\S*)/</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$args</span> <span class="o">=</span> <span class="n">_decode_url_string</span><span class="p">(</span><span class="nv">$1</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">_debug</span><span class="p">(</span><span class="s">&quot;RETURN_VARS: &quot;</span><span class="p">,</span> <span class="nv">$args</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$args</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">erning</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-16T10:12:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/mogilefs/'>mogilefs</a>, <a class='category' href='/blog/categories/perl/'>perl</a>, <a class='category' href='/blog/categories/study/'>study</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/05/16/mogilefs-code-reading-1/" title="Previous Post: MogileFS启动流程">&laquo; MogileFS启动流程</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/05/16/mogilefs-code-reading-3/" title="Next Post: Perl使用Poll多路复用">Perl使用Poll多路复用 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-2/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-2/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

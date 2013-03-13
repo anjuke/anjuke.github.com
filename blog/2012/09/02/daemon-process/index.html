@@ -1,0 +1,529 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>深入理解daemon - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="用linux的各位巨巨应该都知道在系统里有种进程叫做daemon，一般理解为后台服务，它有一些特征，比如后台运行，不能直接在终端控制，用户退出登陆后也不会停止等等；有时候我们也想自己运行的脚本能够&#8221;后台运行&#8221;，往往使用的是nohup这个工具。那么daemon到底是什么呢 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/09/02/daemon-process/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">深入理解daemon</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-02T13:11:00+08:00" pubdate data-updated="true">Sep 2<span>nd</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
+
+<p>用linux的各位巨巨应该都知道在系统里有种进程叫做<code>daemon</code>，一般理解为后台服务，它有一些特征，比如后台运行，不能直接在终端控制，用户退出登陆后也不会停止等等；有时候我们也想自己运行的脚本能够&#8221;后台运行&#8221;，往往使用的是<code>nohup</code>这个工具。那么daemon到底是什么呢?</p>
+
+<p>(如果以下解释里有任何遗漏或者错误，也欢迎指出)</p>
+
+<p>在许许多多的开源工具(例如<a href="http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/">这里</a>)里我们都能找到类似如下的代码，这2次fork被称作<code>unix magic 2 forks</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="k">def</span> <span class="nf">daemonize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span class='line'>    <span class="sd">&quot;&quot;&quot;</span>
+</span><span class='line'><span class="sd">    do the UNIX double-fork magic, see Stevens&#39; &quot;Advanced</span>
+</span><span class='line'><span class="sd">    Programming in the UNIX Environment&quot; for details (ISBN 0201563177)</span>
+</span><span class='line'><span class="sd">    http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16</span>
+</span><span class='line'><span class="sd">    &quot;&quot;&quot;</span>
+</span><span class='line'>    <span class="k">try</span><span class="p">:</span>
+</span><span class='line'>          <span class="n">pid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">if</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span class='line'>                <span class="c"># exit first parent</span>
+</span><span class='line'>                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+</span><span class='line'>        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;fork #1 failed: </span><span class="si">%d</span><span class="s"> (</span><span class="si">%s</span><span class="s">)</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">errno</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">strerror</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c"># decouple from parent environment</span>
+</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">setsid</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">umask</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c"># do second fork</span>
+</span><span class='line'>    <span class="k">try</span><span class="p">:</span>
+</span><span class='line'>        <span class="n">pid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">if</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span class='line'>            <span class="c"># exit from second parent</span>
+</span><span class='line'>                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+</span><span class='line'>        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;fork #2 failed: </span><span class="si">%d</span><span class="s"> (</span><span class="si">%s</span><span class="s">)</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">errno</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">strerror</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c"># redirect standard file descriptors</span>
+</span><span class='line'>    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">si</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">so</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="s">&#39;a+&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">se</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;a+&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">si</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">so</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">se</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c"># write pidfile</span>
+</span><span class='line'>    <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delpid</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">pid</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
+</span><span class='line'>    <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pidfile</span><span class="p">,</span><span class="s">&#39;w+&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">pid</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>某始终没搞明白为什么需要fork 2次，所以带着疑问去找了找根源(网上很多解释都是一笔带过)。不过很遗憾的是文中写到的这个<a href="http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16">来源</a>目前已经无法访问到了，幸运的是在『advanced programming in the unix enviroment』这本书里有提到，所以某去找了找(如今我已经买了一本来看XD)。</p>
+
+<p>把关于daemon的一些特征、如何做到daemon以及稍稍探究了以下为何需要这么做，以下内容是某个人总结的。</p>
+
+<h2>daemon 的特征和必要工作</h2>
+
+<ul>
+<li>总结引用自原书13.3 daemon process</li>
+</ul>
+
+
+<blockquote><p>避免不需要的交互，并且具有以下一些特征</p>
+
+<ol>
+<li>调用umask(0)，把创建文件的mask设置成0，以保证daemon本身创建的文件不会继承父进程的mask</li>
+<li>调用fork，并让其父进程退出，这里有3层含义
+
+<ul>
+<li>如果父进程是一个shell命令，则退出就使得shell认为该进程已经终止</li>
+<li>子进程会继承父进程的group id，从而确保自己不是group leader (后面一步setsid的先决条件) [关于这个可以参考后面一段9.5 session]</li>
+<li>子进程获得一个新的进程号(PID)</li>
+</ul>
+</li>
+<li>调用setsid，创建一个新的session，这里有3个步骤含义
+
+<ul>
+<li>子进程自己成为新session的leader进程</li>
+<li>子进程自己也会成为新session里唯一一个group的leader</li>
+<li>子进程没有<code>controlling terminal</code> [关于这个可以参考后面9.6 controlling terminal]</li>
+</ul>
+</li>
+<li>更改工作路径到<code>/</code>，unix系统传统上认为一个daemon是从system boot开始一直到system halt/reboot为止一直常驻的进程，如果把工作路径设置到某个挂载上来的设备上，那么系统halt/reboot的时候设备将无法卸载(因为有进程在使用)</li>
+<li>关于不需要的文件句柄(FD)，避免daemon自身打开从其父进程那里继承过来的任何FD</li>
+<li>有些daemon会把FD0、FD1、FD2(分别是标准输入、标准输出和标准错误)，重定向到<code>/dev/null</code>，确保各种引用lib的流程都无效化(即没有依赖)</li>
+</ol>
+</blockquote>
+
+<p>典型的来说，daemon已经不再像unix系统所阐述的那样了，一般的可以认为没有交互终端控制访问进程的后台进程都可以认为是以后宗具有daemon性质的进程，所以以上步骤中第1、4步可以选择不做或者根据需要修改。</p>
+
+<p>我们再来看看其中一些有疑点的地方(个人来说)</p>
+
+<h2>什么是会话(session)</h2>
+
+<ul>
+<li>总结引用自原书9.5 session</li>
+</ul>
+
+
+<blockquote><p>一般在进程建立新session的时候，会调用<code>setsid()</code>这个函数，它会有3个必要的步骤、特征</p>
+
+<ol>
+<li>如果调用者(以下称为caller)是一个进程组的leader，那么调用会出错，(我们可以通过fork来避免，父进程退出，子进程继续运行)
+
+<ul>
+<li>关于进程组的leader，指的就是一系列PIPE或者FORK的第一个进程，例如<code>cat foo | wc -l</code>，这里2个进程一起被称作一个group，而<code>cat</code>是这个group的leader</li>
+</ul>
+</li>
+<li>caller本身称为一个session的leader(道理和group类似)，也是这个新session里仅有的进程
+
+<ul>
+<li>caller本身也称为一个group的leader，group id 就是caller的PID</li>
+</ul>
+</li>
+<li>caller本身不会有<code>controlling terminal</code>，如果在<code>setsid()</code>之前就有<code>controlling terminal</code>，那么调用就会失败
+
+<ul>
+<li>关于<code>controlliing terminal</code>，可以参考下面的9.6</li>
+</ul>
+</li>
+</ol>
+</blockquote>
+
+<h2>什么是控制终端(controlling terminal)</h2>
+
+<ul>
+<li>总结引用自原书9.6 controlling terminal</li>
+</ul>
+
+
+<blockquote><p>关于<code>controlling terminal</code>，有以下这些特征</p>
+
+<ol>
+<li>一个session仅有一个终端，可以是真正的终端，也可以是伪终端(例如我们常在X11里用的终端模拟器)</li>
+<li>建立到<code>controlling terminal</code>的进程叫做<code>controlling process</code>，通常是<code>login shell</code>(常见的例如<code>/bin/bash --login</code>)</li>
+<li>在一个session里，进程组(group)，可以分为一个前台组(foreground group)和若干个后台组(background group) (具体的可以参考unix-like系统的进程控制方面的解说)
+
+<ul>
+<li>如果有conrolling terminal的情况下，也最多只有一个前台组，其他都是后台组，如果要和controlling terminal通信，需要打开例如<code>/dev/tty</code>这样的设备</li>
+</ul>
+</li>
+<li>键盘随时按下中断键(通常是<code>ctrl+c</code>)，会给所有前台组里的进程发送<code>SIGINT</code>的信号</li>
+<li>键盘随时按下退出键(通常是<code>ctrl+bs</code>)，会给所有前台组里的进程发送<code>quit signal</code>的信号</li>
+<li>如果终端接口检测到了网络断开，则会给session leader(同时也是controlling process)发送一个hang-up的信号
+
+<ul>
+<li>这也就是为什么是session leader子进程的前台组里的程序在我们断开ssh连接后会立即终止的原因</li>
+</ul>
+</li>
+</ol>
+</blockquote>
+
+<h2>但您还未解释为什么需要fork两次?</h2>
+
+<p>在前面解释daemon的地方，第2步fork只提到了1次，那么为什么网上那么多daemon的做法里都建议使用2次<code>fork</code>呢，原书里也做了一些解释。</p>
+
+<ul>
+<li>总结引用自原书9.6 controlling terminal以及3.3 open</li>
+</ul>
+
+
+<blockquote><p>一些系统在使用daemon时建议调用2次fork，情况主要是这样的</p>
+
+<ol>
+<li>基于<code>System V</code>的Unix系统会为打开一个还未分配到任何session的终端设备，把它当作<code>controlling terminal</code>来使用
+
+<ul>
+<li><code>System V</code>在调用<code>open</code>时，如果没有指定<code>0_NOCTTY</code>这个flag就会这样</li>
+</ul>
+</li>
+<li>基于<code>BSD</code>的Unix系统会在session leader调用<code>ioctl</code>时带上<code>TIOCSCTTY</code>参数，分配一个<code>controlling terminal</code>；而如果调用时该进程恰巧已经有一个<code>controlling terminal</code>，则调用会失败，所以一般来紧跟一个<code>setsid()</code>来保证调用的正确。然后在<code>POSIX.1</code>规范中，<code>BSD</code>系统并不会使用上面提到的<code>0_NOCTTY</code>这样的参数
+
+<ul>
+<li>示例调用代码在原书19.4节</li>
+</ul>
+</li>
+</ol>
+</blockquote>
+
+<p>这样一来就可以理解了，<u><strong>第二次调用<code>fork</code>，可以保证第二个子进程不是session leader，而之后的<code>open</code>调用，也不会分配到任何<code>controlling terminal</code>，这样就保证了daemon的必要条件。</strong></u></p>
+
+<h2>那我们经常使用的nohup到底和daemon有什么区别?</h2>
+
+<p>首先，请认真<code>man nohup</code> (PIA死)</p>
+
+<p>从<a href="http://en.wikipedia.org/wiki/Nohup">维基百科的页面</a>上，我们会发现解释可以和以上这些信息结合后概括成最终下面的结论</p>
+
+<p>可以看到在session结束后，session leader会收到hang-up的信号，而<code>nohup</code>其实时给一个进程<strong>忽略</strong> <code>SIGHUP</code>信号，<u>并非真正的daemon</u>，它仅仅提供了一种想退出登陆又不愿意中断进程的选择。</p>
+
+<p>对于类似的功能，我个人强烈推荐tmux，以及类似功能的screen。它们甚至可以把session从controlling terminal上detach，换一个地方再attach上来，<strike><strong>是不折腾会死星人的好伙伴XDDDDDDDDD</strong></strike></p>
+
+<h2>方便的daemon工具?</h2>
+
+<p>而对于希望执行daemon的人来说，除了前面提到的<code>unix magic 2 forks</code>(大部分现代编程语言都提供了类似daemon这样的lib)，还可以使用debian等发行版提供的<code>/sbin/start-stop-daemon</code></p>
+
+<p>以上</p>
+
+<p>__END__</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-02T13:11:00+08:00" pubdate data-updated="true">Sep 2<span>nd</span>, 2012</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/08/27/use-supervisord-with-storm-and-zookeeper/" title="Previous Post: Use Supervisord with Storm and ZooKeeper">&laquo; Use Supervisord with Storm and ZooKeeper</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/09/08/a-workaround-for-flask-werkzeugs-incompatibility-with-buildout/" title="Next Post: A Workaround for Flask Werkzeug's Incompatibility With Buildout">A Workaround for Flask Werkzeug's Incompatibility With Buildout &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/09/02/daemon-process/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/09/02/daemon-process/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

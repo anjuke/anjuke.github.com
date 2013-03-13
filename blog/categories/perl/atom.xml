@@ -1,0 +1,946 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: perl | Anjuke Engineering]]></title>
+  <link href="http://arch.corp.anjuke.com/blog/categories/perl/atom.xml" rel="self"/>
+  <link href="http://arch.corp.anjuke.com/"/>
+  <updated>2013-03-13T12:15:00+08:00</updated>
+  <id>http://arch.corp.anjuke.com/</id>
+  <author>
+    <name><![CDATA[Anjuke Inc.]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[MogileFS源码学习分享]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading/"/>
+    <updated>2012-05-16T10:20:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading</id>
+    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/78811efe9c142e0898c049686e25594d"></p>
+
+<ul>
+<li><a href="/blog/2012/05/16/mogilefs-code-reading-1">MogileFS启动流程</a></li>
+<li><a href="/blog/2012/05/16/mogilefs-code-reading-2">MogileFS读取文件的过程</a></li>
+<li><a href="/blog/2012/05/16/mogilefs-code-reading-3">Perl使用Poll多路复用</a></li>
+<li><a href="/blog/2012/05/16/mogilefs-code-reading-4">Perl使用Epoll优化</a></li>
+<li><a href="/blog/2012/05/16/mogilefs-code-reading-5">进程间通信【IPC】</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[进程间通信【IPC】]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-5/"/>
+    <updated>2012-05-16T10:15:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-5</id>
+    <content type="html"><![CDATA[<!-- more -->
+
+
+<p><blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=perl-ipc'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote></p>
+
+<p>```perl</p>
+
+<h1>!/usr/bin/perl</h1>
+
+<p>use warnings;
+use strict;
+use bytes;
+use Socket;
+use Data::Dumper;
+use Carp;
+use IO::Socket;
+use Errno  qw(EINPROGRESS EWOULDBLOCK EISCONN ENOTSOCK</p>
+
+<pre><code>          EPIPE EAGAIN EBADF ECONNRESET ENOPROTOOPT);
+</code></pre>
+
+<p>use constant POLLIN        => 1;
+use constant POLLOUT       => 4;
+use constant POLLERR       => 8;
+use constant POLLHUP       => 16;
+use constant POLLNVAL      => 32;
+use POSIX;</p>
+
+<p>socketpair(my $ps,my $cs,AF_UNIX,SOCK_STREAM,PF_UNSPEC) or die ("socketpair fail");</p>
+
+<p>my $pid;
+die ("fork fail") unless defined ($pid = fork);</p>
+
+<p>select( (select($ps),$|++)[0] );
+select( (select($cs),$|++)[0] );</p>
+
+<h1>组长进程</h1>
+
+<p>if ($pid){</p>
+
+<pre><code>close $cs;
+undef $cs;
+our %des;
+
+my $fn = fileno($ps);
+$des{$fn} = $ps;
+
+IO::Handle::blocking($ps,0);
+
+while(1){
+    my @poll;
+    while( my($f,$s) = each %des ){
+        push @poll,$f,POLLIN;
+    }
+    my $count = IO::Poll::_poll(4, @poll); 
+    if($count){
+        while (@poll) {
+            my ($fd, $state) = splice(@poll, 0, 2);
+            my $len = sysread($des{$fd},my $data,8) or warn("warn:$!\n");
+            if(!$len &amp;&amp; $! != EWOULDBLOCK ){
+                delete $des{$fd};
+            }else{
+                print "reply:".$data;
+            }
+        }
+    }
+    #print Dumper(\%des);
+    #sleep(1);
+}
+</code></pre>
+
+<p>}else{</p>
+
+<pre><code>#sleep(5);
+close $ps;
+undef $ps;
+#print "$$\n";
+while(1){
+    my $str = "cs msg!\n";
+    my $len = length $str;
+    my $rv = syswrite($cs,$str);
+    #如果不sleep 服务器端瞬间拿到N多次的结果。。。 不sleep就得控制长度
+    #sleep 1 if defined $rv &amp;&amp; $rv == $len;
+}
+exit 0;
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Perl使用Epoll优化]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-4/"/>
+    <updated>2012-05-16T10:14:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-4</id>
+    <content type="html"><![CDATA[<!-- more -->
+
+
+<p><blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=perl-epoll'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote></p>
+
+<blockquote><p>优势：当有事件时才会增加到@events，无需遍历</p>
+
+<p>注意：EPOLLERR，不增加该事件，无法执行到退出</p></blockquote>
+
+<p>```perl</p>
+
+<h1>!/usr/bin/perl</h1>
+
+<p>use warnings;
+use Data::Dumper;
+use strict;
+use IO::Socket;
+use POSIX;
+use Socket qw(SO_KEEPALIVE);
+use bytes;
+use IO::Poll;</p>
+
+<h1>/Developer/SDKs/MacOSX10.6.sdk/usr/include/sys/errno.h</h1>
+
+<h1>死活没找到，find / -name errno.h -print了下</h1>
+
+<p>use Errno  qw(EINPROGRESS EWOULDBLOCK EISCONN ENOTSOCK</p>
+
+<pre><code>          EPIPE EAGAIN EBADF ECONNRESET ENOPROTOOPT);
+</code></pre>
+
+<p>use Sys::Syscall qw(:epoll);</p>
+
+<p>use constant POLLIN        => 1;
+use constant POLLOUT       => 4;
+use constant POLLERR       => 8;
+use constant POLLHUP       => 16;
+use constant POLLNVAL      => 32;</p>
+
+<p>my $server = IO::Socket::INET->new(</p>
+
+<pre><code>LocalAddr =&gt; '192.168.10.200:8888',
+Type      =&gt; SOCK_STREAM,
+Proto     =&gt; 'tcp',
+Blocking  =&gt; 0,
+Reuse     =&gt; 1,
+Listen    =&gt; 1024,  
+</code></pre>
+
+<p>) or die("error create socket:$! and $@\n") ;</p>
+
+<p>$server->sockopt(SO_KEEPALIVE, 1);</p>
+
+<p>my $epoll_test = Sys::Syscall::epoll_defined();
+my $epoll = epoll_create(1024);
+my @events;
+my %des;</p>
+
+<p>while(1){</p>
+
+<pre><code>if(my $csock = $server-&gt;accept){
+    my $fn = fileno($csock);
+    epoll_ctl($epoll,EPOLL_CTL_ADD,$fn,EPOLLIN|EPOLLERR);
+    $des{$fn} = $csock;
+}
+my $evcount = epoll_wait($epoll,1000,0.25,\@events);
+my $i;
+for($i = 0; $i &lt; $evcount; $i++){
+    my $ev = $events[$i];
+    my $len = sysread($des{$ev-&gt;[0]},my $data,1024);
+    if(!$len &amp;&amp; $! != EWOULDBLOCK ){
+        epoll_ctl($epoll,EPOLL_CTL_DEL,$ev-&gt;[0],EPOLLIN);
+        delete $des{$ev-&gt;[0]};
+    }else{
+        print $data;
+    }
+}
+#print Dumper(\%des);
+#sleep(1);
+</code></pre>
+
+<p>}
+```</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Perl使用Poll多路复用]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-3/"/>
+    <updated>2012-05-16T10:13:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-3</id>
+    <content type="html"><![CDATA[<!-- more -->
+
+
+<p><blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=perl-poll'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote></p>
+
+<blockquote><p>明显的缺点，需要遍历所有的socket</p></blockquote>
+
+<p>```perl</p>
+
+<h1>!/usr/bin/perl</h1>
+
+<p>use warnings;
+use Data::Dumper;
+use strict;
+use IO::Socket;
+use POSIX;
+use Socket qw(SO_KEEPALIVE);
+use bytes;
+use IO::Poll;</p>
+
+<h1>/Developer/SDKs/MacOSX10.6.sdk/usr/include/sys/errno.h</h1>
+
+<h1>死活没找到，find / -name errno.h -print了下</h1>
+
+<p>use Errno  qw(EINPROGRESS EWOULDBLOCK EISCONN ENOTSOCK</p>
+
+<pre><code>          EPIPE EAGAIN EBADF ECONNRESET ENOPROTOOPT);
+</code></pre>
+
+<p>use constant POLLIN        => 1;
+use constant POLLOUT       => 4;
+use constant POLLERR       => 8;
+use constant POLLHUP       => 16;
+use constant POLLNVAL      => 32;</p>
+
+<p>my $server = IO::Socket::INET->new(</p>
+
+<pre><code>LocalAddr =&gt; '127.0.0.1:8888',
+Type      =&gt; SOCK_STREAM,
+Proto     =&gt; 'tcp',
+Blocking  =&gt; 0,
+Reuse     =&gt; 1,
+Listen    =&gt; 1024,  
+</code></pre>
+
+<p>) or die("error create socket:$! and $@\n") ;</p>
+
+<p>$server->sockopt(SO_KEEPALIVE, 1);</p>
+
+<p>my %des;</p>
+
+<p>while(1){</p>
+
+<pre><code>my @poll;
+while( my($fd,$sock) = each %des ){
+    push @poll,$fd,POLLIN;
+}
+if(my $csock = $server-&gt;accept){
+    my $fn = fileno($csock);
+    push @poll,$fn,POLLIN;
+    $des{$fn} = $csock;
+}
+my $count = IO::Poll::_poll(4, @poll); 
+if($count){
+    while (@poll) {
+        my ($fd, $state) = splice(@poll, 0, 2);
+        my $len = sysread($des{$fd},my $data,1024);
+        if(!$len &amp;&amp; $! != EWOULDBLOCK ){
+            #遍历所有的socket，一段时间后会监测到问题后删除
+            delete $des{$fd};
+        }else{
+            print $data;
+        }
+    }
+}
+print Dumper(\%des);
+sleep(1);
+</code></pre>
+
+<p>}
+```</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MogileFS读取文件的过程]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-2/"/>
+    <updated>2012-05-16T10:12:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-2</id>
+    <content type="html"><![CDATA[<!-- more -->
+
+
+<p><blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=mogilefs-read'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote></p>
+
+<h2>客户端读取文件代码</h2>
+
+<blockquote><p>定义好domain和key就能获取文件内容</p></blockquote>
+
+<p>```perl</p>
+
+<h1>!/usr/bin/perl</h1>
+
+<p>use strict;
+use warnings;
+use MogileFS::Client;</p>
+
+<p>my %new_opt = (</p>
+
+<pre><code>hosts =&gt; ["127.0.0.1:7001"],
+domain =&gt; "127.0.0.1::test",
+</code></pre>
+
+<p>);
+my $mogc = MogileFS::Client->new(%new_opt);</p>
+
+<p>my $key = "test_key_2";
+my $fd = $mogc->read_file($key);
+print while&lt;$fd>;
+```</p>
+
+<h2>MogileFS::Client与MogileFS::Server通信</h2>
+
+<blockquote><p>通过get_paths取得文件的url路径</p>
+
+<p>MogileFS::ClientHTTPFile通过HTTP获取文件句柄</p>
+
+<blockquote><p>IO::WrapTie可以让返回的内容当文件句柄使用</p></blockquote></blockquote>
+
+<p>```
+sub read_file {</p>
+
+<pre><code>my MogileFS::Client $self = shift;
+
+my @paths = $self-&gt;get_paths(@_);
+
+my $path = shift @paths;
+
+return if !$path;
+
+my @backup_dests = map { [ undef, $_ ] } @paths;
+
+return IO::WrapTie::wraptie('MogileFS::ClientHTTPFile',
+                            path         =&gt; $path,
+                            backup_dests =&gt; \@backup_dests,
+                            readonly     =&gt; 1,
+                            );
+</code></pre>
+
+<p>}
+```</p>
+
+<blockquote><p>get_paths调用MogileFS::Backend的do_request方法</p></blockquote>
+
+<p>```
+my $res = $self->{backend}->do_request</p>
+
+<pre><code>    ("get_paths", {
+        domain =&gt; $self-&gt;{domain},
+        key    =&gt; $key,
+        noverify =&gt; $noverify ? 1 : 0,
+        zone   =&gt; $zone,
+    %extra_args,
+    }) or return ();
+</code></pre>
+
+<p>```</p>
+
+<blockquote><p>MogileFS::Backend发送信息</p>
+
+<p>消息的内容是get_paths *****</p></blockquote>
+
+<p><code>
+my MogileFS::Backend $self = shift;
+my ($cmd, $args) = @_;
+my $argstr = _encode_url_string(%$args);
+my $req = "$cmd $argstr\r\n";
+$rv = send($sock, $req, $FLAG_NOSIGNAL);
+</code></p>
+
+<h2>服务器端接收消息</h2>
+
+<blockquote><p>$code->($state);是关键，主进程监听到了事件去执行回调</p></blockquote>
+
+<p>```perl</p>
+
+<h1>Fetch handles with read events</h1>
+
+<p>while (@poll) {</p>
+
+<pre><code>my ($fd, $state) = splice(@poll, 0, 2);
+next unless $state;
+
+$pob = $DescriptorMap{$fd};
+if (!$pob) {
+    if (my $code = $OtherFds{$fd}) {
+        $code-&gt;($state);
+    }    
+    next;
+}    
+
+$pob-&gt;event_read   if $state &amp; POLLIN &amp;&amp; ! $pob-&gt;{closed};
+$pob-&gt;event_write  if $state &amp; POLLOUT &amp;&amp; ! $pob-&gt;{closed};
+$pob-&gt;event_err    if $state &amp; POLLERR &amp;&amp; ! $pob-&gt;{closed};
+$pob-&gt;event_hup    if $state &amp; POLLHUP &amp;&amp; ! $pob-&gt;{closed};
+</code></pre>
+
+<p>}
+```</p>
+
+<blockquote><p>这就是回调函数，主进程接收请求，创建个MogileFS::Connection::Client</p>
+
+<p>MogileFS::Connection::Client会继承于Danga::Socket,会加到%DescriptorMap里,所以事件循环可以读取到</p>
+
+<p>$pob->event_read   if $state &amp; POLLIN &amp;&amp; ! $pob->{closed};开始读取</p></blockquote>
+
+<p>```
+Danga::Socket->AddOtherFds( fileno($server) => sub {</p>
+
+<pre><code>while (my $csock = $server-&gt;accept) {
+    MogileFS::Connection::Client-&gt;new($csock);#也会被加到%DescriptorMap
+}   
+</code></pre>
+
+<p>} );
+```</p>
+
+<h2>MogileFS::Connection::Client接收消息和处理</h2>
+
+<blockquote><p>调用handle_request</p>
+
+<blockquote><p>tips:$self->{read_buf} =~ reg 取得需要的东西，并清空</p></blockquote></blockquote>
+
+<p>```perl</p>
+
+<h1>Client</h1>
+
+<p>sub event_read {</p>
+
+<pre><code>my MogileFS::Connection::Client $self = shift;
+
+my $bref = $self-&gt;read(1024);
+return $self-&gt;close unless defined $bref;
+$self-&gt;{read_buf} .= $$bref;
+
+while ($self-&gt;{read_buf} =~ s/^(.*?)\r?\n//) {
+    next unless length $1; 
+    $self-&gt;handle_request($1);
+}   
+</code></pre>
+
+<p>}
+```</p>
+
+<blockquote><p>调用MogileFS::ProcManager->EnqueueCommandRequest来处理get_paths指令</p>
+
+<blockquote><p>tips:看到可以使用telnet 127.0.0.1 7001连接上server使用!h来获取帮助!stat可以查看服务器状态</p></blockquote></blockquote>
+
+<p>```perl
+sub handle_request {</p>
+
+<pre><code>my ($self, $line) = @_;
+
+# if it's just 'help', 'h', '?', or something, do that
+#if ((substr($line, 0, 1) eq '?') || ($line eq 'help')) {
+#    MogileFS::ProcManager-&gt;SendHelp($_[1]);
+#    return;
+#}
+
+if ($line =~ /^!(\S+)(?:\s+(.+))?$/) {
+    my ($cmd, $args) = ($1, $2);
+    return $self-&gt;handle_admin_command($cmd, $args);
+}
+
+MogileFS::ProcManager-&gt;EnqueueCommandRequest($line, $self);
+</code></pre>
+
+<p>}
+```</p>
+
+<blockquote><p>加到待处理等列里，并开始处理</p></blockquote>
+
+<p>```perl
+sub EnqueueCommandRequest {</p>
+
+<pre><code>my ($class, $line, $client) = @_; 
+push @PendingQueries, [
+                       $client,
+                       ($client-&gt;peer_ip_string || '0.0.0.0') . " $line"
+                       ];  
+MogileFS::ProcManager-&gt;ProcessQueues;
+</code></pre>
+
+<p>}
+```</p>
+
+<blockquote><p>如果有空闲的query-worker和待处理的队列，那就开始行动</p>
+
+<p>所以queryworker的数量决定了，MogileFS的处理能力，当然加大数量也会加大DB压力，memcache能缓解部分压力</p>
+
+<p>$Mappings{$worker->{fd}} = $clref;设置Mappings，等下返回结果时，这个client句柄还要用的</p>
+
+<p>$worker->write("$worker->{pid}-$worker->{reqid} $clref->[1]\r\n");向真正的worker发送消息，让他干活</p>
+
+<blockquote><p>tips:例子123-455 10.2.3.123 get_paths foo=bar&amp;blah=bar\r\n</p></blockquote>
+
+<p>$Stats都是存储当前服务器状态的，times_out_of_qworkers可以看出worker是不是处理不过来</p></blockquote>
+
+<p>```
+sub ProcessQueues {</p>
+
+<pre><code>return if $IsChild;
+
+# try to match up a client with a worker
+while (@IdleQueryWorkers &amp;&amp; @PendingQueries) {
+    # get client that isn't closed
+    my $clref;
+    while (!$clref &amp;&amp; @PendingQueries) {
+        $clref = shift @PendingQueries
+            or next;
+        if ($clref-&gt;[0]-&gt;{closed}) {
+            $clref = undef;
+            next;
+        }
+    }
+    next unless $clref;
+
+    # get worker and make sure it's not closed already
+    my MogileFS::Connection::Worker $worker = shift @IdleQueryWorkers;
+    if (!defined $worker || $worker-&gt;{closed}) {
+        unshift @PendingQueries, $clref;
+        next;
+    }
+
+    # put in mapping and send data to worker
+    push @$clref, Time::HiRes::time();
+    $Mappings{$worker-&gt;{fd}} = $clref;
+    $Stats{queries}++;
+
+    # increment our counter so we know what request counter this is going out
+    $worker-&gt;{reqid}++;
+    # so we're writing a string of the form:
+    #     123-455 10.2.3.123 get_paths foo=bar&amp;blah=bar\r\n
+    $worker-&gt;write("$worker-&gt;{pid}-$worker-&gt;{reqid} $clref-&gt;[1]\r\n");
+
+}
+
+if (@PendingQueries) {
+    # Don't like the name. Feel free to change if you find better.
+    $Stats{times_out_of_qworkers}++;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<h2>真正的QueryWorker开始干活，MogileFS::Worker::Query</h2>
+
+<blockquote><p>select判断是否可以读取</p>
+
+<blockquote><p>tips:vec($rin, fileno($psock), 1) = 1; 设置2进制数值，如果fileno=5那么返回的数值就是00010000</p></blockquote>
+
+<p>sysread取得socket内容</p>
+
+<p>process_line处理get_paths命令</p></blockquote>
+
+<p>```
+sub work {</p>
+
+<pre><code>my $self = shift;
+my $psock = $self-&gt;{psock};
+my $rin = '';
+vec($rin, fileno($psock), 1) = 1; 
+my $buf;
+
+while (1) {
+    my $rout;
+    unless (select($rout=$rin, undef, undef, 5.0)) {
+        $self-&gt;still_alive;
+        next;
+    }    
+
+    my $newread;
+    my $rv = sysread($psock, $newread, 1024);
+    if (!$rv) {
+        if (defined $rv) {
+            die "While reading pipe from parent, got EOF.  Parent's gone.  Quitting.\n";
+        } else {
+            die "Error reading pipe from parent: $!\n";
+        }    
+    }    
+    $buf .= $newread;
+
+    while ($buf =~ s/^(.+?)\r?\n//) {
+        my $line = $1;
+        if ($self-&gt;process_generic_command(\$line)) {
+            $self-&gt;still_alive;  # no-op for watchdog
+        } else {
+            $self-&gt;validate_dbh;
+            $self-&gt;process_line(\$line);
+        }
+    }
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<h2>MogileFS::Worker::Query处理命令</h2>
+
+<p>process_line调用cmd_get_paths方法</p>
+
+<p>```</p>
+
+<pre><code>#设置符号表
+my $cmd_handler = *{"cmd_$cmd"}{CODE};
+$cmd_handler-&gt;($self, $args);
+</code></pre>
+
+<p>```</p>
+
+<blockquote><p>MogileFS::Config->memcache_client 取得memcache</p>
+
+<p>my $mogfid_memkey = "mogfid:$args->{dmid}:$key";这是存fidid的key</p>
+
+<p>my $devid_memkey = "mogdevids:" . $fid->id;这是文件存在哪里的缓存key</p>
+
+<blockquote><p>tips:如果没有就查询数据库SELECT devid FROM file_on WHERE fid=?</p></blockquote>
+
+<p>万事具备，就差拼url了，执行MogileFS::DevFID->new($dev, $fid); my $path = $dfid->get_url;</p>
+
+<p>return $self->ok_line($ret);最终返回带有OK字样的结果</p>
+
+<blockquote><p>tips:ok_line里 $self->send_to_parent("${id}${delay}OK $argline");通过ipc告诉父进程</p></blockquote></blockquote>
+
+<p>```
+sub cmd_get_paths {</p>
+
+<pre><code>my MogileFS::Worker::Query $self = shift;
+my $args = shift;
+
+# memcache mappings are as follows:
+#  mogfid:&lt;dmid&gt;:&lt;dkey&gt; -&gt; fidid
+#  mogdevids:&lt;fidid&gt;    -&gt; \@devids  (and TODO: invalidate when the replication or deletion is run!)
+
+# if you specify 'noverify', that means a correct answer isn't needed and memcache can
+# be used.
+my $memc          = MogileFS::Config-&gt;memcache_client;
+my $get_from_memc = $memc &amp;&amp; $args-&gt;{noverify};
+my $memcache_ttl  = MogileFS::Config-&gt;server_setting_cached("memcache_ttl") || 3600;
+
+# validate domain for plugins
+$args-&gt;{dmid} = $self-&gt;check_domain($args)
+    or return $self-&gt;err_line('domain_not_found');
+
+# now invoke the plugin, abort if it tells us to
+my $rv = MogileFS::run_global_hook('cmd_get_paths', $args);
+return $self-&gt;err_line('plugin_aborted')
+    if defined $rv &amp;&amp; ! $rv;
+
+# validate parameters
+my $dmid = $args-&gt;{dmid};
+my $key = $args-&gt;{key} or return $self-&gt;err_line("no_key");
+
+# We default to returning two possible paths.
+# but the client may ask for more if they want.
+my $pathcount = $args-&gt;{pathcount} || 2;
+$pathcount = 2 if $pathcount &lt; 2; 
+
+# get DB handle 
+my $fid; 
+my $need_fid_in_memcache = 0; 
+my $mogfid_memkey = "mogfid:$args-&gt;{dmid}:$key"; 
+if ($get_from_memc) { 
+    if (my $fidid = $memc-&gt;get($mogfid_memkey)) { 
+        $fid = MogileFS::FID-&gt;new($fidid); 
+    } else { 
+        $need_fid_in_memcache = 1; 
+    } 
+} 
+unless ($fid) { 
+    Mgd::get_store()-&gt;slaves_ok(sub { 
+        $fid = MogileFS::FID-&gt;new_from_dmid_and_key($dmid, $key); 
+    }); 
+    $fid or return $self-&gt;err_line("unknown_key"); 
+} 
+
+# add to memcache, if needed.  for an hour. 
+$memc-&gt;set($mogfid_memkey, $fid-&gt;id, $memcache_ttl ) if $need_fid_in_memcache || ($memc &amp;&amp; !$get_from_memc); 
+
+my $dmap = Mgd::device_factory()-&gt;map_by_id; 
+
+my $ret = { 
+    paths =&gt; 0, 
+}; 
+
+# find devids that FID is on in memcache or db.
+my @fid_devids;
+my $need_devids_in_memcache = 0; 
+my $devid_memkey = "mogdevids:" . $fid-&gt;id; 
+if ($get_from_memc) { 
+    if (my $list = $memc-&gt;get($devid_memkey)) { 
+        @fid_devids = @$list; 
+    } else { 
+        $need_devids_in_memcache = 1; 
+    } 
+} 
+unless (@fid_devids) { 
+    Mgd::get_store()-&gt;slaves_ok(sub { 
+        @fid_devids = $fid-&gt;devids; 
+    }); 
+    $memc-&gt;set($devid_memkey, \@fid_devids, $memcache_ttl ) if $need_devids_in_memcache || ($memc &amp;&amp; !$get_from_memc); 
+} 
+
+my @devices = map { $dmap-&gt;{$_} } @fid_devids; 
+
+my @sorted_devs; 
+unless (MogileFS::run_global_hook('cmd_get_paths_order_devices', \@devices, \@sorted_devs)) { 
+    @sorted_devs = sort_devs_by_utilization(@devices); 
+} 
+
+# keep one partially-bogus path around just in case we have nothing else to send. 
+my $backup_path; 
+
+# construct result paths 
+foreach my $dev (@sorted_devs) { 
+    next unless $dev &amp;&amp; ($dev-&gt;can_read_from);
+
+    my $host = $dev-&gt;host;
+    next unless $dev &amp;&amp; $host; 
+    my $dfid = MogileFS::DevFID-&gt;new($dev, $fid); 
+    my $path = $dfid-&gt;get_url; 
+    my $currently_down = 
+        $host-&gt;observed_unreachable || $dev-&gt;observed_unreachable; 
+
+    if ($currently_down) { 
+        $backup_path = $path; 
+        next; 
+    } 
+
+    # only verify size one first one, and never verify if they've asked not to 
+    next unless 
+        $ret-&gt;{paths}        || 
+        $args-&gt;{noverify}    || 
+        $dfid-&gt;size_matches; 
+
+    my $n = ++$ret-&gt;{paths}; 
+    $ret-&gt;{"path$n"} = $path; 
+    last if $n == $pathcount;   # one verified, one likely seems enough for now.  time will tell. 
+} 
+
+# use our backup path if all else fails
+if ($backup_path &amp;&amp; ! $ret-&gt;{paths}) {
+    $ret-&gt;{paths} = 1;
+    $ret-&gt;{path1} = $backup_path;
+}
+
+return $self-&gt;ok_line($ret);
+</code></pre>
+
+<p>}</p>
+
+<p>sub ok_line {</p>
+
+<pre><code>my MogileFS::Worker::Query $self = shift;
+
+my $delay = '';
+if ($self-&gt;{querystarttime}) {
+    $delay = sprintf("%.4f ", Time::HiRes::tv_interval( $self-&gt;{querystarttime} ));
+    $self-&gt;{querystarttime} = undef;
+}
+
+my $id = defined $self-&gt;{reqid} ? "$self-&gt;{reqid} " : '';
+
+my $args = shift || {};
+my $argline = join('&amp;', map { eurl($_) . "=" . eurl($args-&gt;{$_}) } keys %$args);
+$self-&gt;send_to_parent("${id}${delay}OK $argline");
+return 1;
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<h2>主进程还在事件循环，MogileFS::Connection::Worker接受刚才的OK数据</h2>
+
+<blockquote><p>因为是queryworker所以调用HandleQueryWorkerResponse
+```
+sub event_read {</p>
+
+<pre><code>my MogileFS::Connection::Worker $self = shift;
+</code></pre></blockquote>
+
+<pre><code># if we read data from it, it's not blocked on something else.
+$self-&gt;note_alive;
+
+my $bref = $self-&gt;read(1024);
+return $self-&gt;close() unless defined $bref;
+$self-&gt;{read_buf} .= $$bref;
+while ($self-&gt;{read_buf} =~ s/^(.+?)\r?\n//) {
+    my $line = $1; 
+    if ($self-&gt;job eq 'queryworker' &amp;&amp; $line !~ /^(?:\:|error|debug)/) {
+        MogileFS::ProcManager-&gt;HandleQueryWorkerResponse($self, $line);
+    } else {
+        MogileFS::ProcManager-&gt;HandleChildRequest($self, $line);
+    }   
+}   
+</code></pre>
+
+<p>}
+```</p>
+
+<h2>真正的返回数据</h2>
+
+<blockquote><p>my ($client, $jobstr, $starttime) = @{ $Mappings{$worker->{fd}} };还记得Mappings吗，就是这里用</p>
+
+<p>$client->write("$res\r\n");写入数据，客户端接受</p></blockquote>
+
+<p>```</p>
+
+<h1>called when we get a response from a worker.  this reenqueues the</h1>
+
+<h1>worker so it can handle another response as well as passes the answer</h1>
+
+<h1>back on to the client.</h1>
+
+<p>sub HandleQueryWorkerResponse {</p>
+
+<pre><code># got a response from a worker
+my MogileFS::Connection::Worker $worker;
+my $line;
+(undef, $worker, $line) = @_;
+
+return Mgd::error("ASSERT: ProcManager (Child) got worker response: $line") if $IsChild;
+return unless $worker &amp;&amp; $Mappings{$worker-&gt;{fd}};
+
+# get the client we're working with (if any)
+my ($client, $jobstr, $starttime) = @{ $Mappings{$worker-&gt;{fd}} };
+
+# if we have no client, then we just got a standard message from
+# the queryworker and need to pass it up the line
+return MogileFS::ProcManager-&gt;HandleChildRequest($worker, $line) if !$client;
+
+# at this point it was a command response, but if the client has gone
+# away, just reenqueue this query worker
+return MogileFS::ProcManager-&gt;NoteIdleQueryWorker($worker) if $client-&gt;{closed};
+
+# &lt;numeric id&gt; [client-side time to complete] &lt;response&gt;
+my ($time, $id, $res);
+if ($line =~ /^(\d+-\d+)\s+(\-?\d+\.\d+)\s+(.+)$/) {
+    # save time and response for use later
+    # Note the optional negative sign in the regexp.  Somebody
+    # on the mailing list was getting a time of -0.0000, causing
+    # broken connections.
+    ($id, $time, $res) = ($1, $2, $3);
+}
+
+# now, if it doesn't match
+unless ($id &amp;&amp; $id eq "$worker-&gt;{pid}-$worker-&gt;{reqid}") {
+    $id   = "&lt;undef&gt;" unless defined $id;
+    $line = "&lt;undef&gt;" unless defined $line;
+    $line =~ s/\n/\\n/g;
+    $line =~ s/\r/\\r/g;
+    Mgd::error("Worker responded with id $id (line: [$line]), but expected id $worker-&gt;{pid}-$worker-&gt;{reqid}, killing");
+    $client-&gt;close('worker_mismatch');
+    return MogileFS::ProcManager-&gt;AskWorkerToDie($worker);
+}
+
+# now time this interval and add to @RecentQueries
+my $tinterval = Time::HiRes::time() - $starttime;
+push @RecentQueries, sprintf("%s %.4f %s", $jobstr, $tinterval, $time);
+shift @RecentQueries if scalar(@RecentQueries) &gt; 50;
+
+# send text to client, put worker back in queue
+$client-&gt;write("$res\r\n");
+MogileFS::ProcManager-&gt;NoteIdleQueryWorker($worker);
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<h2>绕了一大圈终于回来了</h2>
+
+<blockquote><p>_wait_for_readability等待socket有返回数据</p>
+
+<p>如果OK就返回decode的引用</p></blockquote>
+
+<p>```</p>
+
+<h1>wait up to 3 seconds for the socket to come to life</h1>
+
+<p>unless (_wait_for_readability(fileno($sock), $self->{timeout})) {</p>
+
+<pre><code>close($sock);
+$self-&gt;run_hook('do_request_read_timeout', $cmd, $self-&gt;{last_host_connected});
+undef $self-&gt;{sock_cache};
+return _fail("timed out after $self-&gt;{timeout}s against $self-&gt;{last_host_connected} when sending command: [$req]");
+</code></pre>
+
+<p>}
+my $line = &lt;$sock>;</p>
+
+<h1>OK <arg_len> <response></h1>
+
+<p>if ($line =~ /<sup>OK\s+\d<em>\s</em>(\S*)/)</sup> {</p>
+
+<pre><code>my $args = _decode_url_string($1);
+_debug("RETURN_VARS: ", $args);
+return $args;
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+]]></content>
+  </entry>
+  
+</feed>

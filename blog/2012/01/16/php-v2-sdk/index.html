@@ -1,0 +1,607 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>PHP V2 SDK 设计规范 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="本文涉及PHP V2代码级SDK设计的规范。 代码 目录结构和命名 SDK的模块代码将和客户代码在同一个运行时环境下执行，代码的命名需要注意，避免名称冲突。 假设发布功能模块的SDK名称为($SDK_NAME)，其代码的根目录应该命名为:app-($SDK_NAME)-shared。 app-($ &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/01/16/php-v2-sdk/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">PHP V2 SDK 设计规范</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-16T16:27:00+08:00" pubdate data-updated="true">Jan 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>本文涉及PHP V2代码级SDK设计的规范。</p>
+
+<h2>代码</h2>
+
+<h3>目录结构和命名</h3>
+
+<p>SDK的模块代码将和客户代码在同一个运行时环境下执行，代码的命名需要注意，避免名称冲突。</p>
+
+<p>假设发布功能模块的SDK名称为<code>($SDK_NAME)</code>，其代码的根目录应该命名为:<code>app-($SDK_NAME)-shared</code>。</p>
+
+<pre><code>app-($SDK_NAME)-shared
+|
++--- classes
+|    |    
+|    +--- $(SDK_NAME)
+|    |    |
+|    |    + API.php
+|    |
+|    + ...
+|
++--- config
+|    |
+|    +--- database.php
+|    |
+|    +--- common.php
+|    |
+|    + ...
+|
++--- lib
+</code></pre>
+
+<p>对使用SDK的客户代码，只需要关心一个类<code>($SDK_NAME)_API</code>，类文件位于<code>classes/($SDK_NAME)/API.php</code>。
+客户代码在需要调用模块的地方引用</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{</span><span class="nv">$SDK_NAME</span><span class="si">}</span><span class="s2">_API&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$api</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$SDK_NAME</span><span class="p">)</span><span class="nx">_API</span><span class="o">::</span><span class="na">get_instance</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$api</span><span class="o">-&gt;</span><span class="na">exported_func</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>API文件的基本格式为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s1">&#39;....&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s1">&#39;....&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="err">($</span><span class="nc">SDK_NAME</span><span class="p">)</span><span class="nx">_API</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">const</span> <span class="no">VERSION</span> <span class="o">=</span> <span class="s1">&#39;....&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">get_instance</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="o">...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">exported_func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="o">...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<!-- more -->
+
+
+<h3>配置管理</h3>
+
+<p>代码已经有<strong>名字空间</strong>的概念，要求代码在独立的名字空间下，而配置文件原先没有这个概念。
+为了不和其他代码模块冲突，配置文件也需要遵循前缀的策略。</p>
+
+<h4>Database</h4>
+
+<p>SDK的数据库配置不能够简单的起名为<code>master</code>、<code>slave</code>，而必须增加<code>($SDK_NAME)_</code>前缀。例如</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="o">...</span>
+</span><span class='line'><span class="nv">$config</span><span class="p">[</span><span class="s1">&#39;bbs_master&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>    <span class="o">...</span>
+</span><span class='line'><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$config</span><span class="p">[</span><span class="s1">&#39;bbs_slave&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>    <span class="o">...</span>
+</span><span class='line'><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如上述例子，SDK里引用的配置项要求<strong>全部采用<code>($SDK_NAME)_</code>作为前缀</strong>。</p>
+
+<h4>Memcached</h4>
+
+<p>SDK的Memcached配置也必须增加<code>($SDK_NAME)_</code>前缀。例如</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="o">...</span>
+</span><span class='line'><span class="nv">$config</span><span class="p">[</span><span class="s1">&#39;server&#39;</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="o">...</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$config</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{</span><span class="nv">$SDK_NAME</span><span class="si">}</span><span class="s2">_server&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="o">...</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>同时，system下的<code>APF_Cache_Factory</code>类的<code>get_memcache()</code>和<code>load_memcache()</code>方法也需要做相应的改进，增加memcache的名字参数</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='diff'><span class='line'><span class="gh">diff --git a/system/classes/apf/cache/Factory.php b/system/classes/apf/cache/Factory.php</span>
+</span><span class='line'><span class="gd">--- a/system/classes/apf/cache/Factory.php</span>
+</span><span class='line'><span class="gi">+++ b/system/classes/apf/cache/Factory.php</span>
+</span><span class='line'><span class="gu">@@ -17,20 +17,20 @@ class APF_Cache_Factory {</span>
+</span><span class='line'>     /**
+</span><span class='line'>      * @return APF_Cache_Memcache
+</span><span class='line'>      */
+</span><span class='line'><span class="gd">-    public function get_memcache() {</span>
+</span><span class='line'><span class="gd">-        if (!isset($this-&gt;memcache)) {</span>
+</span><span class='line'><span class="gd">-            $this-&gt;memcache = $this-&gt;load_memcache();</span>
+</span><span class='line'><span class="gi">+    public function get_memcache($name=&#39;&#39;) {</span>
+</span><span class='line'><span class="gi">+        if (!isset($this-&gt;memcaches[$name])) {</span>
+</span><span class='line'><span class="gi">+            $this-&gt;memcaches[$name] = $this-&gt;load_memcaches($name);</span>
+</span><span class='line'>         }
+</span><span class='line'><span class="gd">-        return $this-&gt;memcache;</span>
+</span><span class='line'><span class="gi">+        return $this-&gt;memcaches[$name];</span>
+</span><span class='line'>     }
+</span><span class='line'>
+</span><span class='line'>     /**
+</span><span class='line'>      * @return APF_Cache_Memcache
+</span><span class='line'>      */
+</span><span class='line'><span class="gd">-    public function load_memcache() {</span>
+</span><span class='line'><span class="gi">+    public function load_memcache($name=&#39;&#39;) {</span>
+</span><span class='line'>         apf_require_class($this-&gt;memcache_class);
+</span><span class='line'>         $memcache = new $this-&gt;memcache_class();
+</span><span class='line'><span class="gd">-        $servers = APF::get_instance()-&gt;get_config(&quot;servers&quot;, &quot;cache&quot;);</span>
+</span><span class='line'><span class="gi">+        $servers = APF::get_instance()-&gt;get_config(($name) ? &quot;{$name}_servers&quot; : &quot;servers&quot;, &quot;cache&quot;);</span>
+</span><span class='line'>         foreach ($servers as $server) {
+</span><span class='line'>             $memcache-&gt;addServer($server[&#39;host&#39;], $server[&#39;port&#39;]);
+</span><span class='line'>         }
+</span><span class='line'><span class="gu">@@ -39,9 +39,9 @@ class APF_Cache_Factory {</span>
+</span><span class='line'>     }
+</span><span class='line'>
+</span><span class='line'>     /**
+</span><span class='line'><span class="gd">-     * @var APF_Cache_Memcache</span>
+</span><span class='line'><span class="gi">+     * @var APF_Cache_Memcache array</span>
+</span><span class='line'>      */
+</span><span class='line'><span class="gd">-    private $memcache;</span>
+</span><span class='line'><span class="gi">+    private $memcaches=array();</span>
+</span><span class='line'>
+</span><span class='line'>     //
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这个对system的改动，需要使用SDK的<strong>各个事业部都应该进行</strong>。</p>
+
+<h3>部署建议</h3>
+
+<p>代码位置：</p>
+
+<pre><code>RELEASE_PATH
+|
++--- app-foobar
+|
++--- app-($SDK_NAME)-shared
+|
++--- app-($SDK_NAME)-demo
+|
++--- system
+</code></pre>
+
+<p>入口文件：</p>
+
+<pre><code>/home/www/v2
+|
++--- foobar
+|    |
+|    +--- index.php
+|    |
+|    +--- config
+|    |    |
+|    |    +--- database.php
+|    |    |
+|    |    + ...
+|
+|
++--- ($SDK_NAME)
+|    |
+|    +--- 
+|    |
+|    +--- config_($SDK_VERSION)
+|    |    |
+|    |    +--- database.php
+|    |    |
+|    |    + ...
+|
+</code></pre>
+
+<p><code>($SDK_NAME)/config_($SDK_VERSION)</code>目录下的文件由SDK的配置发布工具自动更新。</p>
+
+<p><code>index.php</code>里的配置文件路径:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="o">...</span>
+</span><span class='line'><span class="nv">$G_CONF_PATH</span><span class="o">=</span><span class="k">array</span><span class="p">(</span>
+</span><span class='line'>      <span class="nx">APP_PATH</span><span class="o">.</span><span class="s2">&quot;../app-</span><span class="si">{</span><span class="nv">$SDK_NAME</span><span class="si">}</span><span class="s2">-shared/config/&quot;</span><span class="p">,</span>       <span class="c1">// SDK的缺省配置</span>
+</span><span class='line'>      <span class="nx">APP_PATH</span><span class="o">.</span><span class="s1">&#39;config/&#39;</span><span class="p">,</span>                                 <span class="c1">// APP的缺省配置</span>
+</span><span class='line'>      <span class="s2">&quot;/home/www/v2/</span><span class="si">{</span><span class="nv">$SDK_NAME</span><span class="si">}</span><span class="s2">/config_</span><span class="si">{</span><span class="nv">$SDK_VERSION</span><span class="si">}</span><span class="s2">/&quot;</span><span class="p">,</span>  <span class="c1">// SDK的生成环境配置，由agent自动更新</span>
+</span><span class='line'>      <span class="s1">&#39;/home/www/v2/&#39;</span><span class="o">.</span><span class="nx">APP_NAME</span><span class="o">.</span><span class="s1">&#39;/config/&#39;</span><span class="p">,</span>                <span class="c1">// APP的生成环境配置，可以覆盖SDK的配置</span>
+</span><span class='line'><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>版本</h2>
+
+<h3>兼容性要求</h3>
+
+<p>SDK和客户app程序都依赖APF的system，因此SDK首先要保证不使用特殊的system版本，例如数据库访问应该仅依赖<code>system/apf/db</code>里现有的方法。</p>
+
+<p>其他事业部对system的改动也将严格限制。一般情况下，</p>
+
+<ul>
+<li>不允许对现有的system目录下的类进行改动</li>
+<li>由于新功能或改进功能而增加修改的类应该方在app程序的目录下，例如<code>app-aifang-core</code>这样的包内</li>
+<li>不应该出现<code>APF_</code>为名字空间前缀的类</li>
+</ul>
+
+
+<h3>版本号规则</h3>
+
+<ul>
+<li>版本号的基本规则为X.Y.Z三部分的数字</li>
+<li>公开的API改变或减少，增加X，同时Y,Z清0</li>
+<li>公开的API增加或者实现的改变，增加Y，同时Z清0</li>
+<li>仅对BUG修复的，增加Z</li>
+<li>预发布、测试的版本，格式为X.Y.0-foobar，其中Z为0。这种版本不作为对外公布的正式版本，仅供开发或测试使用。</li>
+<li>所有新的公开发布必须使用新的版本号</li>
+</ul>
+
+
+<p>详细规则见张吉翻译的<a href="https://github.com/anjuke-inc/semver/blob/zh-cn/semver.md">版本号的语义命名法</a></p>
+
+<h2>自动化配置部署</h2>
+
+<p>客户程序的app服务器上需要配置SDK的config-agent脚本。这个脚本根据SDK的服务提供方要求，自动修改SDK相关的配置。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">erning</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-16T16:27:00+08:00" pubdate data-updated="true">Jan 16<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/spec/'>spec</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/01/07/semver/" title="Previous Post: 版本号的语义命名法 2.0.0-rc.1">&laquo; 版本号的语义命名法 2.0.0-rc.1</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/02/24/how-to-blogging/" title="Next Post: 怎样维护ArchCorp的内容 (未完…)">怎样维护ArchCorp的内容 (未完…) &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/01/16/php-v2-sdk/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/01/16/php-v2-sdk/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

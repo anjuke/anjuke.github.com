@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: aps | Anjuke Engineering]]></title>
+  <link href="http://arch.corp.anjuke.com/blog/categories/aps/atom.xml" rel="self"/>
+  <link href="http://arch.corp.anjuke.com/"/>
+  <updated>2013-03-13T12:15:00+08:00</updated>
+  <id>http://arch.corp.anjuke.com/</id>
+  <author>
+    <name><![CDATA[Anjuke Inc.]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Anjuke PHP Service 规范]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2011/07/16/aps/"/>
+    <updated>2011-07-16T22:22:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2011/07/16/aps</id>
+    <content type="html"><![CDATA[<p>Zhang Erning <a href="&#109;&#x61;&#x69;&#x6c;&#x74;&#111;&#58;&#101;&#114;&#x6e;&#x69;&#x6e;&#x67;&#x40;&#x61;&#x6e;&#106;&#x75;&#107;&#101;&#46;&#x63;&#111;&#x6d;">&#x65;&#114;&#x6e;&#105;&#x6e;&#103;&#64;&#x61;&#x6e;&#x6a;&#x75;&#107;&#x65;&#x2e;&#x63;&#111;&#109;</a><br/>
+v1.0, July 2011</p>
+
+<h2>Goal</h2>
+
+<p>我们的目标是为PHP应用程序搭建一个轻量、灵活、高性能的异步远过程调用(RPC)的解决方案。同时也希望能够方便隔离前端的应用程序和后端的服务进程，使得产品的开发和部署更加便捷。</p>
+
+<p><strong>轻量</strong></p>
+
+<ul>
+<li>可以将服务进程与PHP应用服务部署在同一台物理服务器上</li>
+<li>一台应用服务器上能够部署多种服务进程</li>
+</ul>
+
+
+<p><strong>灵活</strong></p>
+
+<ul>
+<li>PHP应用程序可以采用进程间通讯(IPC)的方式与部署在同一服务器上的服务进程交互</li>
+<li>PHP应用程序也能够通过网络通讯(TCP)的方式与部署在其他服务器上的服务进程交互</li>
+<li>与服务进程通讯的方式可以通过配置文件调整，PHP的应用程序本身并不关心</li>
+<li>服务进程可以采用各种语言编写</li>
+</ul>
+
+
+<p><strong>高性能</strong></p>
+
+<ul>
+<li>为PHP提供异步方法调用的基本目的就是为了解决了PHP程序在处理请求的时候单线程的问题，因此不能以牺牲性能为代价</li>
+</ul>
+
+
+<!-- more -->
+
+
+<h2>Architect</h2>
+
+<p>为了实现这几个基本目标，我们选用<strong>ØMQ</strong>作为底层实现的基础，采用PHP直接与服务进程通讯的方式，而不是通过庞大复杂的中间件。</p>
+
+<p>服务进程(Service)以ØMQ的<strong>XREP</strong>套接字绑定在某个位置，客户程序(Client)用ØMQ的<strong>XREQ</strong>套接字连接服务进程。客户程序发送请求；服务进程处理请求，之后返回结果；客户程序接收结果并进行后续操作。</p>
+
+<pre><code> +-------+      +-------+      +-------+      +-------+
+ |  PHP  |      |  PHP  |      |  PHP  |      |  PHP  |
+ +---+---+      +---+---+      +---+---+      +---+---+
+     |              |              |              |  
+     |              |              |              |  
+     \------zmq-----+------zmq-----+------zmq-----/
+             |              |              |
+             |              |              |
+       /-----+-----\  /-----+-----\  /-----+-----\
+       |           |  |           |  |           |
+       | Service A |  | Service B |  | Service C |
+       |           |  |           |  |           |
+       \-----------/  \-----------/  \-----------/
+</code></pre>
+
+<h3>Asynchronous</h3>
+
+<p>要求客户程序和服务进程间实现异步的方法调用。客户程序允许一次发送多条请求给服务进程，之后一起等待结果。</p>
+
+<pre><code>           Synchronous RPC                          Asynchronous RPC
+
+  Client      Service A    Service B        Client      Service A    Service B
+     |            |            |               |            |            |
+ 0 S |-----------&gt;|            |           0 S |-----------&gt;|            |
+ 1   |            |            |           1   |------------------------&gt;|
+ 2   |            |            |           2   |            |            |
+ 3   |&lt;-----------|            |           3   |&lt;-----------|            |
+ 4   |------------------------&gt;|           4   |            |            |
+ 5   |            |            |           5   |            |            |
+ 6   |            |            |           6 F |&lt;------------------------|
+ 7   |            |            |           7   |            |            |
+ 8   |            |            |           8   |            |            |
+ 9 F |&lt;------------------------|           9   |            |            |
+     |            |            |               |            |            |
+
+ The services can't proceed multiple       The services can proceed multiple
+ requests in parallel. Thus wait time      requests in parallel. Thus client
+ becomes long.                             can gather results faster.        
+</code></pre>
+
+<h3>Parallel Pipelining</h3>
+
+<p>当服务进程从一个客户程序收到多条请求时可以并行处理这些请求，当任何一个请求处理完成时，应当立即将这个请求的结果返回给客户程序。也就是说，服务进程返回结果的顺序不必与客户程序请求的顺序一致。</p>
+
+<p>客户程序发起的每一个请求都会分配一个唯一的请求序列号。服务进程返回结果时，要求将相应请求的序列号原封不动的返回给客户程序，客户程序通过这一个序列号识别当前收到的结果是哪一个请求的。</p>
+
+<pre><code>  RPC without parallel pipelining           RPC with parallel pipelining
+
+      Client           Service                  Client           Service
+         |               |  |                      |               |  |
+     0 S |--1-----------&gt;|  |                  0 S |--1-----------&gt;|  |
+     1   |--2--------------&gt;|                  1   |--2--------------&gt;|
+     2   |               |  |                  2   |               |  |
+     3   |               |  |                  3   |&lt;-2---------------|
+     4   |               |  |                  4   |               |  |
+     5   |&lt;-1------------|  |                  5 F |&lt;-1------------|  |
+     6 F |&lt;-2---------------|                  6   |               |  |
+     7   |               |  |                  7   |               |  |
+     8   |               |  |                  8   |               |  |
+     9   |               |  |                  9   |               |  |
+         |               |  |                      |               |  |
+
+ The service must return in received       The service can return just when it
+ order, even if former task is heavy       finished and the client can receive
+ and following one is light.               replies faster.
+</code></pre>
+
+<h3>Flexible Worker</h3>
+
+<p>通常服务进程需要维护多个处理程序(Worker)，这样在接收到多个请求的时候能够并行处理这些请求。我们建议使用ØMQ来实现线程间(或进程间)的通讯，这样不必再为多线程间的共享数据而引入各种各样的锁机制，减少不必要的麻烦。</p>
+
+<pre><code>      A Service with several workers
+
+ /-----------------------------------------\
+ | Service                                 |
+ |                                         |
+ |          +--------+  +--------+         |
+ |          : Worker |  : Worker |         |
+ |          +--------+  +--------+         |
+ |                                         |
+ |    +--------+  +--------+  +--------+   |
+ |    : Worker |  : Worker |  : Worker |   |
+ |    +--------+  +--------+  +--------+   |
+ |                                         |
+ \-----------------------------------------/ 
+</code></pre>
+
+<p>我们这里还规范了一份处理程序和其所属的服务进程间的通讯协议。采用这一规范来实现的处理程序将能够被我们的通用服务进程调度和管理，使处理程序是采用不同的语言开发。我们的规范要求处理程序采用ØMQ的<strong>XREQ</strong>套接字连接至其所属的服务进程，发出准备好的消息，并等待分配的任务。</p>
+
+<h2>Message Format</h2>
+
+<ul>
+<li>客户程序与服务进程之间通讯的消息格式应当完全采用如下<strong>APS/Client</strong>规范。</li>
+<li>通用服务进程与处理程序之间通讯的消息格式采用如下的<strong>APS/Worker</strong>规范。</li>
+</ul>
+
+
+<h3>APS/Client</h3>
+
+<p>客户程序与服务进程间通过<strong>REQUEST</strong>和<strong>REPLY</strong>互相通讯。由客户程序向服务进程发起的是<strong>REQUEST</strong>命令；服务进程返回的是<strong>REPLY</strong>命令。</p>
+
+<h4>REQUEST</h4>
+
+<ul>
+<li>Frame 1: "APS10" (5 bytes string)</li>
+<li>Frame 2: Sequence, Timestamp, Expiry (msgpacked array)</li>
+<li>Frame 3: Method (printable string)</li>
+<li>Frame 4: Request body (msgpack(params))</li>
+</ul>
+
+
+<h4>REPLY</h4>
+
+<ul>
+<li>Frame 1: "APS10" (5 bytes string)</li>
+<li>Frame 2: Sequence, Timestamp, Status (msgpacked array)</li>
+<li>Frame 3: Reply body (msgpack(result))</li>
+</ul>
+
+
+<h3>APS/Worker</h3>
+
+<p>通用的服务进程将通过以下消息与处理程序进行通讯。</p>
+
+<p>第一个消息由处理程序发起，处理程序向通用服务进程发送<strong>HEARTBEAT</strong>消息，表示已经准备妥当可以接收任务；通用服务进程将客户程序的请求以<strong>REQUEST</strong>命令转发给处理程序；处理程序完成后以<strong>REPLY</strong>命令回复给通用服务进程；通用服务进程负责转给请求的客户程序。REQUEST命令只能由服务进程发起；REPLY命令只能由处理程序发起。</p>
+
+<p>处理程序和通用服务进程间可以定时发送<strong>HEARTBEAT</strong>消息，以告知对方自己还处在正常状态。单通用服务进程在一段时间内没有收到处理程序的状态报告，可以认为改处理程序异常，而不再给其分配任务。</p>
+
+<p>处理程序主动退出时应该使用<strong>GOODBYE</strong>消息通知通用服务进程，通用服务进程保证不再分配任务给这个处理程序。当处理程序收到通用服务进程发来的<strong>GOODBYE</strong>消息，在处理完当前任务后可以退出进程。</p>
+
+<h4>HEARTBEAT</h4>
+
+<ul>
+<li>Frame 1: "APS10"</li>
+<li>Frame 2: 0x01 (one byte, representing HEARTBEAT)</li>
+<li>Frame 3: Timestamp (msgpacked)</li>
+</ul>
+
+
+<h4>GOODBYE</h4>
+
+<ul>
+<li>Frame 1: "APS10"</li>
+<li>Frame 2: 0x02 (one byte, representing GOODBYE)</li>
+<li>Frame 3: Timestamp (msgpacked)</li>
+</ul>
+
+
+<h4>REQUEST</h4>
+
+<ul>
+<li>Frame 1: "APS10"</li>
+<li>Frame 2: 0x00</li>
+<li>Frame 3: Envelope (from upstream route, may more than one frame)</li>
+<li>Frame 4: Empty</li>
+<li>Frame 5: Sequence, Timestamp, Expiry (msgpacked array)</li>
+<li>Frame 6: Method (printable string)</li>
+<li>Frame 7: Request body (msgpack(params))</li>
+</ul>
+
+
+<h4>REPLY</h4>
+
+<ul>
+<li>Frame 1: "APS10"</li>
+<li>Frame 2: 0x00</li>
+<li>Frame 3: Envelope (from upstream route, may more than one frame)</li>
+<li>Frame 4: Empty</li>
+<li>Frame 5: Sequence, Timestamp, Status (msgpacked array)</li>
+<li>Frame 6: Reply body (msgpack([result]))</li>
+</ul>
+
+
+<h2>Realibility</h2>
+
+<p>可靠性的控制不此描述，由客户程序和通用服务进程的具体实现负责可靠性。</p>
+]]></content>
+  </entry>
+  
+</feed>

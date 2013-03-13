@@ -1,0 +1,1149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Translation | Anjuke Engineering]]></title>
+  <link href="http://arch.corp.anjuke.com/blog/categories/translation/atom.xml" rel="self"/>
+  <link href="http://arch.corp.anjuke.com/"/>
+  <updated>2013-03-13T12:15:00+08:00</updated>
+  <id>http://arch.corp.anjuke.com/</id>
+  <author>
+    <name><![CDATA[Anjuke Inc.]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[开源软件架构 - 卷1：第14章 Python打包工具]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/11/18/aosa-python-packaging/"/>
+    <updated>2012-11-18T19:20:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/11/18/aosa-python-packaging</id>
+    <content type="html"><![CDATA[<p>作者：<a href="http://www.aosabook.org/en/intro1.html#ziade-tarek">Tarek Ziadé</a>，翻译：<a href="mailto:zhangji87@gmail.com">张吉</a></p>
+
+<p>原文：<a href="http://www.aosabook.org/en/packaging.html">http://www.aosabook.org/en/packaging.html</a></p>
+
+<h2>14.1 简介</h2>
+
+<p>对于如何安装软件，目前有两种思想流派。第一种是说软件应该自给自足，不依赖于其它任何部件，这点在Windows和Mac OS X系统中很流行。这种方式简化了软件的管理：每个软件都有自己独立的“领域”，安装和卸载它们不会对操作系统产生影响。如果软件依赖一项不常见的类库，那么这个类库一定是包含在软件安装包之中的。</p>
+
+<p>第二种流派，主要在类Linux的操作系统中盛行，即软件应该是由一个个独立的、小型的软件包组成的。类库被包含在软件包中，包与包之间可以有依赖关系。安装软件时需要查找和安装它所依赖的其他特定版本的软件包。这些依赖包通常是从一个包含所有软件包的中央仓库中获取的。这种理念也催生了Linux发行版中那些复杂的依赖管理工具，如<code>dpkg</code>和<code>RPM</code>。它们会跟踪软件包的依赖关系，并防止两个软件使用了版本相冲突的第三方包。</p>
+
+<p>以上两种流派各有优劣。高度模块化的系统可以使得更新和替换某个软件包变的非常方便，因为每个类库都只有一份，所有依赖于它的应用程序都能因此受益。比如，修复某个类库的安全漏洞可以立刻应用到所有程序中，而如果应用程序使用了自带的类库，那安全更新就很难应用进去了，特别是在类库版本不一致的情况下更难处理。</p>
+
+<p>不过这种“模块化”也被一些开发者视为缺点，因为他们无法控制应用程序的依赖关系。他们希望提供一个独立和稳定的软件运行环境，这样就不会在系统升级后遭遇各种依赖方面的问题。</p>
+
+<!-- more -->
+
+
+<p>在安装程序中包含所有依赖包还有一个优点：便于跨平台。有些项目在这点上做到了极致，它们将所有和操作系统的交互都封装了起来，在一个独立的目录中运行，甚至包括日志文件的记录位置。</p>
+
+<p>Python的打包系统使用的是第二种设计思想，并尽可能地方便开发者、管理员、用户对软件的管理。不幸的是，这种方式导致了种种问题：错综复杂的版本结构、混乱的数据文件、难以重新打包等等。三年前，我和其他一些Python开发者决定研究解决这个问题，我们自称为“打包别动队”，本文就是讲述我们在这个问题上做出的努力和取得的成果。</p>
+
+<h3>术语</h3>
+
+<p>在Python中， <em>包</em> 表示一个包含Python文件的目录。Python文件被称为 <em>模块</em> ，这样一来，使用“包”这个单词就显得有些模糊了，因为它常常用来表示某个项目的 <em>发行版本</em> 。</p>
+
+<p>Python开发者有时也对此表示不能理解。为了更清晰地进行表述，我们用“Python包（package）”来表示一个包含Python文件的目录，用“发行版本（release）”来表示某个项目的特定版本，用“发布包（distribution）”来表示某个发行版本的源码或二进制文件，通常是Tar包或Zip文件的形式。</p>
+
+<h2>14.2 Python开发者的困境</h2>
+
+<p>大多数Python开发者希望自己的程序能够在任何环境中运行。他们还希望自己的软件既能使用标准的Python类库，又能使用依赖于特定系统类型的类库。但除非开发者使用现有的各种打包工具生成不同的软件包，否则他们打出的软件安装包就必须在一个安装有Python环境的系统中运行。这样的软件包还希望做到以下几点：</p>
+
+<ul>
+<li>其他人可以针对不同的目标系统对这个软件重新打包；</li>
+<li>软件所依赖的包也能够针对不同的目标系统进行重新打包；</li>
+<li>系统依赖项能够被清晰地描述出来。</li>
+</ul>
+
+
+<p>要做到以上几点往往是不可能的。举例来说，Plone这一功能全面的CMS系统，使用了上百个纯Python语言编写的类库，而这些类库并不一定在所有的打包系统中提供。这就意味着Plone必须将它所依赖的软件包都集成到自己的安装包中。要做到这一点，他们选择使用<code>zc.buildout</code>这一工具，它能够将所有的依赖包都收集起来，生成一个完整的应用程序文件，在独立的目录中运行。它事实上是一个二进制的软件包，因为所有C语言代码都已经编译好了。</p>
+
+<p>这对开发者来说是福音：他们只需要描述好依赖关系，然后借助<code>zc.buildout</code>来发布自己的程序即可。但正如上文所言，这种发布方式在系统层面构筑了一层屏障，这让大多数Linux系统管理员非常恼火。Windows管理员不会在乎这些，但CentOS和Debian管理员则会，因为按照他们的管理原则，系统中的所有文件都应该被注册和归类到现有的管理工具中。</p>
+
+<p>这些管理员会想要将你的软件按照他们自己的标准重新打包。问题在于：Python有没有这样的打包工具，能够自动地按照新的标准重新打包？如果有，那么Python的任何软件和类库就能够针对不同的目标系统进行打包，而不需要额外的工作。这里，“自动”一词并不是说打包过程可以完全由脚本来完成——这点上<code>RPM</code>和<code>dpkg</code>的使用者已经证实是不可能的了，因为他们总会需要增加额外的信息来重新打包。他们还会告诉你，在重新打包的过程中会遇到一些开发者没有遵守基本打包原则的情况。</p>
+
+<p>我们来举一个实际例子，如何通过使用现有的Python打包工具来惹恼那些想要重新打包的管理员：在发布一个名为“MathUtils”的软件包时使用“Fumanchu”这样的版本号名字。撰写这个类库的数学家想用自家猫咪的名字来作为版本号，但是管理员怎么可能知道“Fumanchu”是他家第二只猫的名字，第一只猫叫做“Phil”，所以“Fumanchu”版本要比“Phil”版本来得高？</p>
+
+<p>可能这个例子有些极端，但是在现有的打包工具和规范中是可能发生的。最坏的情况是<code>easy_install</code>和<code>pip</code>使用自己的一套标准来追踪已安装的文件，并使用字母顺序来比较“Fumanchu”和“Phil”的版本高低。</p>
+
+<p>另一个问题是如何处理数据文件。比如，如果你的软件使用了SQLite数据库，安装时被放置在包目录中，那么在程序运行时，系统会阻止你对其进行读写操作。这样做还会破坏Linux系统的一项惯例，即<code>/var</code>目录下的数据文件是需要进行备份的。</p>
+
+<p>在现实环境中，系统管理员需要能够将你的文件放置到他们想要的地方，并且不破坏程序的完整性，这就需要你来告诉他们各类文件都是做什么用的。让我们换一种方式来表述刚才的问题：Python是否有这样一种打包工具，它可以提供各类信息，足以让第三方打包工具能据此重新进行打包，而不需要阅读软件的源码？</p>
+
+<h2>14.3 现有的打包管理架构</h2>
+
+<p>Python标准库中提供的<code>Distutils</code>打包工具充斥了上述的种种问题，但由于它是一种标准，所以人们要么继续忍受并使用它，或者转向更先进的工具<code>Setuptools</code>，它在Distutils之上提供了一些高级特性。另外还有<code>Distribute</code>，它是<code>Setuptools</code>的衍生版本。<code>Pip</code>则是一种更为高级的安装工具，它依赖于<code>Setuptools</code>。</p>
+
+<p>但是，这些工具都源自于<code>Distutils</code>，并继承了它的种种问题。有人也想过要改进<code>Distutils</code>本身，但是由于它的使用范围已经很广很广，任何小的改动都会对Python软件包的整个生态系统造成冲击。</p>
+
+<p>所以，我们决定冻结<code>Distutils</code>的代码，并开始研发<code>Distutils2</code>，不去考虑向前兼容的问题。为了解释我们所做的改动，首先让我们近距离观察一下<code>Distutils</code>。</p>
+
+<h3>14.3.1 Distutils基础及设计缺陷</h3>
+
+<p><code>Distutils</code>由一些命令组成，每条命令都是一个包含了<code>run</code>方法的类，可以附加若干参数进行调用。<code>Distutils</code>还提供了一个名为<code>Distribution</code>的类，它包含了一些全局变量，可供其他命令使用。</p>
+
+<p>当要使用<code>Distutils</code>时，Python开发者需要在项目中添加一个模块，通常命名为<code>setup.py</code>。这个模块会调用<code>Distutils</code>的入口函数：<code>setup</code>。这个函数有很多参数，这些参数会被<code>Distribution</code>实例保存起来，供后续使用。下面这个例子中我们指定了一些常用的参数，如项目名称和版本，它所包含的模块等：</p>
+
+<p>```python
+from distutils.core import setup</p>
+
+<p>setup(name='MyProject', version='1.0', py_modules=['mycode.py'])
+```</p>
+
+<p>这个模块可以用来执行<code>Distutils</code>的各种命令，如<code>sdist</code>。这条命令会在<code>dist</code>目录中创建一个源代码发布包：</p>
+
+<p><code>bash
+$ python setup.py sdist
+</code></p>
+
+<p>这个模块还可以执行<code>install</code>命令：</p>
+
+<p><code>bash
+$ python setup.py install
+</code></p>
+
+<p><code>Distutils</code>还提供了一些其他命令：</p>
+
+<ul>
+<li><code>upload</code> 将发布包上传至在线仓库</li>
+<li><code>register</code> 向在线仓库注册项目的基本信息，而不上传发布包</li>
+<li><code>bdist</code> 创建二进制发布包</li>
+<li><code>bdist_msi</code> 创建<code>.msi</code>安装包，供Windows系统使用</li>
+</ul>
+
+
+<p>我们还可以使用其他一些命令来获取项目的基本信息。</p>
+
+<p>所以在安装或获取应用程序信息时都是通过这个文件调用<code>Distutils</code>实现的，如获取项目名称：</p>
+
+<p><code>bash
+$ python setup.py --name
+MyProject
+</code></p>
+
+<p><code>setup.py</code>是一个项目的入口，可以通过它对项目进行构建、打包、发布、安装等操作。开发者通过这个函数的参数信息来描述自己的项目，并使用它进行各种打包任务。这个文件同样用于在目标系统中安装软件。</p>
+
+<p><img src="http://www.aosabook.org/images/packaging/setup-py.png" alt="图14.1 安装" /></p>
+
+<p>图14.1 安装</p>
+
+<p>然而，使用同一个文件来对项目进行打包、发布、以及安装，是<code>Distutils</code>的主要缺点。例如，你需要查看<code>lxml</code>项目的名称属性，<code>setup.py</code>会执行很多其他无关的操作，而不是简单返回一个字符串：</p>
+
+<p><code>bash
+$ python setup.py --name
+Building lxml version 2.2.
+NOTE: Trying to build without Cython, pre-generated 'src/lxml/lxml.etree.c'
+needs to be available.
+Using build configuration of libxslt 1.1.26
+Building against libxml2/libxslt in the following directory: /usr/lib/lxml
+</code></p>
+
+<p>在有些项目中它甚至会执行失败，因为开发者默认为<code>setup.py</code>只是用来安装软件的，而其他一些<code>Distutils</code>功能只在开发过程中使用。因此，<code>setup.py</code>的角色太多，容易引起他人的困惑。</p>
+
+<h3>14.3.2 元信息和PyPI</h3>
+
+<p><code>Distutils</code>在构建发布包时会创建一个<code>Metadata</code>文件。这个文件是按照PEP314<sup>1</sup>编写的，包含了一些常见的项目信息，包括名称、版本等，主要有以下几项：</p>
+
+<ul>
+<li><code>Name</code>：项目名称</li>
+<li><code>Version</code>：发布版本号</li>
+<li><code>Summary</code>：项目简介</li>
+<li><code>Description</code>：项目详情</li>
+<li><code>Home-Page</code>：项目主页</li>
+<li><code>Author</code>：作者</li>
+<li><code>Classifers</code>：项目类别。Python为不同的发行协议、发布版本（beta，alpha，final）等提供了不同的类别。</li>
+<li><code>Requires</code>，<code>Provides</code>，<code>Obsoletes</code>：描述项目依赖信息</li>
+</ul>
+
+
+<p>这些信息一般都能移植到其他打包系统中。</p>
+
+<p>Python项目索引（Python Package Index，简称PyPI<sup>2</sup>），是一个类似CPAN的中央软件包仓库，可以调用<code>Distutils</code>的<code>register</code>和<code>upload</code>命令来注册和发布项目。<code>register</code>命令会构建<code>Metadata</code>文件并传送给PyPI，让访问者和安装工具能够浏览和搜索。</p>
+
+<p><img src="http://www.aosabook.org/images/packaging/pypi.png" alt="图14.2：PyPI仓库" /></p>
+
+<p>图14.2：PyPI仓库</p>
+
+<p>你可以通过<code>Classifies</code>（类别）来浏览，获取项目作者的名字和主页。同时，<code>Requires</code>可以用来定义Python模块的依赖关系。<code>requires</code>选项可以向元信息文件的<code>Requires</code>字段添加信息：</p>
+
+<p>```python
+from distutils.core import setup</p>
+
+<p>setup(name='foo', version='1.0', requires=['ldap'])
+```</p>
+
+<p>这里声明了对<code>ldap</code>模块的依赖，这种依赖并没有实际效力，因为没有安装工具会保证这个模块真实存在。如果说Python代码中会使用类似Perl的<code>require</code>关键字来定义依赖关系，那还有些作用，因为这时安装工具会检索PyPI上的信息并进行安装，其实这也就是CPAN的做法。但是对于Python来说，<code>ldap</code>模块可以存在于任何项目之中，因为<code>Distutils</code>是允许开发者发布一个包含多个模块的软件的，所以这里的元信息字段并无太大作用。</p>
+
+<p><code>Metadata</code>的另一个缺点是，因为它是由Python脚本创建的，所以会根据脚本执行环境的不同而产生特定信息。比如，运行在Windows环境下的一个项目会在<code>setup.py</code>文件中有以下描述：</p>
+
+<p>```python
+from distutils.core import setup</p>
+
+<p>setup(name='foo', version='1.0', requires=['win32com'])
+```</p>
+
+<p>这样配置相当于是默认该项目只会运行在Windows环境下，即使它可能提供了跨平台的方案。一种解决方法是根据不同的平台来指定<code>requires</code>参数：</p>
+
+<p>```python
+from distutils.core import setup
+import sys</p>
+
+<p>if sys.platform == 'win32':</p>
+
+<pre><code>setup(name='foo', version='1.0', requires=['win32com'])
+</code></pre>
+
+<p>else:</p>
+
+<pre><code>setup(name='foo', version='1.0')
+</code></pre>
+
+<p>```</p>
+
+<p>但这种做法往往会让事情更糟。要注意，这个脚本是用来将项目的源码包发布到PyPI上的，这样写就说明它向PyPI上传的<code>Metadata</code>文件会因为该脚本运行环境的不同而不同。换句话说，这使得我们无法在元信息文件中看出这个项目依赖于特定的平台。</p>
+
+<h3>14.3.3 PyPI的架构设计</h3>
+
+<p><img src="http://www.aosabook.org/images/packaging/pypi-workflow.png" alt="图14.3 PyPI工作流" /></p>
+
+<p>图14.3 PyPI工作流</p>
+
+<p>如上文所述，PyPI是一个Python项目的中央仓库，人们可以通过不同的类别来搜索已有的项目，也可以创建自己的项目。人们可以上传项目源码和二进制文件，供其他人下载使用或研究。同时，PyPI还提供了相应的Web服务，让安装工具可以调用它来检索和下载文件。</p>
+
+<h4>注册项目并上传发布包</h4>
+
+<p>我们可以使用<code>Distutils</code>的<code>register</code>命令在PyPI中注册一个项目。这个命令会根据项目的元信息生成一个POST请求。该请求会包含验证信息，PyPI使用HTTP基本验证来确保所有的项目都和一个注册用户相关联。验证信息保存在<code>Distutils</code>的配置文件中，或在每次执行<code>register</code>命令时提示用户输入。以下是一个使用示例：</p>
+
+<p><code>bash
+$ python setup.py register
+running register
+Registering MPTools to http://pypi.python.org/pypi
+Server response (200): OK
+</code></p>
+
+<p>每个注册项目都会产生一个HTML页面，上面包含了它的元信息。开发者可以使用<code>upload</code>命令将发布包上传至PyPI：</p>
+
+<p><code>bash
+$ python setup.py sdist upload
+running sdist
+…
+running upload
+Submitting dist/mopytools-0.1.tar.gz to http://pypi.python.org/pypi
+Server response (200): OK
+</code></p>
+
+<p>如果开发者不想将代码上传至PyPI，可以使用元信息中的<code>Download-URL</code>属性来指定一个外部链接，供用户下载。</p>
+
+<h4>检索PyPI</h4>
+
+<p>除了在页面中检索项目，PyPI还提供了两个接口供程序调用：简单索引协议和XML-PRC API。</p>
+
+<p>简单索引协议的地址是<code>http://pypi.python.org/simple/</code>，它包含了一个链接列表，指向所有的注册项目：</p>
+
+<p><code>html
+&lt;html&gt;&lt;head&gt;&lt;title&gt;Simple Index&lt;/title&gt;&lt;/head&gt;&lt;body&gt;
+⋮    ⋮    ⋮
+&lt;a href='MontyLingua/'&gt;MontyLingua&lt;/a&gt;&lt;br/&gt;
+&lt;a href='mootiro_web/'&gt;mootiro_web&lt;/a&gt;&lt;br/&gt;
+&lt;a href='Mopidy/'&gt;Mopidy&lt;/a&gt;&lt;br/&gt;
+&lt;a href='mopowg/'&gt;mopowg&lt;/a&gt;&lt;br/&gt;
+&lt;a href='MOPPY/'&gt;MOPPY&lt;/a&gt;&lt;br/&gt;
+&lt;a href='MPTools/'&gt;MPTools&lt;/a&gt;&lt;br/&gt;
+&lt;a href='morbid/'&gt;morbid&lt;/a&gt;&lt;br/&gt;
+&lt;a href='Morelia/'&gt;Morelia&lt;/a&gt;&lt;br/&gt;
+&lt;a href='morse/'&gt;morse&lt;/a&gt;&lt;br/&gt;
+⋮    ⋮    ⋮
+&lt;/body&gt;&lt;/html&gt;
+</code></p>
+
+<p>如MPTools项目对应的<code>MPTools/</code>目录，它所指向的路径会包含以下内容：</p>
+
+<ul>
+<li>所有发布包的地址</li>
+<li>在<code>Metadata</code>中定义的项目网站地址，包含所有版本</li>
+<li>下载地址（<code>Download-URL</code>），同样包含所有版本</li>
+</ul>
+
+
+<p>以MPTools项目为例：</p>
+
+<p><code>html
+&lt;html&gt;&lt;head&gt;&lt;title&gt;Links for MPTools&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;&lt;h1&gt;Links for MPTools&lt;/h1&gt;
+&lt;a href="../../packages/source/M/MPTools/MPTools-0.1.tar.gz"&gt;MPTools-0.1.tar.gz&lt;/a&gt;&lt;br/&gt;
+&lt;a href="http://bitbucket.org/tarek/mopytools" rel="homepage"&gt;0.1 home_page&lt;/a&gt;&lt;br/&gt;
+&lt;/body&gt;&lt;/html&gt;
+</code></p>
+
+<p>安装工具可以通过访问这个索引来查找项目的发布包，或者检查<code>http://pypi.python.org/simple/PROJECT_NAME/</code>是否存在。</p>
+
+<p>但是，这个协议主要有两个缺陷。首先，PyPI目前还是单台服务器。虽然很多用户会自己搭建镜像，但过去两年中曾发生过几次PyPI无法访问的情况，用户无法下载依赖包，导致项目构建出现问题。比如说，在构建一个Plone项目时，需要向PyPI发送近百次请求。所以PyPI在这里成为了单点故障。</p>
+
+<p>其次，当项目的发布包没有保存在PyPI中，而是通过<code>Download-URL</code>指向了其他地址，安装工具就需要重定向到这个地址下载发布包。这种情况也会增加安装过程的不稳定性。</p>
+
+<p>简单索引协议只是提供给安装工具一个项目列表，并不包含项目元信息。可以通过PyPI的XML-RPC API来获取项目元信息：</p>
+
+<p>```python</p>
+
+<blockquote><blockquote><blockquote><p>import xmlrpclib
+import pprint
+client = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+client.package_releases('MPTools')
+['0.1']
+pprint.pprint(client.release_urls('MPTools', '0.1'))
+[{'comment_text': &rquot;,
+'downloads': 28,
+'filename': 'MPTools-0.1.tar.gz',
+'has_sig': False,
+'md5_digest': '6b06752d62c4bffe1fb65cd5c9b7111a',
+'packagetype': 'sdist',
+'python_version': 'source',
+'size': 3684,
+'upload_time': <DateTime '20110204T09:37:12' at f4da28>,
+'url': 'http://pypi.python.org/packages/source/M/MPTools/MPTools-0.1.tar.gz'}]
+pprint.pprint(client.release_data('MPTools', '0.1'))
+{'author': 'Tarek Ziade',
+'author_email': 'tarek@mozilla.com',
+'classifiers': [],
+'description': 'UNKNOWN',
+'download_url': 'UNKNOWN',
+'home_page': 'http://bitbucket.org/tarek/mopytools',
+'keywords': None,
+'license': 'UNKNOWN',
+'maintainer': None,
+'maintainer_email': None,
+'name': 'MPTools',
+'package_url': 'http://pypi.python.org/pypi/MPTools',
+'platform': 'UNKNOWN',
+'release_url': 'http://pypi.python.org/pypi/MPTools/0.1',
+'requires_python': None,
+'stable_version': None,
+'summary': 'Set of tools to build Mozilla Services apps',
+'version': '0.1'}
+```</p></blockquote></blockquote></blockquote>
+
+<p>这种方式的问题在于，项目元信息原本就能以静态文件的方式在简单索引协议中提供，这样可以简化安装工具的复杂性，也可以减少PyPI服务的请求数。对于诸如下载数量这样的动态数据，可以在其他接口中提供。用两种服务来获取所有的静态内容，显然不太合理。</p>
+
+<h3>14.3.4 Python安装目录的结构</h3>
+
+<p>在使用<code>python setup.py install</code>安装一个Python项目后，<code>Distutils</code>这一Python核心类库会负责将程序代码复制到目标系统的相应位置。</p>
+
+<ul>
+<li><em>Python包</em> 和模块会被安装到Python解释器程序所在的目录中，并随解释器启动：Ubuntu系统中会安装到<code>/usr/local/lib/python2.6/dist-packages/</code>，Fedora则是<code>/usr/local/lib/python2.6/sites-packages/</code>。</li>
+<li>项目中的 <em>数据文件</em> 可以被安装到任何位置。</li>
+<li><em>可执行文件</em> 会被安装到系统的<code>bin</code>目录下，依平台类型而定，可能是<code>/usr/local/bin</code>，或是其它指定的目录。</li>
+</ul>
+
+
+<p>从Python2.5开始，项目的元信息文件会随模块和包一起发布，名称为<code>project-version.egg-info</code>。比如，<code>virtualenv</code>项目会有一个<code>virtualenv-1.4.9.egg-info</code>文件。这些元信息文件可以被视为一个已安装项目的数据库，因为可以通过遍历其中的内容来获取已安装的项目和版本。但是，<code>Distutils</code>并没有记录项目所安装的文件列表，也就是说，我们无法彻底删除安装某个项目后产生的所有文件。可惜的是，<code>install</code>命令本身是提供了一个名为<code>--record</code>的参数的，可以将已安装的文件列表记录在文本文件中，但是这个参数并没有默认开启，而且<code>Distutils</code>的文档中几乎没有提及这个参数。</p>
+
+<h3>14.3.5 Setuptools、Pip等工具</h3>
+
+<p>正如介绍中所提到的，有些项目已经在尝试修复<code>Distutils</code>的问题，并取得了一些成功。</p>
+
+<h4>依赖问题</h4>
+
+<p>PyPI允许开发者在发布的项目中包含多个模块，还允许项目通过定义<code>Require</code>属性来声明模块级别的依赖。这两种做法都是合理的，但是同时使用就会很糟糕。</p>
+
+<p>正确的做法应该是定义项目级别的依赖，这也是<code>Setuptools</code>在<code>Distutils</code>之上附加的一个特性。它还提供了一个名为<code>easy_install</code>的脚本来从PyPI上自动获取和安装依赖项。在实际生产中，模块级别的依赖并没有真正被使用，更多人倾向于使用<code>Setuptools</code>。然而，这些特性只是针对<code>Setuptools</code>的，并没有被<code>Distutils</code>或PyPI所接受，所以<code>Setuptools</code>实质上是一个构建在错误设计上的仿冒品。</p>
+
+<p><code>easy_install</code>需要下载项目的压缩文档，执行<code>setup.py</code>来获取元信息，并对每个依赖项进行相同的操作。项目的依赖树会随着软件包的下载逐步勾画出来。</p>
+
+<p>虽然PyPI上可以直接浏览项目元信息，但是<code>easy_install</code>还是需要下载所有的软件包，因为上文提到过，PyPI上的项目元信息很可能和上传时所使用的平台有关，从而和目标系统有所差异。但是这种一次性安装项目依赖的做法已经能够解决90%的问题了，的确是个很不错的特性。这也是为什么<code>Setuptools</code>被广泛采用的原因。然而，它还是有以下一些问题：</p>
+
+<ul>
+<li>如果某一个依赖项安装失败，它并没有提供回滚的选项，因此系统会处于一个不可用的状态。</li>
+<li>项目依赖树是在安装一个个软件包时构建出来的，因此当其中两个依赖项产生冲突时，系统也会变的不可用。</li>
+</ul>
+
+
+<h4>卸载的问题</h4>
+
+<p>虽然<code>Setuptools</code>可以在元信息中记录已安装的文件，但它并没有提供卸载功能。另一个工具<code>Pip</code>，它通过扩展<code>Setuptools</code>的元信息来记录已安装的文件，从而能够进行卸载操作。但是，这组信息又是一种自定义的内容，因此一个Python项目很可能包含四种不同的元信息：</p>
+
+<ul>
+<li><code>Distutils</code>的<code>egg-info</code>，一个单一的文件；</li>
+<li><code>Setuptools</code>的<code>egg-info</code>，一个目录，记录了<code>Setuptools</code>特定的元信息；</li>
+<li><code>Pip</code>的<code>egg-info</code>，是后者的扩展；</li>
+<li>其它由打包系统产生的信息。</li>
+</ul>
+
+
+<h3>14.3.6 数据文件如何处理？</h3>
+
+<p>在<code>Distutils</code>中，数据文件可以被安装在任意位置。你可以像这样在<code>setup.py</code>中定义一个项目的数据文件：</p>
+
+<p><code>python
+setup(…,
+  packages=['mypkg'],
+  package_dir={'mypkg': 'src/mypkg'},
+  package_data={'mypkg': ['data/*.dat']},
+  )
+</code></p>
+
+<p>那么，<code>mypkg</code>项目中所有以<code>.dat</code>为扩展名的文件都会被包含在发布包中，并随Python代码安装到目标系统。</p>
+
+<p>对于需要安装到项目目录之外的数据文件，可以进行如下配置。他们随项目一起打包，并安装到指定的目录中：</p>
+
+<p>```python
+setup(…,</p>
+
+<pre><code>data_files=[('bitmaps', ['bm/b1.gif', 'bm/b2.gif']),
+            ('config', ['cfg/data.cfg']),
+            ('/etc/init.d', ['init-script'])]
+)
+</code></pre>
+
+<p>```</p>
+
+<p>这对系统打包人员来说简直是噩梦：</p>
+
+<ul>
+<li>元信息中并不包含数据文件的信息，因此打包人员需要阅读<code>setup.py</code>文件，甚至是研究项目源码来获取这些信息。</li>
+<li>不应该由开发人员来决定项目数据文件应该安装到目标系统的哪个位置。</li>
+<li>数据文件没有区分类型，图片、帮助文件等都被视为同等来处理。</li>
+</ul>
+
+
+<p>打包人员在对项目进行打包时只能去根据目标系统的情况来修改<code>setup.py</code>文件，从而让软件包能够顺利安装。要做到这一点，他就需要阅读程序代码，修改所有用到这些文件的地方。<code>Setuptools</code>和<code>Pip</code>并没有解决这一问题。</p>
+
+<h2>14.4 改进标准</h2>
+
+<p>所以最后我们得到的是这样一个打包系统：所有功能都由一个模块提供，项目的元信息不完整，无法描述清楚项目中包含的所有内容。现在就让我们来做些改进。</p>
+
+<h3>14.4.1 元信息</h3>
+
+<p>首先，我们要修正<code>Metadata</code>标准中的内容。PEP 345定义了一个新的标准，它包含以下内容：</p>
+
+<ul>
+<li>更合理的版本定义方式</li>
+<li>项目级别的依赖关系</li>
+<li>使用一种静态的方式描述平台相关的属性</li>
+</ul>
+
+
+<h4>版本</h4>
+
+<p>元信息标准的目标之一是能够让Python包管理工具使用相同的方式来对项目进行分类。对于版本号来说，应该让所有的工具都知道“1.1”是在“1.0”之后的。如果项目使用了自己定义的版本号命名方式，就无法做到这一点了。</p>
+
+<p>要保证这种一致性，唯一的方法是让所有的项目都按照统一的方式来命名版本号。我们选择的方式是经典的序列版本号，在PEP 386中定义，它的格式是：</p>
+
+<p><code>
+N.N[.N]+[{a|b|c|rc}N[.N]+][.postN][.devN]
+</code></p>
+
+<p>其中：</p>
+
+<ul>
+<li><em>N</em> 是一个整数。你可以使用任意数量的N，用点号将它们分隔开来。但至少要有两个N，即“主版本.次版本”。</li>
+<li><em>a, b, c</em> 分别是 <em>alpha, beta, release candidate</em> 的简写，它们后面还有一个整数。预发布版本有两种标记，c和rc，主要是为了和过去兼容，但c更简单些。</li>
+<li><em>dev</em> 加一个数字表示开发版本。</li>
+<li><em>post</em> 加一个数字表示已发布版本。</li>
+</ul>
+
+
+<p>根据项目发布周期的不同，开发版本和已发布版本可以作为两个最终版本之间的过渡版本号。大多数项目会使用开发版本。</p>
+
+<p>按照这个形式，PEP 386定义了严格的顺序：</p>
+
+<ul>
+<li>alpha &lt; beta &lt; rc &lt; final</li>
+<li>dev &lt; non-dev &lt; post, non-dev包括alpha, beta, rc或者final</li>
+</ul>
+
+
+<p>以下是一个完整的示例：</p>
+
+<p>```
+1.0a1 &lt; 1.0a2.dev456 &lt; 1.0a2 &lt; 1.0a2.1.dev456
+  &lt; 1.0a2.1 &lt; 1.0b1.dev456 &lt; 1.0b2 &lt; 1.0b2.post345</p>
+
+<pre><code>&lt; 1.0c1.dev456 &lt; 1.0c1 &lt; 1.0.dev456 &lt; 1.0
+  &lt; 1.0.post456.dev34 &lt; 1.0.post456
+</code></pre>
+
+<p>```</p>
+
+<p>这样定义的目标在于让其他打包系统能够将Python项目的版本号方便地转换成它们自己的版本命名规则。目前，如果上传的项目使用了PEP 345定义的元信息，PyPI会拒绝接受没有遵守PEP 386版本号命名规范的项目。</p>
+
+<h4>依赖</h4>
+
+<p>PEP 345定义了三个新的元信息属性，用来替换PEP 314中的<code>Requires</code>，<code>Provides</code>，和<code>Obsoletes</code>，它们是<code>Requires-Dist</code>，<code>Provides-Dist</code>，<code>Obsoletes-Dist</code>。这些属性可以在元信息中出现多次。</p>
+
+<p><code>Requires-Dist</code>中定义了项目所依赖的软件包，使用依赖项目的<code>Name</code>元信息，并可以跟上一个版本号。这些依赖项目的名称必须能在PyPI中找到，且版本号命名规则要遵守PEP 386中的定义。以下是一些示例：</p>
+
+<p><code>
+Requires-Dist: pkginfo
+Requires-Dist: PasteDeploy
+Requires-Dist: zope.interface (&gt;3.5.0)
+</code></p>
+
+<p><code>Provides-Dist</code>用来定义项目中包含的其他项目，常用于合并两个项目的情形。比如，ZODB项目可以包含名为<code>transaction</code>的项目，并声明：</p>
+
+<p><code>
+Provides-Dist: transaction
+</code></p>
+
+<p><code>Obsoletes-Dist</code>主要用于将其它项目标记为本项目的过期版本。</p>
+
+<p><code>
+ObsoletesDist: OldName
+</code></p>
+
+<h4>环境标识</h4>
+
+<p>环境标识可以添加在上述三个属性的后面，使用分号分隔，用来标识该属性在什么样的目标环境中生效。以下是一些示例：</p>
+
+<p><code>
+Requires-Dist: pywin32 (&gt;1.0); sys.platform == 'win32'
+Obsoletes-Dist: pywin31; sys.platform == 'win32'
+Requires-Dist: foo (1,!=1.3); platform.machine == 'i386'
+Requires-Dist: bar; python_version == '2.4' or python_version == '2.5'
+Requires-External: libxslt; 'linux' in sys.platform
+</code></p>
+
+<p>这种简易的语法足以让非Python程序员看懂：它使用<code>==</code>或<code>in</code>运算符（含<code>!=</code>和<code>not in</code>），且可以通过逻辑运算符连接。PEP 345中规定以下属性可以使用这种语法：</p>
+
+<ul>
+<li><code>Requires-Python</code></li>
+<li><code>Requires-External</code></li>
+<li><code>Requires-Dist</code></li>
+<li><code>Provides-Dist</code></li>
+<li><code>Obsoletes-Dist</code></li>
+<li><code>Classifier</code></li>
+</ul>
+
+
+<h3>14.4.2 用户安装了什么？</h3>
+
+<p>出于互通性的考虑，Python项目的安装格式必须一致。要让安装工具A能够检测到工具B安装的项目，它们就必须共享和更新相同的项目列表。</p>
+
+<p>当然，理想中用户会在系统中只使用一种安装工具，但是他们也许会需要迁移到另一种工具以获得一些新的特性。比如，Mac OS X操作系统自带了<code>Setuptools</code>，因而装有<code>easy_install</code>工具。当他们想要切换到新的工具时，该工具就必须兼容现有的环境。</p>
+
+<p>如果系统使用类似RPM这样的工具管理Python软件包，那么其它安装工具在安装新项目时是无法通知到系统的。更糟糕的是，即便Python安装工具能够通知到中央打包系统，我们也必须在Python元信息和系统元信息之间做一个映射。比如，项目的名称在两个系统中可能是不一致的。造成这种问题的原因也多种多样，比较常见的原因是命名冲突，即RPM源中已经有一个同名的项目了。另一个原因是项目名称中包含了<code>python</code>这个前缀，从而破坏了RPM系统的规范。比如，你的项目名称是<code>foo-python</code>，那在RPM源中很可能被表示为<code>python-foo</code>。</p>
+
+<p>一种解决办法是不去触碰全局的Python环境，而是使用一个隔离的环境，如<code>Virtualenv</code>。</p>
+
+<p>但不管怎样，采用统一的Python安装格式还是有必要的，因为其它一些打包系统在为自己安装Python项目时还是需要考虑互通性。当第三方打包系统新安装了一个项目，并在自身的数据库中注册后，它还需要为Python安装环境生成一个正确的元信息，从而让项目在这个环境中变得可见，或能通过该Python环境提供的API检索到。</p>
+
+<p>元信息的映射问题可以这样描述：因为RPM系统知道自己安装了哪些Python项目，它就能生成合适的Python元信息。例如，它知道<code>python26-webob</code>项目在PyPI中的名字是<code>WebOb</code>。</p>
+
+<p>回到我们的规范：PEP 376定义的项目安装规范和<code>Seteptools</code>以及<code>Pip</code>的格式很相似，它是一个以<code>dist-info</code>结尾的目录，包含以下内容：</p>
+
+<ul>
+<li><code>METADATA</code>：元信息，其格式在PEP 345、PEP 314和PEP 241中描述。</li>
+<li><code>RECORD</code>：项目安装的文件列表，以类似csv的格式保存。</li>
+<li><code>INSTALLER</code>：安装项目所使用的工具。</li>
+<li><code>REQUESTED</code>：如果这个文件存在，则表明这个项目是被显式安装的，即并不是作为依赖项而安装。</li>
+</ul>
+
+
+<p>如果所有的安装工具都能识别这种格式，我们在管理Python项目时就不需要依赖特定的安装工具和它提供的特性了。此外，PEP 376将元信息设计为一个目录，这样就能方便地扩展。事实上，下一章要描述的<code>RESOURCES</code>文件很可能会在不久的将来添加到元信息中，而不用改变PEP 376标准。当事实证明这个文件能被所有的安装工具使用，则会将它修订到PEP中。</p>
+
+<h3>14.4.3 数据文件的结构</h3>
+
+<p>前面已经提到，我们需要能够让打包者来决定项目的数据文件安装在哪个位置，而不用修改代码。同样，也要能够让开发者在开发时不用去考虑数据文件的存放位置。我们的解决方案很普通：重定向。</p>
+
+<h4>使用数据文件</h4>
+
+<p>假设你的<code>MPTools</code>项目需要使用一个配置文件。开发者会将改文件放到Python包安装目录中，并使用<code>__file__</code>去引用：</p>
+
+<p>```python
+import os</p>
+
+<p>here = os.path.dirname(<strong>file</strong>)
+cfg = open(os.path.join(here, 'config', 'mopy.cfg'))
+```</p>
+
+<p>这样编写代码意味着该配置文件必须和代码放在相同的位置，一个名为<code>config</code>的子目录下。</p>
+
+<p>我们设计的新的数据文件结构以项目为根节点，开发者可以定义任意的文件目录结构，而不用关心根目录是存放在软件安装目录中或是其它目录。开发者可以使用<code>pkgutil.open</code>来访问这些数据文件：</p>
+
+<p>```python
+import os
+import pkgutil</p>
+
+<h1>Open the file located in config/mopy.cfg in the MPTools project</h1>
+
+<p>cfg = pkgutil.open('MPTools', 'config/mopy.cfg')
+```</p>
+
+<p><code>pkgutil.open</code>命令会检索项目元信息中的<code>RESOURCES</code>文件，该文件保存的是一个简单的映射信息——文件名称和它所存放的位置：</p>
+
+<p><code>
+config/mopy.cfg {confdir}/{distribution.name}
+</code></p>
+
+<p>其中，<code>{confdir}</code>变量指向系统的配置文件目录，<code>{distribution.name}</code>变量表示的是Python项目名称。</p>
+
+<p><img src="http://www.aosabook.org/images/packaging/find-file.png" alt="图14.4：定位一个文件" /></p>
+
+<p>图14.4：定位一个文件</p>
+
+<p>只要安装过程中生成了<code>RESOURCES</code>文件，这个API就能帮助开发者找到<code>mopy.cfg</code>文件。又因为<code>config/mopy.cfg</code>是一个相对于项目的路径，我们就能在开发模式下提供一个本地的路径，让<code>pkgutil</code>能够找到它。</p>
+
+<h4>声明数据文件</h4>
+
+<p>实际使用中，我们可以在<code>setup.cfg</code>文件中用映射关系来定义数据文件的存放位置。映射关系的形式是<code>(glob-style pattern, target)</code>，每个“模式”指向项目中的一个或一组文件，“目标”则表示实际安装位置，可以包含变量名，用花括号括起。例如，<code>MPTools</code>的<code>setup.cfg</code>文件可以是以下内容：</p>
+
+<p>```
+[files]
+resources =</p>
+
+<pre><code>    config/mopy.cfg {confdir}/{application.name}/
+    images/*.jpg    {datadir}/{application.name}/
+</code></pre>
+
+<p>```</p>
+
+<p><code>sysconfig</code>模块提供了一组可用的变量，并为不同的操作系统提供了默认值。例如，<code>{confdir}</code>在Linux下是<code>/etc</code>。安装工具就能结合<code>sysconfig</code>模块来决定数据文件的存放位置。最后，它会生成一个<code>RESOURCES</code>文件，这样<code>pkgutil</code>就能找到这些文件了：</p>
+
+<p><img src="http://www.aosabook.org/images/packaging/installer.png" alt="图14.5：安装工具" /></p>
+
+<p>图14.5：安装工具</p>
+
+<h3>14.4.4 改进PypI</h3>
+
+<p>上文提到过，PyPI目前是一个单点故障源。PEP 380中正式提出了这个问题，并定义了一个镜像协议，使得用户可以在PyPI出现问题时连接到其他源。这个协议的目的是让社区成员可以在世界各地搭建起PyPI镜像。</p>
+
+<p><img src="http://www.aosabook.org/images/packaging/mirroring.png" alt="图14.6：镜像" /></p>
+
+<p>图14.6：镜像</p>
+
+<p>镜像列表的格式是<code>X.pypi.python.org</code>，其中<code>X</code>是一个字母序列，如<code>a,b,c,…,aa,ab,….</code>，<code>a.pypi.python.org</code>是主服务器，b字母开始是从服务器。域名<code>last.pypi.python.org</code>的A记录指向这个列表中的最后一个服务器，这样PyPI的使用者就能够根据DNS记录来获取完整的服务器镜像列表了。</p>
+
+<p>比如，以下代码获取到的最后一个镜像地址是<code>h.pypi.python.org</code>，表示当前PyPI有7个镜像服务器（b至h）：</p>
+
+<p>```python</p>
+
+<blockquote><blockquote><blockquote><p>import socket
+socket.gethostbyname_ex('last.pypi.python.org')[0]
+'h.pypi.python.org'
+```</p></blockquote></blockquote></blockquote>
+
+<p>这样一来，客户端还可以根据域名的IP地址来决定连接最近的镜像服务器，或者在服务器发生故障时自动重连到新的地址。镜像协议本身要比rsync更复杂一些，因为我们需要保证下载统计量的准确性，并提供最基本的安全性保障。</p>
+
+<h4>同步</h4>
+
+<p>镜像必须尽可能降低和主服务器之间的数据交换，要达到这个目的，就必须在PyPI的XML-RPC接口中加入<code>changelog</code>信息，以保证只获取变化的内容。对于每个软件包“P”，镜像必须复制<code>/simple/P/</code>和<code>/serversig/P</code>这两组信息。</p>
+
+<p>如果中央服务器中删除了一个软件包，它就必须删除所有和它有关的数据。为了检测软件包文件的变动，可以缓存文件的ETag信息，并通过<code>If-None-Match</code>头来判断是否可以跳过传输过程。当同步完成后，镜像就将<code>/last-modified</code>文件设置为当前的时间。</p>
+
+<h4>统计信息</h4>
+
+<p>当用户在镜像中下载一个软件包时，镜像就需要将这个事件报告给中央服务器，继而广播给其他镜像服务器。这样就能保证下载工具在任意镜像都能获得正确的下载量统计信息。</p>
+
+<p>统计信息以CSV文件的格式保存在中央服务器的<code>stats</code>目录中，按照日和周分隔。每个镜像服务器需要提供一个<code>local-stats</code>目录来存放它自己的统计信息。文件中保存了每个软件包的下载数量，以及它们的下载工具。中央服务器每天都会从镜像服务器中获取这些信息，将其合并到全局的<code>stats</code>目录，这样就能保证镜像服务器中的<code>local-stats</code>目录中的数据至少是每日更新的。</p>
+
+<h4>镜像服务器的合法性</h4>
+
+<p>在分布式的镜像系统中，客户端需要能够验证镜像服务器的合法性。如果不这样做，就可能产生以下威胁：</p>
+
+<ul>
+<li>中央索引发生错误</li>
+<li>镜像服务被篡改</li>
+<li>服务器和客户端之间遭到拦截攻击</li>
+</ul>
+
+
+<p>对于第一种攻击，软件包的作者就需要使用自己的PGP密钥来对软件包进行加密，这样其他用户就能判断他所下载的软件包是来自可信任的作者的。镜像服务协议中只对第二种攻击做了预防，不过有些措施也可以预防拦截攻击。</p>
+
+<p>中央服务器会在<code>/serverkey</code>这个URL下提供一个DSA密钥，它是用<code>opensll dsa-pubout</code><sup>3</sup>生成的PEM格式的密钥。这个URL不能被镜像服务器收录，客户端必须从主服务器中获取这个serverkey密钥，或者使用PyPI客户端本身自带的密钥。镜像服务器也是需要下载这个密钥的，用来检测密钥是否有更新。</p>
+
+<p>对于每个软件包，<code>/serversig/package</code>中存放了它们的镜像签名。这是一个DSA签名，和URL<code>/simple/package</code>包含的内容对等，采用DER格式，是SHA-1和DSA的结合<sup>4</sup>。</p>
+
+<p>客户端从镜像服务器下载软件包时必须经过以下验证：</p>
+
+<ol>
+<li>下载<code>/simple</code>页面，计算它的<code>SHA-1</code>哈希值。</li>
+<li>计算这个哈希值的DSA签名。</li>
+<li>下载对应的<code>/serversig</code>，将它和第二步中生成的签名进行比对。</li>
+<li>计算并验证所有下载文件的MD5值（和<code>/simple</code>页面中的内容对比）。</li>
+</ol>
+
+
+<p>在从中央服务器下载软件包时不需要进行上述验证，客户端也不应该进行验证，以减少计算量。</p>
+
+<p>这些密钥大约每隔一年会被更新一次。镜像服务器需要重新获取所有的<code>/serversig</code>页面内容，使用镜像服务的客户端也需要通过可靠的方式获取新密钥。一种做法是从<code>https://pypi.python.org/serverkey</code>下载。为了检测拦截攻击，客户端需要通过CAC认证中心验证服务端的SSL证书。</p>
+
+<h2>14.5 实施细节</h2>
+
+<p>上文提到的大多数改进方案都在<code>Distutils2</code>中实现了。<code>setup.py</code>文件已经退出历史舞台，取而代之的是<code>setup.cfg</code>，一个类似<code>.ini</code>类型的文件，它描述了项目的所有信息。这样做可以让打包人员方便地改变软件包的安装方式，而不需要接触Python语言。以下是一个配置文件的示例：</p>
+
+<p>```
+[metadata]
+name = MPTools
+version = 0.1
+author = Tarek Ziade
+author-email = tarek@mozilla.com
+summary = Set of tools to build Mozilla Services apps
+description-file = README
+home-page = http://bitbucket.org/tarek/pypi2rpm
+project-url: Repository, http://hg.mozilla.org/services/server-devtools
+classifier = Development Status :: 3 - Alpha</p>
+
+<pre><code>License :: OSI Approved :: Mozilla Public License 1.1 (MPL 1.1)
+</code></pre>
+
+<p>[files]
+packages =</p>
+
+<pre><code>    mopytools
+    mopytools.tests
+</code></pre>
+
+<p>extra_files =</p>
+
+<pre><code>    setup.py
+    README
+    build.py
+    _build.py
+</code></pre>
+
+<p>resources =</p>
+
+<pre><code>etc/mopytools.cfg {confdir}/mopytools
+</code></pre>
+
+<p>```</p>
+
+<p><code>Distutils2</code>会将这个文件用作于：</p>
+
+<ul>
+<li>生成<code>META-1.2</code>格式的元信息，可以用作多种用途，如在PyPI上注册项目。</li>
+<li>执行任何打包管理命令，如<code>sdist</code>。</li>
+<li>安装一个以<code>Distutils2</code>为基础的项目。</li>
+</ul>
+
+
+<p><code>Distutils2</code>还通过<code>version</code>模块实现了<code>VERSION</code>元信息。</p>
+
+<p>对<code>INSTALL-DB</code>元信息的实现会被包含在Python3.3的<code>pkgutil</code>模块中。在过度版本中，它的功能会由<code>Distutils2</code>完成。它所提供的API可以让我们浏览系统中已安装的项目。</p>
+
+<p>以下是<code>Distutils2</code>提供的核心功能：</p>
+
+<ul>
+<li>安装、卸载</li>
+<li>依赖树</li>
+</ul>
+
+
+<h2>14.6 经验教训</h2>
+
+<h3>14.6.1 PEP的重要性</h3>
+
+<p>要改变像Python打包系统这样庞大和复杂的架构必须通过谨慎地修改PEP标准来进行。据我所知，任何对PEP的修改和添加都要历经一年左右的时间。</p>
+
+<p>社区中一直以来有个错误的做法：为了改善某个问题，就肆意扩展项目元信息，或是修改Python程序的安装方式，而不去尝试修订它所违背的PEP标准。</p>
+
+<p>换句话说，根据你所使用的安装工具的不同，如<code>Distutils</code>和<code>Setuptools</code>，它们安装应用程序的方式就是不同的。这些工具的确解决了一些问题，但却会引发一连串的新问题。以操作系统的打包工具为例，管理员必须面对多个Python标准：官方文档所描述的标准，<code>Setuptools</code>强加给大家的标准。</p>
+
+<p>但是，<code>Setuptools</code>能够有机会在实际环境中大范围地（在整个社区中）进行实验，创新的进度很快，得到的反馈信息也是无价的。我们可以据此撰写出更切合实际的PEP新标准。所以，很多时候我们需要能够察觉到某个第三方工具在为Python社区做出贡献，并应该起草一个新的PEP标准来解决它所提出的问题。</p>
+
+<h3>14.6.2 一个被纳入标准库的项目就已经死亡了一半</h3>
+
+<p>这个标题是援引Guido van Rossum的话，而事实上，Python的这种战争式的哲学也的确冲击了我们的努力成果。</p>
+
+<p><code>Distutils</code>是Python标准库之一，将来<code>Distutils2</code>也会成为标准库。一个被纳入标准库的项目很难再对其进行改造。虽然我们有正常的项目更新流程，即经过两个Python次版本就可以对某个API进行删改，但一旦某个API被发布，它必定会持续存在多年。</p>
+
+<p>因此，对标准库中某个项目的一次修改并不是简单的bug修复，而很有可能影响整个生态系统。所以，当你需要进行重大更新时，就必须创建一个新的项目。</p>
+
+<p>我之所以深有体会，就是因为在我对<code>Distutils</code>进行了超过一年的修改后，还是不得不回滚所有的代码，开启一个新的<code>Distutils2</code>项目。将来，如果我们的标准又一次发生了重大改变，很有可能会产生<code>Distutils3</code>项目，除非未来某一天标准库会作为独立的项目发行。</p>
+
+<h3>14.6.3 向前兼容</h3>
+
+<p>要改变Python项目的打包方式，其过程是非常漫长的：Python的生态系统中包含了那么多的项目，它们都采用旧的打包工具管理，一定会遇到诸多阻力。（文中一些章节描述的问题，我们花费了好几年才达成共识，而不是我之前预想的几个月。）对于Python3，可能会花费数年的时间才能将所有的项目都迁移到新的标准中去。</p>
+
+<p>这也是为什么我们做的任何修改都必须兼容旧的打包工具，这是<code>Distutils2</code>编写过程中非常棘手的问题。</p>
+
+<p>例如，一个以新标准进行打包的项目可能会依赖一个尚未采用新标准的其它项目，我们不能因此中断安装过程，并告知用户这是一个无法识别的依赖项。</p>
+
+<p>举例来说，<code>INSTALL-DB</code>元信息的实现中会包含那些用<code>Distutils</code>、<code>Pip</code>、<code>Distribution</code>、或<code>Setuptools</code>安装的项目。<code>Distutils2</code>也会为那些使用<code>Distutils</code>安装的项目生成新的元信息。</p>
+
+<h2>14.7 参考和贡献者</h2>
+
+<p>本文的部分章节直接摘自PEP文档，你可以在<code>http://python.org</code>中找到原文：</p>
+
+<ul>
+<li>PEP 241: Metadata for Python Software Packages 1.0: http://python.org/peps/pep-0214.html</li>
+<li>PEP 314: Metadata for Python Software Packages 1.1: http://python.org/peps/pep-0314.html</li>
+<li>PEP 345: Metadata for Python Software Packages 1.2: http://python.org/peps/pep-0345.html</li>
+<li>PEP 376: Database of Installed Python Distributions: http://python.org/peps/pep-0376.html</li>
+<li>PEP 381: Mirroring infrastructure for PyPI: http://python.org/peps/pep-0381.html</li>
+<li>PEP 386: Changing the version comparison module in Distutils: http://python.org/peps/pep-0386.html</li>
+</ul>
+
+
+<p>在这里我想感谢所有为打包标准的制定做出贡献的人们，你可以在PEP中找到他们的名字。我还要特别感谢“打包别动队”的成员们。还要谢谢Alexis Metaireau、Toshio Kuratomi、Holger Krekel、以及Stefane Fermigier，感谢他们对本文提供的反馈。</p>
+
+<p>本章中讨论的项目有：</p>
+
+<ul>
+<li>Distutils: http://docs.python.org/distutils</li>
+<li>Distutils2: http://packages.python.org/Distutils2</li>
+<li>Distribute: http://packages.python.org/distribute</li>
+<li>Setuptools: http://pypi.python.org/pypi/setuptools</li>
+<li>Pip: http://pypi.python.org/pypi/pip</li>
+<li>Virtualenv: http://pypi.python.org/pypi/virtualenv</li>
+</ul>
+
+
+<h2>脚注</h2>
+
+<ol>
+<li>文中引用的Python改进提案（Python Enhancement Proposals，简称PEP）会在本文最后一节整理。</li>
+<li>过去被命名为CheeseShop</li>
+<li>即RFC 3280 SubjectPublishKeyInfo中定义的1.3.14.3.2.12算法。</li>
+<li>即RFC 3279 Dsa-Sig-Value中定义的1.2.840.10040.4.3算法。</li>
+</ol>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[开源软件架构 - 卷2：第6章 Git]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2012/11/16/aosa-git/"/>
+    <updated>2012-11-16T23:54:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2012/11/16/aosa-git</id>
+    <content type="html"><![CDATA[<p>作者：<a href="http://www.aosabook.org/en/intro2.html#potter-susan">Susan Potter</a>，翻译：<a href="mailto:zhangji87@gmail.com">张吉</a></p>
+
+<p>原文：<a href="http://www.aosabook.org/en/git.html">http://www.aosabook.org/en/git.html</a></p>
+
+<h2>6.1 Git概述</h2>
+
+<p>Git能够让不同的协作者通过一个点对点的仓库网络对数据内容（通常是代码，当然不仅限于代码）进行维护。它支持分布式的工作流程，能够让数据内容临时分离，并最终合并到一起。</p>
+
+<p>本章将阐述Git的内部实现是如何提供以上功能的，以及它和其他版本控制系统（VCS）的区别。</p>
+
+<h2>6.2 Git起源</h2>
+
+<p>为了更好地理解Git的设计思想，我们有必要先了解一下Git项目的发源地——Linux内核开发社区——所面临的问题。</p>
+
+<p>Linux内核开发与其他商业软件项目有很大不同，因为它的开发者众多，且每个开发者的参与程度和对Linux内核代码的理解有很大差异。多年以来，内核代码一直都是以Tar压缩文件以及补丁的形式维护的，而当时的核心开发团队一直在寻找一个能够满足他们各方面需求的版本控制系统。</p>
+
+<p>Git就是在这样的背景下于2005年作为一款开源软件诞生的。当时，Linux内核代码通过两种版本控制系统进行维护，BitKeeper和CVS，分别由两组核心开发团队使用。BitKeeper相较于当时颇为流行的CVS，提供了一种不同的历史展示方式。</p>
+
+<!-- more -->
+
+
+<p>当BitKeeper的所有者BitMover决定收回Linux内核开发人员的使用许可时，Linux Torvalds紧急开启了一个项目，也就是后来的Git。一开始，他通过编写一组Shell脚本来帮助他将邮件中的补丁按顺序应用到代码中。这组原始脚本能够在代码合并过程中迅速中断，让维护者能够进行人工干预，修改代码，然后继续合并。</p>
+
+<p>从项目开始之初，Torvalds就为Git制定了一个目标——要和CVS的做法完全相反——同时还包含了以下三条设计目标：</p>
+
+<ul>
+<li>支持分布式的协作流程，类似BitKeeper</li>
+<li>预防代码错乱</li>
+<li>高性能</li>
+</ul>
+
+
+<p>这些设计目标都被实现了，我会在下文中通过解析Git的各种做法来阐述，包括在内容管理中使用有向无环图（<a href="http://en.wikipedia.org/wiki/Directed_acyclic_graph">DAG</a>），头指针引用，对象模型，远程协议，以及Git如何追踪合并树。</p>
+
+<p>虽然Git设计之初受到了很多BitKeeper的影响，但是两者还是有根本上的区别的，如Git提供了更多分布式和本地开发流程，这点是BitKeeper做不到的。<a href="http://www.monotone.ca/">Monotone</a>，2003年启动的一个开源分布式版本控制系统，也对Git的早期开发产生了影响。</p>
+
+<p>分布式版本控制系统在提供更灵活的工作流程的同时，往往会增加它的复杂程度。分布式模型的独特优点有：</p>
+
+<ul>
+<li>能够线下进行增量提交</li>
+<li>开发者可以决定自己的代码何时能够开放出来</li>
+<li>能够线下浏览历史</li>
+<li>可以将工作成果发布到不同的仓库，以不同的分支、不同的提交粒度展现出来</li>
+</ul>
+
+
+<p>在Git项目的开发期间，诞生了其他三个开源分布式版本控制系统（其中Mercurial可以参见《开源软件架构》的第一卷）。这些分布式版本控制系统（dVCS）都提供了非常灵活的工作流程，这是先前的集中式版本控制系统做不到的。注意：Subversion有一款插件名为SVK，由不同的开发者维护，提供了服务器之间的同步功能。</p>
+
+<p>目前流行的dVCS包括Bazaar, Darcs, Fossil, Git, Mercurial, 以及Veracity。</p>
+
+<h2>6.3 版本控制系统的设计</h2>
+
+<p>现在让我们回过头来看看Git之外的其他版本控制系统是如何设计的。通过比较他们和Git之间的区别，可以帮助我们去理解Git在架构设计中的选择。</p>
+
+<p>版本控制系统通常有三项核心功能（需求）：</p>
+
+<ul>
+<li>保存内容</li>
+<li>记录变更历史（包括具体的合并信息）</li>
+<li>向协作者分发内容和变更历史</li>
+</ul>
+
+
+<p>注意：第三项并不是所有版本控制系统的核心功能。</p>
+
+<h3>保存内容</h3>
+
+<p>在VCS中保存内容，最普遍的做法是保存增量的修改，或使用有向无环图（DAG）。</p>
+
+<p>增量修改可以反映出两个版本之间的内容差异，以及一些额外的信息。使用有向无环图保存内容则是将特定对象构造成一种树状结构，作为某一次提交的快照保存下来（树状结构中未发生变化的对象是可以重用的）。Git使用有向无环图来保存内容，它所使用的不同对象类型会在本文的“对象数据库”一节中有所描述。</p>
+
+<h3>提交和合并的历史</h3>
+
+<p>在保存历史、记录变化方面，大部分VCS使用以下方式之一：</p>
+
+<ul>
+<li>线性历史</li>
+<li>有向无环图</li>
+</ul>
+
+
+<p>Git使用的还是有向无环图，这次则是用来保存历史。每次提交包含了它父节点的元信息——Git中的一次提交可以拥有0个或多个父节点（理论上没有个数限制）。例如，Git仓库的第一次提交就没有父节点，而一次三头合并则有三个父节点。</p>
+
+<p>Git和SVN线性提交的另一个重要区别是Git可以直接进行分支的创建，并记录下大部分合并历史。</p>
+
+<p><img src="http://www.aosabook.org/images/git/dag-example.png" alt="图6.1：Git中有向无环图示例" /></p>
+
+<p>图6.1：Git中有向无环图示例</p>
+
+<p>通过采用有向无环图保存内容，Git能够提供完整的分支功能。一个文件的历史会通过它所处的目录结构位置和根节点关联起来，并最终和一个提交节点关联。这个提交节点又会有一个或多个父节点。这种组织方式提供了以下两个特性，让我们能够更好地在Git浏览文件历史和内容：</p>
+
+<ul>
+<li>当内容节点（文件或目录）在有向无环图中有相同的标识（Git中以SHA码表示），即使它们处于不同的提交节点，也能保证它们的内容是一致的，从而使得Git在差异比对时更为高效。</li>
+<li>在对两个分支进行合并时，实质上是在对两个有向无环图节点进行合并。有向无环图能够让Git更为高效地判断出他们共同的父节点。</li>
+</ul>
+
+
+<h3>内容分发</h3>
+
+<p>版本控制系统在向协作者分发内容时通常有以下三种做法：</p>
+
+<ul>
+<li>仅限本地：某些版本控制系统没有上文提到的第三项需求。</li>
+<li>中央服务器：版本库的所有改动都必须在一个中央版本库中进行，也只有这个版本库会记录历史。</li>
+<li>分布式模型：虽然分布式模型中也会有一个中央仓库供协作者“推送”自己的改动，但协作者可以在本地进行提交，并稍后再推送到远程。</li>
+</ul>
+
+
+<p>为了展示以上设计模式的优点和不足，我们设想这样一个应用场景：一个SVN仓库和一个Git仓库，有着相同的内容（即Git默认分支的头指针指向的内容和SVN仓库最新的trunk分支内容一致）。一个名叫Alex的开发者在本地检出了一份SVN代码，以及克隆了一个Git版本库。</p>
+
+<p>假设Alex在本地对一个1M大小的文件进行了修改，并进行了提交。提交后本地更新了元信息，远程服务器则是将文件的差异记录了下来。</p>
+
+<p>Git下则有所不同。Alex对文件的变动首先会在本地进行记录，然后再“推送”到远程的公共仓库，这样文件的改动就能被其他开发者看到了。文件内容的变动记录在不同的版本库之中的表示方式是完全一致的。除了本地提交之外，Git会为变动后的文件创建一个对象来保存它（包括其完整的内容），然后逐层为该文件的父目录创建对象，直至仓库根目录。接下来Git会创建一个有向无环图，从刚才新创建的根目录节点开始，指向各个二进制单元（期间会重用那些内容没有改变的二进制单元），并使用新创建的二进制单元去替代那些变动的部分（一个二进制单元通常用来表示一个文件）。</p>
+
+<p>到此为止，本次提交还是只保存在Alex克隆下来的本地仓库中。当Alex将这个提交推送到远程仓库后，远程仓库会验证这次提交是否能应用到当前分支中，然后这些对象将会按照原样保存下来，如同在本地仓库中创建的一样。</p>
+
+<p>在Git中会有很多可变动的部分，有些对用户是透明的，有些则需要用户显示地指定这些内容是否需要分享出来，或是只在本地保存。虽然增加了复杂性，但也提供给团队开发者更大的自由度，得以更好地控制工作流程和发布内容，这在“Git起源”一节中已经有所阐述。</p>
+
+<p>在SVN中，开发者不会忘记将变动内容提交至远程仓库。从效率上讲，SVN仅保存变动内容的方式会比Git保存文件每个版本的完整内容要来得高效，但是之后我们会讲述Git其实已经通过某种方式对此进行了优化。</p>
+
+<h2>6.4 工具包</h2>
+
+<p>如今，Git已然形成一个生态系统，在各种操作系统上（包括Windows）都开发出了大量命令行和图界面工具，而他们大部分都是构建在Git核心工具包之上的。</p>
+
+<p>由于Git是Linus发起和开发的，它又立足于Linux社区，因此Git工具包的设计理念和传统的Unix命令行工具相仿。</p>
+
+<p>Git工具包分为两个部分：底层命令和上层命令。底层命令提供了基本的内容追踪手段，以及直接操纵有向无环图。上层命令则是用户主要接触的命令，用以维护仓库，以及在多个仓库间进行协作。</p>
+
+<p>虽然Git工具包提供了足够多的命令来操纵仓库，但是开发者们还是抱怨Git没有提供类库以供调用。Git命令最终会执行die()方法，使得GUI和Web界面在使用它时必须启动一个新的进程，效率较低。</p>
+
+<p>不过这一问题已经得到处理，我会在本文的“当前进展和未来规划”一节加以阐述。</p>
+
+<h2>6.5 版本库、暂存区、工作区</h2>
+
+<p>让我们开始深入研究一下Git吧，了解其中几个关键概念。</p>
+
+<p>首先让我们在本地创建一个Git版本库。在类Unix系统下，我们可以执行以下命令：</p>
+
+<p><code>bash
+$ mkdir testgit
+$ cd testgit
+$ git init
+</code></p>
+
+<p>这样我们就在testgit目录中初始化了一个新的版本库。我们可以建立分支、提交、创建里程碑、和远程Git仓库进行交互。我们甚至可以和其他类型的版本控制系统进行交互，只需要借助若干<code>git</code>命令即可。</p>
+
+<p><code>git init</code>命令会在testgit目录下创建一个名为.git的子目录。我们来看一下这个目录的结构：</p>
+
+<p>```
+tree .git/
+.git/
+|-- HEAD
+|-- config
+|-- description
+|-- hooks
+|   |-- applypatch-msg.sample
+|   |-- commit-msg.sample
+|   |-- post-commit.sample
+|   |-- post-receive.sample
+|   |-- post-update.sample
+|   |-- pre-applypatch.sample
+|   |-- pre-commit.sample
+|   |-- pre-rebase.sample
+|   |-- prepare-commit-msg.sample
+|   |-- update.sample
+|-- info
+|   |-- exclude
+|-- objects
+|   |-- info
+|   |-- pack
+|-- refs</p>
+
+<pre><code>|-- heads
+|-- tags
+</code></pre>
+
+<p>```</p>
+
+<p><code>.git</code>目录默认创建在工作区的根目录下，也就是<code>testgit</code>。它包含了以下几种类型的文件和目录：</p>
+
+<ul>
+<li><em>配置文件</em>： <code>.git/config</code>、<code>.git/description</code>、<code>.git/info/exclude</code>，这些文件会用来配置本地仓库。</li>
+<li><em>钩子</em>： <code>.git/hooks</code>目录下的脚本可以在Git运作的各个环节中得到执行。</li>
+<li><em>暂存区</em>： <code>.git/index</code>文件（它并没有在上述目录结构中显示出来）会用来保存工作区准备提交的内容。</li>
+<li><em>对象数据库</em>： <code>.git/objects</code>是默认的Git对象数据库存放目录，囊括了本地仓库的所有文件内容和指针。对象一经创建则不能修改。</li>
+<li><em>引用</em>：<code>.git/refs</code>目录用来存放本地和远程仓库的分支、里程碑、头指针等信息。“引用”表示指向某个对象指针，通常是<code>tag</code>和<code>commit</code>类型。引用之所以放置在对象数据库之外，是为了让他们能够随版本库的演进而变化。特殊的引用可以指向其他引用，如<code>HEAD</code>。</li>
+</ul>
+
+
+<p><code>.git</code>目录是真正意义上的版本库。工作区指的是包含所有工作文件的目录，它通常是<code>.git</code>目录的父目录。如果你需要创建一个没有工作区的远程仓库，可以使用<code>git init --bare</code>命令。它会直接在根目录下生成Git仓库的各类文件，而不是放置在一个子目录中。</p>
+
+<p>另一个较为重要的文件是Git暂存区：<code>.git/index</code>。它在工作区和本地版本库之间增加了一个缓冲区，可以将需要提交的内容暂存在这里，最后一起提交。即使你对很多文件进行了修改，通过暂存区可以将它们作为一次完整的提交，并加注合理的注释。如果想将工作区某些文件的部分修改保存至暂存区，可以使用<code>git add -p</code>命令。</p>
+
+<p>Git暂存区里的内容默认保存在单个文件中。版本库、暂存区、工作区的存放位置都是可以通过环境变量来进行配置的。</p>
+
+<p>我们有必要了解一下以上三个区域的文件是如何进行交互的，以几个核心的Git命令举例：</p>
+
+<ul>
+<li><p><code>git checkout [branch]</code></p>
+
+<p>  这条命令会将HEAD引用指向指定分支的引用（如<code>refs/heads/master</code>），并用该引用指向的内容替换掉暂存区和工作区中的内容。</p></li>
+<li><p><code>git add [files]</code></p>
+
+<p>  这条命令会检验工作区中指定的文件和暂存区是否一致，若不一致则更新暂存区。版本库不会发生变化。</p></li>
+</ul>
+
+
+<p>为了深入挖掘其中的原理，让我们看看<code>.git</code>目录下的文件都发生了哪些变化：</p>
+
+<p>```bash
+$ GIT_DIR=$PWD/.git
+$ cat $GIT_DIR/HEAD</p>
+
+<p>ref: refs/heads/master</p>
+
+<p>$ MY_CURRENT_BRANCH=$(cat .git/HEAD | sed 's/ref: //g')
+$ cat $GIT_DIR/$MY_CURRENT_BRANCH</p>
+
+<p>cat: .git/refs/heads/master: No such file or directory
+```</p>
+
+<p>这里会返回一个错误信息，因为我们还没有在Git仓库中进行过任何提交，因此不会存在任何分支，包括默认分支<code>master</code>。</p>
+
+<p>让我们进行一次提交，这时master分支会自动创建：</p>
+
+<p>```bash
+$ git commit -m "Initial empty commit" --allow-empty
+$ git branch</p>
+
+<ul>
+<li>master</li>
+</ul>
+
+
+<p>$ cat $GIT_DIR/$MY_CURRENT_BRANCH</p>
+
+<p>3bce5b130b17b7ce2f98d17b2998e32b1bc29d68</p>
+
+<p>$ git cat-file -p $(cat $GIT_DIR/$MY_CURRENT_BRANCH)
+```</p>
+
+<p>输出的内容就是Git对象数据库中保存的信息了。</p>
+
+<h2>6.6 对象数据库</h2>
+
+<p><img src="http://www.aosabook.org/images/git/object-hierarchy.png" alt="图6.2：Git对象" /></p>
+
+<p>图6.2：Git对象</p>
+
+<p>Git有四种基本对象类型，版本库中的所有内容都是由这些基本对象类型构成的。每种对象类型包含以下属性：<em>类型</em>、<em>大小</em>、<em>内容</em>。这四种基本对象类型是：</p>
+
+<ul>
+<li><em>树</em>：用来表示目录结构，树中的元素可以是另一棵树或是一个二进制单元。</li>
+<li><em>二进制单元</em>：表示一个文件。</li>
+<li><em>提交</em>：提交会指向一个根节点树对象，并保存父提交的信息和其他基本信息。</li>
+<li><em>里程碑</em>：里程碑有一个名称，并指向版本库中的一个提交对象。</li>
+</ul>
+
+
+<p>所有的基本对象类型使用SHA码来标识，它是一种40位的十六进制字符串，含有以下特性：</p>
+
+<ul>
+<li>如果两个对象是一致的，则SHA码一致。</li>
+<li>如果两个对象不一致，则SHA码也不一致。</li>
+<li>如果只是拷贝了对象的一部分，或者对象的数据发生了其他更改，只需重新计算其SHA码就能区别开来。</li>
+</ul>
+
+
+<p>前两种属性使得Git能够实施它的分布式模型（Git的第二个目标），第三种属性则是杜绝了数据混乱（第三个目标）。</p>
+
+<h2>6.7 存储和压缩技术</h2>
+
+<p>Git是通过压缩数据内容来解决存储大小的问题的，它使用一个索引文件来标识对象内容在压缩文件中的实际位置。</p>
+
+<p><img src="http://www.aosabook.org/images/git/packed-format.png" alt="图6.3：压缩文件和它对应的索引文件" /></p>
+
+<p>图6.3：压缩文件和它对应的索引文件</p>
+
+<p>我们可以使用<code>git count-objects</code>来查看版本库中未经压缩的对象数量，然后让Git对未压缩的对象进行压缩，删除冗余的对象等。</p>
+
+<p>Git对象的压缩方式进行过升级。过去，压缩文件和索引文件的CRC校验码会全部保存在索引文件中，这就无法检测出压缩对象中存在的数据混乱，因为后续压缩过程中不会再进行校验。新版本（Version 2）的压缩格式中将每个压缩对象的CRC校验码都保存了下来，从而解决了这一问题。同时，新版格式允许压缩文件大于4GB，这在以前是不支持的。为了更快地检测压缩文件是否损坏，文件末尾会保存一个20个字节的SHA1码，对压缩文件中所有对象的SHA码进行排序和校验。新版压缩格式的主要目的是为了满足Git设计目标中的杜绝数据混乱。</p>
+
+<p>对于远程传输，Git会计算同步版本库（或分支）需要传输的提交和文件内容，生成相应的压缩文件，通过指定协议进行传输。</p>
+
+<h2>6.8 记录合并历史</h2>
+
+<p>上文我有提到过，Git和其它类RCS的版本控制系统的最大区别在于对合并历史的记录。如SVN将文件和目录结构的改动用线性提交来表示，版本号高的内容一定会覆盖版本号低的内容。因此，SVN不能直接提供分支功能，而是使用一种人为规定的目录结构来实现：</p>
+
+<p><img src="http://www.aosabook.org/images/git/merge-history.png" alt="图6.4：合并历史的图形表示" /></p>
+
+<p>图6.4：合并历史的图形表示</p>
+
+<p>首先让我们用一个示例来说明要维护多个分支会多么麻烦，而且在某些场景下是有局限性的。</p>
+
+<p>SVN中的“分支”通常放置在<code>branches/branch-name</code>，它和主干分支<code>trunk</code>（相当于 <em>master</em> ）目录同级。我们假设这个分支和主干分支是并行开发的。</p>
+
+<p>举例来说，我们可能需要修改某个软件的数据库连接类型。在此过程中，我们想要将其他分支（非trunk）的内容合并到当前分支中。合并完成后（可能需要手工合并），我们继续修改。全部完成后，我们需要将<code>branches/branch-name</code>分支合并到<code>trunk</code>中。在类似SVN的线性历史版本控制系统中，我们无法得知其他分支的内容是否已经包含在trunk中了。</p>
+
+<p>而对于以有向无环图为基础的版本控制系统（如Git）来说，就能很好地处理这种应用场景。如果某个分支不含没有合并至当前分支（如<code>db-migration</code>）的“提交”，我们就可以通过“提交”对象的继承关系来确定<code>db-migration</code>分支包含了那个分支的<code>HEAD</code>引用。由于“提交”对象可以包含零个或多个父提交，因此就能通过<code>db-migration</code>中的那次合并提交的信息来确定当前HEAD包含了两个分支中的内容。同理，当将<code>db-migration</code>合并至<code>master</code>分支时也能确认这些关系。</p>
+
+<p>然而有一个问题无论是使用有向无环图还是线性提交都无法解决的，就是判断某个提交是否存在于每个分支中。例如上述例子中，我们假设已经将每个分支的提交都合并到各个分支去了。并不是所有情况下都是如此。</p>
+
+<p>对于较为简单的情况，Git可以将其它分支的“提交”拣选（<code>cherry-pick</code>）到当前分支中，当然前提是这次提交必须是能够直接应用进来的。</p>
+
+<h2>6.9 下一步做什么？</h2>
+
+<p>上文提到，Git采用来自Unix世界的工具包设计理念，因此非常适合用来编写脚本。但是，当需要在长时间运行的应用程序或服务中内嵌Git工具库的话就不太容易了。虽然目前流行的IDE都提供了Git图形化界面，但开发这些工具所需花费的精力还是比其他版本控制系统要多，因为它们提供了便于使用的链接库。</p>
+
+<p>为了解决这个问题，Shawn Pearce（来自谷歌开源程序办公室）率先实现了一个可供链接的Git类库，且发布协议较为宽松，因此没有阻碍该类库的推广。这个类库的名字是<a href="https://github.com/libgit2/libgit2">libgit2</a>。一开始它并不流行，直到一个名叫Vincent Marti的学生在谷歌编程夏令营中使用了它。从那以后，Vincent和Github持续对libgit2类库贡献代码，并为其他语言编写了相应类库，包括Ruby，Python，PHP，.NET，Lua，Object-C等。</p>
+
+<p>Shawn Pearce还开启了一个名为<a href="https://github.com/eclipse/jgit">JGit</a>的BSD项目，使用纯Java语言实现，能够对Git版本库进行基本的操作。该类库现在由Eclipse基金会维护，用于Eclipse IDE的Git插件中。</p>
+
+<p>还有其他一些有趣的周边项目，带有实验性质，使用各类数据源来保存Git对象，如：</p>
+
+<ul>
+<li><a href="https://github.com/spearce/jgit_cassandra">jgit_cassandra</a> 使用Apache Cassandra作为Git对象数据库。它是一种混合型的数据源，提供了动态的BigTable式的数据模型。</li>
+<li><a href="https://github.com/spearce/jgit_hbase">jgit_hbase</a> 能够将Git对象保存在HBase中，一种KV型分布式数据库。</li>
+<li><a href="https://github.com/libgit2/libgit2-backends">libgit2-backends</a> 由libgit2项目衍生而来，致力于提供其他种类的数据源，如Memcached，Redis，SQLite，MySQL。</li>
+</ul>
+
+
+<p>以上这些都是独立于Git核心工具包之外的项目。</p>
+
+<p>如你所见，我们可以用各种方式来使用Git，它的表现形式不再只有命令行这一种了，而是成为一种版本控制系统的协议。</p>
+
+<p>在本文撰写之时，这些项目都还没有发布稳定版本，所以还是有很多工作要做，但整体看来未来是光明的。</p>
+
+<h2>6.10 经验教训</h2>
+
+<p>在软件设计中，任何一个决定都有正反两面。作为一个在日常工作中大量使用Git，并且还为Git对象数据库开发了周边软件的程序员，我觉得Git目前的组织方式非常棒。因此，下文提到的“经验教训”更多的是来自其他开发者对于Git目前设计方式的不满，主要归咎于Git核心开发者当初做出的决定。</p>
+
+<p>最常见的问题在于Git相较于其他CVS不能很好地和IDE进行整合，因为Git是基于工具包设计的，整合起来会比较具有挑战性。</p>
+
+<p>早期Git的实现是采用shell脚本的方式，不能很好地跨平台，特别是对于Windows操作系统。虽然我相信Git开发者不会因为这个问题而寝食难安，但这的确阻碍了Git在大型公司内的推广。现在，有一个名为Git for Windows的项目由志愿者发起，及时地将最新的Git开发成果移植到Windows平台上。</p>
+
+<p>Git工具包的设计方式所带来的另一个间接影响是，他的底层命令繁多，会让初学者陷入困境，难以理解Git出错时抛出的异常信息，最后无可适从。这就使得Git在某些开发团队中的推广受到阻碍。</p>
+
+<p>即便如此，我仍然对Git核心项目以及其周边项目的开发充满信心。</p>
+]]></content>
+  </entry>
+  
+</feed>

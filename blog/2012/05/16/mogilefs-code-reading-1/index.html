@@ -1,0 +1,766 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>MogileFS启动流程 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="看了几天mogilefs源码，分享一下王惠达, blog-wanghuida.rhcloud.com/&hellip; 实例化MogileFS::Server并运行 1
+2
+3
+4
+5
+6
+my $server; # server singleton
+sub server { my ($pkg &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-1/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">MogileFS启动流程</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-16T10:11:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><!-- more -->
+
+
+<blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=mogilefs-init'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote>
+
+
+<h2>实例化MogileFS::Server并运行</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">my</span> <span class="nv">$server</span><span class="p">;</span> <span class="c1"># server singleton</span>
+</span><span class='line'><span class="k">sub </span><span class="nf">server</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="p">(</span><span class="nv">$pkg</span><span class="p">)</span> <span class="o">=</span> <span class="nv">@_</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$server</span> <span class="o">||=</span> <span class="nb">bless</span> <span class="p">{},</span> <span class="nv">$pkg</span><span class="p">;</span><span class="c1">#空就创建对象，有就返回，单例</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nv">$server</span><span class="o">-&gt;</span><span class="n">run</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>读取配置</h2>
+
+<blockquote><p>优先级，命令行>配置文件>默认配置</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="nn">MogileFS::</span><span class="n">Config</span><span class="o">-&gt;</span><span class="n">load_config</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>获得数据库操作句柄</h2>
+
+<blockquote><p>MogileFS::Store是数据库操作的基类,实际返回的对象是MogileFS::Store::MySQL</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="nn">MogileFS::</span><span class="n">Config</span><span class="o">-&gt;</span><span class="n">check_database</span><span class="p">;</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$sto</span> <span class="o">=</span> <span class="nb">eval</span> <span class="p">{</span> <span class="nn">Mgd::</span><span class="n">get_store</span><span class="p">()</span> <span class="p">};</span>
+</span><span class='line'><span class="k">sub </span><span class="nf">get_store</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$store</span> <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">Store</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nv">$sto</span><span class="o">-&gt;</span><span class="n">ping</span><span class="p">;</span>
+</span><span class='line'><span class="k">sub </span><span class="nf">ping</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">dbh</span><span class="o">-&gt;</span><span class="n">ping</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">dbh</span><span class="p">}</span> <span class="o">=</span> <span class="n">DBI</span><span class="o">-&gt;</span><span class="nb">connect</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">dsn</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">user</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">pass</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>设置fidid fidid就是数据库中fid的最大值，但对这次启动来说是最小值</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">my</span> <span class="nv">$min_fidid</span> <span class="o">=</span> <span class="nv">$sto</span><span class="o">-&gt;</span><span class="n">max_fidid</span><span class="p">;</span>
+</span><span class='line'><span class="k">sub </span><span class="nf">max_fidid</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">dbh</span><span class="o">-&gt;</span><span class="n">selectrow_array</span><span class="p">(</span><span class="s">&quot;SELECT MAX(fid) FROM file&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>设置为守护进程 MogileFS::Util->daemonize()</h2>
+
+<blockquote><p>两次fork后成为守护进程</p>
+
+<blockquote><p>第一次fork后，父进程关闭，子进程成为孤儿进程，init接管</p>
+
+<p>setsid让孤儿进程脱离会话，并成为进程组，脱离终端。</p>
+
+<p>忽略挂起信号</p>
+
+<p>第二次fork后，父进程关闭，子进程成为孤儿进程，init接管，成为守护进程</p>
+
+<blockquote><p>据说调用第二次fork可以彻底排除取得会话的可能</p></blockquote></blockquote></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="n">daemonize</span><span class="p">()</span> <span class="k">if</span> <span class="n">MogileFS</span><span class="o">-&gt;</span><span class="n">config</span><span class="p">(</span><span class="s">&quot;daemonize&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="k">sub </span><span class="nf">daemonize</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$pid</span> <span class="o">=</span> <span class="nb">fork</span><span class="p">)</span> <span class="p">{</span> <span class="nb">exit</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>    <span class="n">croak</span> <span class="s">&quot;Cannot detach from controlling terminal&quot;</span>
+</span><span class='line'>        <span class="k">unless</span> <span class="nv">$sess_id</span> <span class="o">=</span> <span class="nn">POSIX::</span><span class="n">setsid</span><span class="p">();</span>
+</span><span class='line'>    <span class="nv">$SIG</span><span class="p">{</span><span class="s">&#39;HUP&#39;</span><span class="p">}</span> <span class="o">=</span> <span class="s">&#39;IGNORE&#39;</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$pid</span> <span class="o">=</span> <span class="nb">fork</span><span class="p">)</span> <span class="p">{</span> <span class="nb">exit</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
+</span><span class='line'>    <span class="nb">chdir</span> <span class="s">&quot;/&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">umask</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>设置进程信号处理</h2>
+
+<blockquote><p>程序自己中断的信号TERM和外部中断信号INT是类似的，干掉所有子进程，删除PID文件</p>
+
+<p>管道信号忽略，(只有写，没有读的管道，会发出这种信号)</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="nv">$SIG</span><span class="p">{</span><span class="n">TERM</span><span class="p">}</span>  <span class="o">=</span> <span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@children</span> <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">child_pids</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">print</span> <span class="bp">STDERR</span> <span class="nb">scalar</span> <span class="nv">@children</span><span class="p">,</span> <span class="s">&quot; children to kill.\n&quot;</span> <span class="k">if</span> <span class="nv">$DEBUG</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$count</span> <span class="o">=</span> <span class="nb">kill</span><span class="p">(</span> <span class="s">&#39;TERM&#39;</span> <span class="o">=&gt;</span> <span class="nv">@children</span> <span class="p">);</span>
+</span><span class='line'>    <span class="k">print</span> <span class="bp">STDERR</span> <span class="s">&quot;Sent SIGTERM to $count children.\n&quot;</span> <span class="k">if</span> <span class="nv">$DEBUG</span><span class="p">;</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">remove_pidfile</span><span class="p">;</span>
+</span><span class='line'>    <span class="nn">Mgd::</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;info&#39;</span><span class="p">,</span> <span class="s">&#39;ending run due to SIGTERM&#39;</span><span class="p">);</span>
+</span><span class='line'>    <span class="nn">Sys::Syslog::</span><span class="n">closelog</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">exit</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="nv">$SIG</span><span class="p">{</span><span class="n">INT</span><span class="p">}</span> <span class="o">=</span> <span class="n">sub</span><span class="p">{</span><span class="err">同上</span><span class="p">}</span>
+</span><span class='line'><span class="nv">$SIG</span><span class="p">{</span><span class="n">PIPE</span><span class="p">}</span> <span class="o">=</span> <span class="s">&#39;IGNORE&#39;</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>创建服务器端socket</h2>
+
+<blockquote><p>Danga::Socket是一个socket事件驱动，处理客户端请求的是MogileFS::Connection::Client</p>
+
+<p>设置%OtherFds</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">my</span> <span class="nv">@servers</span><span class="p">;</span>
+</span><span class='line'><span class="k">foreach</span> <span class="k">my</span> <span class="nv">$listen</span> <span class="p">(</span><span class="nv">@</span><span class="p">{</span> <span class="n">MogileFS</span><span class="o">-&gt;</span><span class="n">config</span><span class="p">(</span><span class="s">&#39;listen&#39;</span><span class="p">)</span> <span class="p">})</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nn">IO::Socket::</span><span class="n">INET</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="n">LocalAddr</span> <span class="o">=&gt;</span> <span class="nv">$listen</span><span class="p">,</span>
+</span><span class='line'>                                       <span class="n">Type</span>      <span class="o">=&gt;</span> <span class="n">SOCK_STREAM</span><span class="p">,</span>
+</span><span class='line'>                                       <span class="n">Proto</span>     <span class="o">=&gt;</span> <span class="s">&#39;tcp&#39;</span><span class="p">,</span>
+</span><span class='line'>                                       <span class="n">Blocking</span>  <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>                                       <span class="n">Reuse</span>     <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span><span class="c1">#调用Reuse可以免去服务器在终止到重启之间的所停留的时间</span>
+</span><span class='line'>                                       <span class="n">Listen</span>    <span class="o">=&gt;</span> <span class="mi">1024</span> <span class="p">)</span> <span class="c1">#监听队列，其实就是连接数</span>
+</span><span class='line'>        <span class="ow">or</span> <span class="nb">die</span> <span class="s">&quot;Error creating socket: $@\n&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">sockopt</span><span class="p">(</span><span class="n">SO_KEEPALIVE</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1"># save sub to accept a client</span>
+</span><span class='line'>    <span class="nb">push</span> <span class="nv">@servers</span><span class="p">,</span> <span class="nv">$server</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">AddOtherFds</span><span class="p">(</span> <span class="nb">fileno</span><span class="p">(</span><span class="nv">$server</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>            <span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$csock</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nb">accept</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nn">MogileFS::Connection::</span><span class="n">Client</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$csock</span><span class="p">);</span><span class="c1">#也会被加到%DescriptorMap</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>设置socket事件处理后的回调，并开始循环</h2>
+
+<blockquote><p>MogileFS::ProcManager  进程管理工具</p>
+
+<p><em>EventLoop = </em>FirstTimeEventLoop; 符号表设置，调用的是FirstTimeEventLoop</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">push_pre_fork_cleanup</span><span class="p">(</span><span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>    <span class="c1"># so children don&#39;t hold server connection open</span>
+</span><span class='line'>    <span class="c1">#关闭连接的匿名函数,给子进程用的</span>
+</span><span class='line'>    <span class="nb">close</span><span class="p">(</span><span class="nv">$_</span><span class="p">)</span> <span class="k">foreach</span> <span class="nv">@servers</span><span class="p">;</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># setup the post event loop callback to spawn jobs, and the timeout</span>
+</span><span class='line'><span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">DebugLevel</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span><span class="c1">#始终是0</span>
+</span><span class='line'><span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">SetLoopTimeout</span><span class="p">(</span> <span class="mi">250</span> <span class="p">);</span> <span class="c1">#事件超时 250 milliseconds</span>
+</span><span class='line'><span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">SetPostLoopCallback</span><span class="p">(</span><span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">PostEventLoopChecker</span><span class="p">);</span><span class="c1">#每次事件驱动完成后执行的函数</span>
+</span><span class='line'><span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">EventLoop</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Socket轮询器选择</h2>
+
+<blockquote><p>我本机为Poll,以后调用EventLoop就是PollEventLoop了,Poll需要轮询，</p>
+
+<p>线上应该为Epoll,Epoll内核提供反射模式，无需轮询</p>
+
+<p>Epoll和Poll那种更好，可能取决于活跃的Socket。。。，如果全是活跃的呢</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">FirstTimeEventLoop</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$class</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">_InitPoller</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$HaveEpoll</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">EpollEventLoop</span><span class="p">(</span><span class="nv">$class</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">elsif</span> <span class="p">(</span><span class="nv">$HaveKQueue</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">KQueueEventLoop</span><span class="p">(</span><span class="nv">$class</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">PollEventLoop</span><span class="p">(</span><span class="nv">$class</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="o">*</span><span class="n">EventLoop</span> <span class="o">=</span> <span class="o">*</span><span class="n">PollEventLoop</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>第一次轮询开始</h2>
+
+<blockquote><p>还记得Danga::Socket->SetPostLoopCallback(MogileFS::ProcManager->PostEventLoopChecker);吗？，第一次轮询直接回调</p>
+
+<p>还记得%OtherFds吗，主进程的socket在里面,%DescriptorMap暂时还没，不过这个散列很重要</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">my</span> <span class="nv">@poll</span><span class="p">;</span>
+</span><span class='line'><span class="k">foreach</span> <span class="k">my</span> <span class="nv">$fd</span> <span class="p">(</span> <span class="nb">keys</span> <span class="nv">%OtherFds</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nb">push</span> <span class="nv">@poll</span><span class="p">,</span> <span class="nv">$fd</span><span class="p">,</span> <span class="n">POLLIN</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span> <span class="k">my</span> <span class="p">(</span><span class="nv">$fd</span><span class="p">,</span> <span class="nv">$sock</span><span class="p">)</span> <span class="o">=</span> <span class="nb">each</span> <span class="nv">%DescriptorMap</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nb">push</span> <span class="nv">@poll</span><span class="p">,</span> <span class="nv">$fd</span><span class="p">,</span> <span class="nv">$sock</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">event_watch</span><span class="p">};</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$count</span> <span class="o">=</span> <span class="nn">IO::Poll::</span><span class="n">_poll</span><span class="p">(</span><span class="nv">$timeout</span><span class="p">,</span> <span class="nv">@poll</span><span class="p">);</span>
+</span><span class='line'><span class="k">unless</span> <span class="p">(</span><span class="nv">$count</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="k">unless</span> <span class="n">PostEventLoop</span><span class="p">();</span>
+</span><span class='line'>    <span class="k">next</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>创建Monitor子进程</h2>
+
+<blockquote><p>创建一副IPC通信一个给父进程，一个给子进程,并切无缓冲</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="nb">socketpair</span><span class="p">(</span><span class="k">my</span> <span class="nv">$parents_ipc</span><span class="p">,</span> <span class="k">my</span> <span class="nv">$childs_ipc</span><span class="p">,</span> <span class="n">AF_UNIX</span><span class="p">,</span> <span class="n">SOCK_STREAM</span><span class="p">,</span> <span class="n">PF_UNSPEC</span> <span class="p">)</span>
+</span><span class='line'>        <span class="ow">or</span> <span class="nb">die</span><span class="p">(</span> <span class="s">&quot;Sockpair failed&quot;</span> <span class="p">);</span>
+</span><span class='line'><span class="nb">select</span><span class="p">((</span><span class="nb">select</span><span class="p">(</span> <span class="nv">$parents_ipc</span> <span class="p">),</span> <span class="vg">$|</span><span class="o">++</span><span class="p">)[</span><span class="mi">0</span><span class="p">]);</span>
+</span><span class='line'><span class="nb">select</span><span class="p">((</span><span class="nb">select</span><span class="p">(</span> <span class="nv">$childs_ipc</span>  <span class="p">),</span> <span class="vg">$|</span><span class="o">++</span><span class="p">)[</span><span class="mi">0</span><span class="p">]);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>父类返回MogileFS::Connection::Worker对象,构造参数是IPC中的一个</p>
+
+<p>MogileFS::Connection::Worker继承Danga::Socket,会增加到$DescriptorMap{$fd} = $self;</p>
+
+<p>MogileFS::ProcManager->RegisterWorkerConn 设置POLLIN和$ChildrenByJob{$worker->job}->{$worker->pid} = $worker;</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="c1"># if i&#39;m the parent</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="nv">$pid</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">sigprocmask</span><span class="p">(</span><span class="n">SIG_UNBLOCK</span><span class="p">,</span> <span class="nv">$sigset</span><span class="p">)</span>
+</span><span class='line'>        <span class="ow">or</span> <span class="k">return</span> <span class="n">error</span><span class="p">(</span><span class="s">&quot;Can&#39;t unblock SIGINT for fork: $!&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">close</span><span class="p">(</span><span class="nv">$childs_ipc</span><span class="p">);</span>  <span class="c1"># unnecessary but explicit</span>
+</span><span class='line'>    <span class="nn">IO::Handle::</span><span class="n">blocking</span><span class="p">(</span><span class="nv">$parents_ipc</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$worker_conn</span> <span class="o">=</span> <span class="nn">MogileFS::Connection::</span><span class="n">Worker</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$parents_ipc</span><span class="p">);</span>
+</span><span class='line'>    <span class="nv">$worker_conn</span><span class="o">-&gt;</span><span class="n">pid</span><span class="p">(</span><span class="nv">$pid</span><span class="p">);</span>
+</span><span class='line'>    <span class="nv">$worker_conn</span><span class="o">-&gt;</span><span class="n">job</span><span class="p">(</span><span class="nv">$job</span><span class="p">);</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">RegisterWorkerConn</span><span class="p">(</span><span class="nv">$worker_conn</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$worker_conn</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<blockquote><p>子类通过job_to_class获取MogileFS::Worker::Monitor,然后实例化，调用work运作起来</p>
+
+<p>会增加到$DescriptorMap{$fd} = $self;但是不要和主进程的混淆，完全两个进程里的</p>
+
+<p>子类不会运行到exit,子进程也调用了Danga的socket事件循环</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="nv">$_</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">foreach</span> <span class="nv">@prefork_cleanup</span><span class="p">;</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$class</span> <span class="o">=</span> <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">job_to_class</span><span class="p">(</span><span class="nv">$job</span><span class="p">)</span>
+</span><span class='line'>        <span class="ow">or</span> <span class="nb">die</span> <span class="s">&quot;No worker class defined for job &#39;$job&#39;\n&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$worker</span> <span class="o">=</span> <span class="nv">$class</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$childs_ipc</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># set our frontend into child mode</span>
+</span><span class='line'><span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">SetAsChild</span><span class="p">(</span><span class="nv">$worker</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$worker</span><span class="o">-&gt;</span><span class="n">work</span><span class="p">;</span>
+</span><span class='line'><span class="nb">exit</span> <span class="mi">0</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Monitor进程开始工作</h2>
+
+<blockquote><p>Monitor监控数据库和Storage的情况</p>
+
+<p>最重要的是Monitor启动后，发送了消息<code>":monitor_just_ran"</code>，接着就一直循环监听和处理了</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">my</span> <span class="nv">$db_monitor</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$db_monitor</span> <span class="o">=</span> <span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">parent_ping</span><span class="p">;</span><span class="c1">#和p保持连接</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">cache_refresh</span><span class="p">;</span><span class="c1">#监控数据库配置,及时通知p</span>
+</span><span class='line'>    <span class="nv">$db_monitor_ran</span><span class="o">++</span><span class="p">;</span>
+</span><span class='line'>    <span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">AddTimer</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="nv">$db_monitor</span><span class="p">);</span><span class="c1">#每4秒查询一次</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$db_monitor</span><span class="o">-&gt;</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$self</span><span class="o">-&gt;</span><span class="n">read_from_parent</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">my</span> <span class="nv">$main_monitor</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$main_monitor</span> <span class="o">=</span> <span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">parent_ping</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">usage_refresh</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$db_monitor_ran</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">send_to_parent</span><span class="p">(</span><span class="s">&quot;:monitor_just_ran&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$db_monitor_ran</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">AddTimer</span><span class="p">(</span><span class="mf">2.5</span><span class="p">,</span> <span class="nv">$main_monitor</span><span class="p">);</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$main_monitor</span><span class="o">-&gt;</span><span class="p">();</span>
+</span><span class='line'><span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">AddOtherFds</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="n">psock_fd</span><span class="p">,</span> <span class="n">sub</span><span class="p">{</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">read_from_parent</span> <span class="p">});</span>
+</span><span class='line'><span class="nn">Danga::</span><span class="n">Socket</span><span class="o">-&gt;</span><span class="n">EventLoop</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>MogileFSD进程处理:monitor_just_ran消息</h2>
+
+<blockquote><p>设置完需要的workers后，又和调用创建Monitor一样，创建其他的workers</p></blockquote>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">my</span> <span class="nv">$child</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+</span><span class='line'><span class="c1"># Gas up other workers if monitor&#39;s completed for the first time.</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="nv">$monitor_good</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">set_min_workers</span><span class="p">(</span><span class="s">&#39;queryworker&#39;</span> <span class="o">=&gt;</span> <span class="n">MogileFS</span><span class="o">-&gt;</span><span class="n">config</span><span class="p">(</span><span class="s">&#39;query_jobs&#39;</span><span class="p">));</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">set_min_workers</span><span class="p">(</span><span class="s">&#39;delete&#39;</span>      <span class="o">=&gt;</span> <span class="n">MogileFS</span><span class="o">-&gt;</span><span class="n">config</span><span class="p">(</span><span class="s">&#39;delete_jobs&#39;</span><span class="p">));</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">set_min_workers</span><span class="p">(</span><span class="s">&#39;replicate&#39;</span>   <span class="o">=&gt;</span> <span class="n">MogileFS</span><span class="o">-&gt;</span><span class="n">config</span><span class="p">(</span><span class="s">&#39;replicate_jobs&#39;</span><span class="p">));</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">set_min_workers</span><span class="p">(</span><span class="s">&#39;reaper&#39;</span>      <span class="o">=&gt;</span> <span class="n">MogileFS</span><span class="o">-&gt;</span><span class="n">config</span><span class="p">(</span><span class="s">&#39;reaper_jobs&#39;</span><span class="p">));</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">set_min_workers</span><span class="p">(</span><span class="s">&#39;fsck&#39;</span>        <span class="o">=&gt;</span> <span class="n">MogileFS</span><span class="o">-&gt;</span><span class="n">config</span><span class="p">(</span><span class="s">&#39;fsck_jobs&#39;</span><span class="p">));</span>
+</span><span class='line'>    <span class="nn">MogileFS::</span><span class="n">ProcManager</span><span class="o">-&gt;</span><span class="n">set_min_workers</span><span class="p">(</span><span class="s">&#39;job_master&#39;</span>  <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="nv">$monitor_good</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$allkidsup</span>    <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">erning</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-16T10:11:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/mogilefs/'>mogilefs</a>, <a class='category' href='/blog/categories/perl/'>perl</a>, <a class='category' href='/blog/categories/study/'>study</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/05/09/the-twelve-factor-app/" title="Previous Post: The Twelve-Factor App">&laquo; The Twelve-Factor App</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/05/16/mogilefs-code-reading-2/" title="Next Post: MogileFS读取文件的过程">MogileFS读取文件的过程 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-1/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading-1/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

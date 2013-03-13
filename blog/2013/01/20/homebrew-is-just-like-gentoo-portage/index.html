@@ -1,0 +1,499 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Homebrew is just like gentoo portage - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="一句话提示： 利用brew versions和brew switch命令也可以实现gentoo portage里eselect类似的版本切换功能! 老规矩，喜欢听故事的继续看下去XDDD 您使用何种包管理？ MacOS下安装软件是件很惬意的事情，因为DMG或者PKG一路NEXT魔法即可( &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Homebrew Is Just Like Gentoo Portage</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-20T14:28:00+08:00" pubdate data-updated="true">Jan 20<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
+
+<h2>一句话提示：</h2>
+
+<blockquote><p>利用<code>brew versions</code>和<code>brew switch</code>命令也可以实现gentoo portage里eselect类似的版本切换功能!</p></blockquote>
+
+<p>老规矩，喜欢听故事的继续看下去XDDD</p>
+
+<!-- more -->
+
+
+<h2>您使用何种包管理？</h2>
+
+<p>MacOS下安装软件是件很惬意的事情，因为DMG或者PKG一路NEXT魔法即可(<strike>这么说Windows其实也是XDD</strike>)，卸载也不是什么难事。Linux下安装软件同样&#8230;也不能算是一件难事，因为我们有apt、pacman、emerge<strike>甚至是yum</strike>这样的包管理器，一条命令随叫随到。</p>
+
+<p>那么有在Mac下像Linux那样安装软件包的工具吗？如今大家可能第一想到的是<a href="https://github.com/mxcl/homebrew">Homebrew</a>（以下简称brew），没错，在他之前就有大名鼎鼎的<a href="http://www.macports.org/">Macports</a>，号称和BSD的ports一样自动下载源代码编译安装的工具。那么为什么Homebrew如今却广受欢迎呢，我想了想</p>
+
+<ul>
+<li>支持最新的MacOS</li>
+<li>包含着常用的大多数软件包</li>
+<li>更新很快</li>
+<li>够Cool! (使用Git方式发布，项目托管在Github上)</li>
+<li><strike>是用ruby写的XDDD</strike></li>
+</ul>
+
+
+<p>brew里的软件是通过Formula方式写成一个打包文件，git同步后，让brew系统来读取这个Formula进行常见的下载、编译、安装过程。看起来和gentoo portage或者BSD的ports如出一辙(如果使用archlinux，可以理解成ABS)。</p>
+
+<p>平时在使用系统的时候比较大的一项烦恼是，我有同一个软件，有不同的版本想要同时使用？如果软件包本身不妨碍多个版本共存那自然是皆大欢喜，不幸的是多数软件都不支持。进一步讲，我是一个开发者，需要引用不同的第三方库的时候这个问题怎么解决呢？</p>
+
+<p>大家也许想到了开发语言自带的包管理器和版本控制工具，这方面的例子，rvm与gem/bundler首当其冲。假使您还不了解其中的重要性，推荐阅读一下<a href="http://www.12factor.net/dependencies">『The Twelve-Factor App』里关于项目依赖的部分</a>。其他的例子，还有python的setuptools/pip等等。自然的，<a href="http://blog.astrumfutura.com/2007/10/to-pear-or-not-to-pear-and-how-to-pear-anyway/">这个方面做的比较差的也有</a>。</p>
+
+<p>更进一步讲，要是我使用的是系统的库呢，除了像<a href="https://github.com/CocoaPods/CocoaPods">CocoaPods</a>这种吸收了gem的新兴工具外，似乎走进了一个死胡同。其实不然，我们可以选择带有这样功能的包管理器或者系统！</p>
+
+<h2>这就是为什么我喜爱gentoo与homebrew!</h2>
+
+<p><a href="http://www.gentoo.org/doc/en/handbook/handbook-x86.xml?part=2&amp;chap=1#doc_chap5">gentoo portage里有一个叫做slot的功能</a>，简单地解释一下，在portage的版本树里一个软件包可以有多个版本的ebuild文件，并把他们划分成不同地slot——例如python——大家都知道python目前有2.x和3.x的大版本区别，在portage里python就有几个slot（见下面的portage记录，版本之前括号里的就是slot），其中有2.7和3.2，他们属于同一个包下的多个slot版本；portage允许同一个包里多个slot并存，一般还会附赠一个<code>eselect-foobar</code>的包来提供版本的选择</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[I] dev-lang/python
+</span><span class='line'>     Available versions:
+</span><span class='line'>  (2.2)   ~2.2-r8[1]
+</span><span class='line'>  (2.5)   2.5.4-r4 ~2.5.4-r5
+</span><span class='line'>  (2.6)   2.6.8 ~2.6.8-r1
+</span><span class='line'>  (2.7)   2.7.3-r2 ~2.7.3-r3
+</span><span class='line'>  (3.1)   3.1.5 ~3.1.5-r1
+</span><span class='line'>  (3.2)   3.2.3 ~3.2.3-r1 ~3.2.3-r2
+</span><span class='line'>  (3.3)   **3.3.0 **3.3.0-r1
+</span><span class='line'>  
+</span><span class='line'>     Installed versions:  2.7.3-r2(2.7)(03:02:44 PM 01/19/2013)(gdbm ipv6 ncurses readline sqlite ssl threads wide-unicode xml -berkdb -build -doc -elibc_uclibc -examples -tk -wininst) 3.2.3(3.2)(03:04:49 PM 01/19/2013)(gdbm ipv6 ncurses readline sqlite ssl threads wide-unicode xml -build -doc -elibc_uclibc -examples -tk -wininst)
+</span><span class='line'>     Homepage:            http://www.python.org
+</span><span class='line'>     Description:         A really great language
+</span><span class='line'>
+</span><span class='line'>[I] app-admin/eselect-python
+</span><span class='line'>     Available versions:  20091230 20100321 ~20111108 **99999999
+</span><span class='line'>     Installed versions:  20100321(02:18:04 PM 11/07/2012)
+</span><span class='line'>     Homepage:            http://www.gentoo.org
+</span><span class='line'>     Description:         Eselect module for management of multiple Python versions</span></code></pre></td></tr></table></div></figure>
+
+
+<p>对于gentoo portage来说，不同的包版本安装的路径是不同的，例如2.7和3.2分别安装在<code>/usr/lib/python2.7</code>与<code>/usr/lib/python3.2</code>下，利用特殊的机制（eselect和软链等，python在gentoo下使用了python-wrapper）来实现多版本并存的功能。</p>
+
+<p>不过可以留意到的是，在portage里同一个slot下也会有多个版本，他们之间是无法并存的XDD</p>
+
+<h3>那么故事讲了这么多Homebrew到底有什么能耐呢？</h3>
+
+<p>其实我前几天在自己的Mac姬上需要测试最新版本的zeromq 3.x，而同时另外有一个项目的zeromq是要求2.1.x版本的；按照常规做法，要么我自己手工编译两个lib分开放（意味着编译链接的FLAG都要自己设置，不开玩笑&#8230;），要么在开发项目A时重新安装3.x，开发项目B时重新安装2.1.x，岂不蛋疼？</p>
+
+<p>让我们回想一下Homebrew的目录结构：官方建议安装在/usr/local下（因为MacOS不会使用这个目录）</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>├── CONTRIBUTING.md
+</span><span class='line'>├── Cellar
+</span><span class='line'>├── Library
+</span><span class='line'>├── README.md
+</span><span class='line'>├── bin
+</span><span class='line'>├── etc
+</span><span class='line'>├── include
+</span><span class='line'>├── lib
+</span><span class='line'>├── opt
+</span><span class='line'>├── sbin
+</span><span class='line'>├── share
+</span><span class='line'>├── tmp
+</span><span class='line'>└── var</span></code></pre></td></tr></table></div></figure>
+
+
+<p>bin和lib下是常见的直接使用的文件，实际上是做了软链接到Cellar下具体某个包、某个版本下，例如</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ls -lah lib/libzmq.a
+</span><span class='line'>lrwxr-xr-x  1 aleiphoenix  wheel    36B Jan 16 15:54 lib/libzmq.a -&gt; ../Cellar/zeromq/2.1.11/lib/libzmq.a</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这下明白了吧，由于brew的实现已经是同一个包不同版本的分开放置，所以要支持多版本切换，只是写一个切换软链接的工具而已，而brew里已经自带了这个功能；并且这个功能比gentoo portage的slot更自由一些，因为任意版本之间都是可以并存的XDDD</p>
+
+<ul>
+<li>查看已经安装的版本 <code>brew info</code></li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>brew info zeromq
+</span><span class='line'>zeromq: stable 3.2.2, HEAD
+</span><span class='line'>http://www.zeromq.org/
+</span><span class='line'>Depends on: pkg-config
+</span><span class='line'>/usr/local/Cellar/zeromq/2.1.11 (41 files, 1.6M) *
+</span><span class='line'>/usr/local/Cellar/zeromq/2.2.0 (41 files, 1.6M)
+</span><span class='line'>/usr/local/Cellar/zeromq/3.2.2 (54 files, 2.2M)</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>查看所有版本 <code>brew versions</code></li>
+</ul>
+
+
+<p>这里有个技巧，由于brew的目录是用git管理的，所以对于Formula来说始终是一个文件（名），利用git命令把需要的版本checkout出来，就可以使用了XDDD</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>brew versions zeromq
+</span><span class='line'>3.2.2    git checkout ab8de4b Library/Formula/zeromq.rb
+</span><span class='line'>2.2.0    git checkout 6a2e6ef Library/Formula/zeromq.rb
+</span><span class='line'>2.1.11   git checkout 497b13a Library/Formula/zeromq.rb
+</span><span class='line'>2.1.10   git checkout 4c8ed3a Library/Formula/zeromq.rb
+</span><span class='line'>2.1.9    git checkout 381c97f Library/Formula/zeromq.rb
+</span><span class='line'>2.1.7    git checkout ed41f79 Library/Formula/zeromq.rb
+</span><span class='line'>2.1.8    git checkout 8e045d5 Library/Formula/zeromq.rb
+</span><span class='line'>2.1.6    git checkout 460a168 Library/Formula/zeromq.rb
+</span><span class='line'>2.1.4    git checkout 83ed494 Library/Formula/zeromq.rb
+</span><span class='line'>2.1.3    git checkout f4a925d Library/Formula/zeromq.rb
+</span><span class='line'>2.1.2    git checkout 3017b39 Library/Formula/zeromq.rb
+</span><span class='line'>2.1.1    git checkout 0476235 Library/Formula/zeromq.rb
+</span><span class='line'>2.0.10   git checkout 00e1ae3 Library/Formula/zeromq.rb
+</span><span class='line'>2.0.9    git checkout 0527b6f Library/Formula/zeromq.rb
+</span><span class='line'>2.0.8    git checkout 1f252bf Library/Formula/zeromq.rb
+</span><span class='line'>2.0.7    git checkout ce8d2f5 Library/Formula/zeromq.rb</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>切换至目标版本 <code>brew switch</code></li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>brew switch zeromq 3.2.2
+</span><span class='line'>Cleaning /usr/local/Cellar/zeromq/2.1.11
+</span><span class='line'>Cleaning /usr/local/Cellar/zeromq/2.2.0
+</span><span class='line'>Cleaning /usr/local/Cellar/zeromq/3.2.2
+</span><span class='line'>49 links created for /usr/local/Cellar/zeromq/3.2.2</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当然，这个并不表示brew一点问题也没有，比如某个libA引用的是特定版本的libB，在libB切换版本后libA可能就出错了。</p>
+
+<blockquote><p>&#8220;It&#8217;s up to you, Mason. It&#8217;s all up to you.&#8221;</p></blockquote>
+
+<p>所以XDDDD</p>
+
+<p>总体而言，brew这个功能给开发者（<strike>不折腾会死星人</strike>）提供了莫大的便利。那天发现这个功能时，不禁感叹，『这不就是gentoo portage么！』 XDDDDDDDDDD</p>
+
+<p>__END__</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-20T14:28:00+08:00" pubdate data-updated="true">Jan 20<span>th</span>, 2013</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/12/23/nginx-live-upgrade/" title="Previous Post: Nginx热升级">&laquo; Nginx热升级</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/03/01/using-pypi-provided-by-anjuke/" title="Next Post: 使用安居客提供的PyPI镜像">使用安居客提供的PyPI镜像 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
