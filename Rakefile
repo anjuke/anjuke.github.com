@@ -248,7 +248,7 @@ desc "deploy public directory to github pages"
 multitask :push do
   puts "## Deploying branch to Github Pages "
   rm_rf("#{deploy_dir}")
-  system "git clone -b master . #{deploy_dir} --single-branch"
+  system "git clone -b #{deploy_branch} . #{deploy_dir} --single-branch"
   Rake::Task[:copydot].invoke(public_dir, deploy_dir)
   puts "\n## copying #{public_dir} to #{deploy_dir}"
   cp_r "#{public_dir}/.", deploy_dir
