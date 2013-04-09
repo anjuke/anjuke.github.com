@@ -4,7 +4,7 @@
   <title><![CDATA[Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2013-04-09T08:46:53+08:00</updated>
+  <updated>2013-04-09T10:19:54+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -1618,7 +1618,7 @@
 
 <p>以Wordcount为例，将一段文字划分成一个个单词的过程就是Map。这个过程是可以并行执行的，即将文章拆分成多个段落，每个段落分别在不同的节点上执行划分单词的操作。这个过程结束后，我们便可以统计各个单词出现的次数，这也就是Reduce的过程。同样，Reduce也是可以并发执行的。整个过程如下图所示：</p>
 
-<p><img src="http://arch.corp.anjuke.com/images/2013/02/cia-hadoop/wordcount.png" alt="Wordcount" /></p>
+<p><img src="http://arch.corp.anjuke.com/medias/20130209/cia-hadoop-wordcount.png" alt="Wordcount" /></p>
 
 <p>中间Shuffle部分的功能是将Map输出的数据按键排序，交由Reduce处理。整个过程全部由Hadoop把控，开发者只需编写<code>Map</code>和<code>Reduce</code>函数，这也是Hadoop强大之处。</p>
 
@@ -7683,12 +7683,12 @@ review工具，他提供了便捷、强大的功能来帮助开发者更顺利�
 
 <p>使用域帐号登录</p>
 
-<p><img class="center" src="http://arch.corp.anjuke.com/images/2012/10/reviewboard001.jpg"></p>
+<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard001.jpg"></p>
 
 <p>登录后，找到右上角的<code>my
 account</code>，进入可以设置自己所在的组，这里需要设置到您所在的组，这样发送到这个组的review请求才会发送通知邮件</p>
 
-<p><img class="center" src="http://arch.corp.anjuke.com/images/2012/10/reviewboard002.jpg"></p>
+<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard002.jpg"></p>
 
 <h2>How could I get access ?</h2>
 
@@ -7732,15 +7732,15 @@ account</code>，进入可以设置自己所在的组，这里需要设置到您
 
 <p>使用admin帐号登录，并选择到后台</p>
 
-<p><img class="center" src="http://arch.corp.anjuke.com/images/2012/10/reviewboard003.jpg"></p>
+<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard003.jpg"></p>
 
-<p><img class="center" src="http://arch.corp.anjuke.com/images/2012/10/reviewboard004.jpg"></p>
+<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard004.jpg"></p>
 
-<p><img class="center" src="http://arch.corp.anjuke.com/images/2012/10/reviewboard005.jpg"></p>
+<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard005.jpg"></p>
 
 <p>新建仓库，设置参考下图，这里的名字将会在后面<code>.reviewboardrc</code>里使用</p>
 
-<p><img class="center" src="http://arch.corp.anjuke.com/images/2012/10/reviewboard006.jpg"></p>
+<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard006.jpg"></p>
 
 <h3>配置.reviewboardrc</h3>
 
@@ -7782,7 +7782,7 @@ account</code>，进入可以设置自己所在的组，这里需要设置到您
 
 <p>如上图会得到一个review请求的地址，访问它，再手工上传diff文件</p>
 
-<p><img class="center" src="http://arch.corp.anjuke.com/images/2012/10/reviewboard007.jpg"></p>
+<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard007.jpg"></p>
 
 <p>此外，还需要填入一些必要的信息</p>
 

@@ -157,7 +157,7 @@
 
 <p>以Wordcount为例，将一段文字划分成一个个单词的过程就是Map。这个过程是可以并行执行的，即将文章拆分成多个段落，每个段落分别在不同的节点上执行划分单词的操作。这个过程结束后，我们便可以统计各个单词出现的次数，这也就是Reduce的过程。同样，Reduce也是可以并发执行的。整个过程如下图所示：</p>
 
-<p><img src="/images/2013/02/cia-hadoop/wordcount.png" alt="Wordcount" /></p>
+<p><img src="/medias/20130209/cia-hadoop-wordcount.png" alt="Wordcount" /></p>
 
 <p>中间Shuffle部分的功能是将Map输出的数据按键排序，交由Reduce处理。整个过程全部由Hadoop把控，开发者只需编写<code>Map</code>和<code>Reduce</code>函数，这也是Hadoop强大之处。</p>
 

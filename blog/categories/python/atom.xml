@@ -4,7 +4,7 @@
   <title><![CDATA[Category: python | Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/blog/categories/python/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2013-04-09T08:47:46+08:00</updated>
+  <updated>2013-04-09T10:19:54+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -18,7 +18,7 @@
     <link href="http://arch.corp.anjuke.com/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/"/>
     <updated>2012-10-31T18:00:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun</id>
-    <content type="html"><![CDATA[<p>{%img right http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png %}</p>
+    <content type="html"><![CDATA[<p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
 
 <p>Storm UI提供了基本的监控界面，可以查看当前时点集群内脚本的运行情况，其中比较重要的是消息吞吐量（Transferred）和处理延迟（Process latency）。不足的是，这套系统没有记录时序数据，因此想看一段时间内的趋势图，或是做脚本上下线的负载监控，Storm UI就无能为力了。</p>
 
@@ -110,7 +110,7 @@ if executor_info.component_id == 'filter':
     <link href="http://arch.corp.anjuke.com/blog/2012/10/02/zc-dot-buildout-workflow/"/>
     <updated>2012-10-02T14:44:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2012/10/02/zc-dot-buildout-workflow</id>
-    <content type="html"><![CDATA[<p>{%img right http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png %}</p>
+    <content type="html"><![CDATA[<p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
 
 <p>This article aims to provide a concrete workflow of using zc.buildout to deploy development and production environment.</p>
 
@@ -303,7 +303,7 @@ with cd('/path/to/boskel/dist/%s' % prefix):
     <link href="http://arch.corp.anjuke.com/blog/2012/09/08/a-workaround-for-flask-werkzeugs-incompatibility-with-buildout/"/>
     <updated>2012-09-08T21:13:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2012/09/08/a-workaround-for-flask-werkzeugs-incompatibility-with-buildout</id>
-    <content type="html"><![CDATA[<p>{%img right http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png %}</p>
+    <content type="html"><![CDATA[<p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
 
 <p>Normally, we can use the following snippet to run a flask application:</p>
 
@@ -446,7 +446,7 @@ entry-points = script_name=project_name.module_name:function_name
     <link href="http://arch.corp.anjuke.com/blog/2012/08/27/use-supervisord-with-storm-and-zookeeper/"/>
     <updated>2012-08-27T21:25:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2012/08/27/use-supervisord-with-storm-and-zookeeper</id>
-    <content type="html"><![CDATA[<p>{%img right http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png %}</p>
+    <content type="html"><![CDATA[<p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
 
 <p>Since both 'bin/storm (nimbus|supervisor|ui)' and 'bin/zkServer.sh start' tend to fork a new process to start the JVM, it's difficult to use 'supervisorctl stop ...' to control the processes.</p>
 
