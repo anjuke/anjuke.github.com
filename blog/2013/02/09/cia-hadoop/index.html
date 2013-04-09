@@ -1,0 +1,721 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Clojure实战(4)：编写Hadoop MapReduce脚本 - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="Hadoop简介 众所周知，我们已经进入了大数据时代，每天都有PB级的数据需要处理、分析，从中提取出有用的信息。Hadoop就是这一时代背景下的产物。它是Apache基金会下的开源项目，受Google两篇论文的启发，采用分布式的文件系统HDFS，以及通用的MapReduce解决方案， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2013/02/09/cia-hadoop/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Clojure实战(4)：编写Hadoop MapReduce脚本</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-09T16:43:00+08:00" pubdate data-updated="true">Feb 9<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>Hadoop简介</h2>
+
+<p>众所周知，我们已经进入了大数据时代，每天都有PB级的数据需要处理、分析，从中提取出有用的信息。Hadoop就是这一时代背景下的产物。它是Apache基金会下的开源项目，受<a href="http://en.wikipedia.org/wiki/Apache_Hadoop#Papers">Google两篇论文</a>的启发，采用分布式的文件系统HDFS，以及通用的MapReduce解决方案，能够在数千台物理节点上进行分布式并行计算。</p>
+
+<p>对于Hadoop的介绍这里不再赘述，读者可以<a href="http://hadoop.apache.org/">访问其官网</a>，或阅读<a href="http://product.dangdang.com/main/product.aspx?product_id=21127813">Hadoop权威指南</a>。</p>
+
+<p>Hadoop项目是由Java语言编写的，运行在JVM之上，因此我们可以直接使用Clojure来编写MapReduce脚本，这也是本文的主题。Hadoop集群的搭建不在本文讨论范围内，而且运行MapReduce脚本也无需搭建测试环境。</p>
+
+<!-- more -->
+
+
+<h2>clojure-hadoop类库</h2>
+
+<p>Hadoop提供的API是面向Java语言的，如果不想在Clojure中过多地操作Java对象，那就需要对API进行包装（wrapper），好在已经有人为我们写好了，它就是<a href="https://github.com/alexott/clojure-hadoop">clojure-hadoop</a>。</p>
+
+<p>从clojure-hadoop的项目介绍中可以看到，它提供了不同级别的包装，你可以选择完全规避对Hadoop类型和对象的操作，使用纯Clojure语言来编写脚本；也可以部分使用Hadoop对象，以提升性能（因为省去了类型转换过程）。这里我们选择前一种，即完全使用Clojure语言。</p>
+
+<h2>示例1：Wordcount</h2>
+
+<p>Wordcount，统计文本文件中每个单词出现的数量，可以说是数据处理领域的“Hello, world!”。这一节我们就通过它来学习如何编写MapReduce脚本。</p>
+
+<h3>Leiningen 2</h3>
+
+<p>前几章我们使用的项目管理工具<code>lein</code>是1.7版的，而前不久Leiningen 2已经正式发布了，因此从本章开始我们的示例都会基于新版本。新版<code>lein</code>的安装过程也很简单：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd</span> ~/bin
+</span><span class='line'><span class="nv">$ </span>wget https://raw.github.com/technomancy/leiningen/stable/bin/lein
+</span><span class='line'><span class="nv">$ </span>chmod 755 lein
+</span><span class='line'><span class="nv">$ </span>lein repl
+</span><span class='line'><span class="nv">user</span><span class="o">=</span>&gt;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中，<code>lein repl</code>这一步会下载<code>lein</code>运行时需要的文件，包括Clojure 1.4。</p>
+
+<h3>新建项目</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>lein new cia-hadoop
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>编辑<code>project.clj</code>文件，添加依赖项<code>clojure-hadoop "1.4.1"</code>，尔后执行<code>lein deps</code>。</p>
+
+<h3>Map和Reduce</h3>
+
+<p>MapReduce，简称mapred，是Hadoop的核心概念之一。可以将其理解为处理问题的一种方式，即将大问题拆分成多个小问题来分析和解决，最终合并成一个结果。其中拆分的过程就是Map，合并的过程就是Reduce。</p>
+
+<p>以Wordcount为例，将一段文字划分成一个个单词的过程就是Map。这个过程是可以并行执行的，即将文章拆分成多个段落，每个段落分别在不同的节点上执行划分单词的操作。这个过程结束后，我们便可以统计各个单词出现的次数，这也就是Reduce的过程。同样，Reduce也是可以并发执行的。整个过程如下图所示：</p>
+
+<p><img src="/images/2013/02/cia-hadoop/wordcount.png" alt="Wordcount" /></p>
+
+<p>中间Shuffle部分的功能是将Map输出的数据按键排序，交由Reduce处理。整个过程全部由Hadoop把控，开发者只需编写<code>Map</code>和<code>Reduce</code>函数，这也是Hadoop强大之处。</p>
+
+<h4>编写Map函数</h4>
+
+<p>在本示例中，我们处理的原始数据是文本文件，Hadoop会逐行读取并调用Map函数。Map函数会接收到两个参数：<code>key</code>是一个长整型，表示该行在整个文件中的偏移量，很少使用；<code>value</code>则是该行的内容。以下是将一行文字拆分成单词的Map函数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="c1">;; src/cia_hadoop/wordcount.clj</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">cia-hadoop.wordcount</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">clojure-hadoop.wrap</span> <span class="ss">:as</span> <span class="nv">wrap</span><span class="p">]</span>
+</span><span class='line'>            <span class="p">[</span><span class="nv">clojure-hadoop.defjob</span> <span class="ss">:as</span> <span class="nv">defjob</span><span class="p">])</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:import</span> <span class="p">[</span><span class="nv">java.util</span> <span class="nv">StringTokenizer</span><span class="p">])</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:use</span> <span class="nv">clojure-hadoop.job</span><span class="p">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">my-map</span> <span class="p">[</span><span class="nb">key </span><span class="nv">value</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">token</span><span class="p">]</span> <span class="p">[</span><span class="nv">token</span> <span class="mi">1</span><span class="p">])</span>
+</span><span class='line'>       <span class="p">(</span><span class="nf">enumeration-seq</span> <span class="p">(</span><span class="nf">StringTokenizer.</span> <span class="nv">value</span><span class="p">))))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，这是一个纯粹的Clojure函数，并没有调用Hadoop的API。函数体虽然只有两行，但还是包含了很多知识点的：</p>
+
+<p><code>(map f coll)</code>函数的作用是将函数<code>f</code>应用到序列<code>coll</code>的每个元素上，并返回一个新的序列。如<code>(map inc [1 2 3])</code>会对每个元素做加1操作（参考<code>(doc inc)</code>），返回<code>[2 3 4]</code>。值得一提的是，<code>map</code>函数返回的是一个惰性序列（lazy sequence），即序列元素不会一次性完全生成，而是在遍历过程中逐个生成，这在处理元素较多的序列时很有优势。</p>
+
+<p><code>map</code>函数接收的参数自然不会只限于Clojure内部函数，我们可以将自己定义的函数传递给它：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">my-inc</span> <span class="p">[</span><span class="nv">x</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="mi">1</span><span class="p">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nb">map </span><span class="nv">my-inc</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span> <span class="c1">; -&gt; [2 3 4]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们更可以传递一个匿名函数给<code>map</code>。上一章提过，定义匿名函数的方式是使用<code>fn</code>，另外还可使用<code>#(...)</code>简写：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="mi">1</span><span class="p">))</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+</span><span class='line'><span class="p">(</span><span class="nb">map </span><span class="o">#</span><span class="p">(</span><span class="nb">+ </span><span class="nv">%</span> <span class="mi">1</span><span class="p">)</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>对于含有多个参数的情况：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">((</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span> <span class="nv">y</span><span class="p">]</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="nv">y</span><span class="p">))</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span> <span class="c1">; -&gt; 3</span>
+</span><span class='line'><span class="p">(</span><span class="o">#</span><span class="p">(</span><span class="nb">+ </span><span class="nv">%1</span> <span class="nv">%2</span><span class="p">)</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span> <span class="c1">; -&gt; 3</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>my-map</code>中的<code>(fn [token] [token 1])</code>即表示接收参数<code>token</code>，返回一个向量<code>[token 1]</code>，其作用等价于<code>#(vector % 1)</code>。为何是<code>[token 1]</code>，是因为Hadoop的数据传输都是以键值对的形式进行的，如<code>["apple" 1]</code>即表示“apple”这个单词出现一次。</p>
+
+<p><a href="http://docs.oracle.com/javase/6/docs/api/java/util/StringTokenizer.html">StringTokenizer</a>则是用来将一行文字按空格拆分成单词的。他的返回值是<code>Enumeration</code>类型，Clojure提供了<code>enumeration-seq</code>函数，可以将其转换成序列进行操作。</p>
+
+<p>所以最终<code>my-map</code>函数的作用就是：将一行文字按空格拆分成单词，返回一个形如<code>[["apple" 1] ["orange" 1] ...]</code>的序列。</p>
+
+<h4>编写Reduce函数</h4>
+
+<p>从上文的图表中可以看到，Map函数处理完成后，Hadoop会对结果按照键进行排序，并使用<code>key, [value1 value2 ...]</code>的形式调用Reduce函数。在clojure-hadoop中，Reduce函数的第二个参数是一个函数，其返回结果才是值的序列：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">my-reduce</span> <span class="p">[</span><span class="nb">key </span><span class="nv">values-fn</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">[[</span><span class="nb">key </span><span class="p">(</span><span class="nb">reduce + </span><span class="p">(</span><span class="nf">values-fn</span><span class="p">))]])</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>和Map函数相同，Reduce函数的返回值也是一个序列，其元素是一个个<code>[key value]</code>。注意，函数体中的<code>(reduce f coll)</code>是Clojure的内置函数，其作用是：取<code>coll</code>序列的第1、2个元素作为参数执行函数<code>f</code>，将结果和<code>coll</code>序列的第3个元素作为参数执行函数<code>f</code>，依次类推。因此<code>(reduce + [1 2 3])</code>等价于<code>(+ (+ 1 2) 3)</code>。</p>
+
+<h4>定义脚本</h4>
+
+<p>有了Map和Reduce函数，我们就可以定义一个完整的脚本了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">defjob/defjob</span> <span class="nv">job</span>
+</span><span class='line'>  <span class="ss">:map</span> <span class="nv">my-map</span>
+</span><span class='line'>  <span class="ss">:map-reader</span> <span class="nv">wrap/int-string-map-reader</span>
+</span><span class='line'>  <span class="ss">:reduce</span> <span class="nv">my-reduce</span>
+</span><span class='line'>  <span class="ss">:input-format</span> <span class="ss">:text</span>
+</span><span class='line'>  <span class="ss">:output-format</span> <span class="ss">:text</span>
+</span><span class='line'>  <span class="ss">:compress-output</span> <span class="nv">false</span>
+</span><span class='line'>  <span class="ss">:replace</span> <span class="nv">true</span>
+</span><span class='line'>  <span class="ss">:input</span> <span class="s">&quot;README.md&quot;</span>
+</span><span class='line'>  <span class="ss">:output</span> <span class="s">&quot;out-wordcount&quot;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>简单说明一下这些配置参数：<code>:map</code>和<code>:reduce</code>分别指定Map和Reduce函数；<code>map-reader</code>表示读取数据文件时采用键为<code>int</code>、值为<code>string</code>的形式；<code>:input-format</code>至<code>compress-output</code>指定了输入输出的文件格式，这里采用非压缩的文本形式，方便阅览；<code>:replace</code>表示每次执行时覆盖上一次的结果；<code>:input</code>和<code>:output</code>则是输入的文件和输出的目录。</p>
+
+<h4>执行脚本</h4>
+
+<p>我们可以采用Clojure的测试功能来执行脚本：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="c1">;; test/cia_hadoop/wordcount_test.clj</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">cia-hadoop.wordcount-test</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:use</span> <span class="nv">clojure.test</span>
+</span><span class='line'>        <span class="nv">clojure-hadoop.job</span>
+</span><span class='line'>        <span class="nv">cia-hadoop.wordcount</span><span class="p">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nf">deftest</span> <span class="nv">test-wordcount</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nf">run</span> <span class="nv">job</span><span class="p">)))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>尔后执行：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>lein <span class="nb">test </span>cia-hadoop.wordcount-test
+</span><span class='line'>...
+</span><span class='line'>13/02/14 00:25:52 INFO mapred.JobClient:  map 0% reduce 0%
+</span><span class='line'>..
+</span><span class='line'>13/02/14 00:25:58 INFO mapred.JobClient:  map 100% reduce 100%
+</span><span class='line'>...
+</span><span class='line'><span class="nv">$ </span>cat out-wordcount/part-r-00000
+</span><span class='line'>...
+</span><span class='line'><span class="s2">&quot;java&quot;</span>  1
+</span><span class='line'><span class="s2">&quot;lein&quot;</span>  3
+</span><span class='line'><span class="s2">&quot;locally&quot;</span>   2
+</span><span class='line'><span class="s2">&quot;on&quot;</span>    1
+</span><span class='line'>...
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果想要将MapReduce脚本放到Hadoop集群中执行，可以采用以下命令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>lein uberjar
+</span><span class='line'><span class="nv">$ </span>hadoop jar target/cia-hadoop-0.1.0-SNAPSHOT-standalone.jar clojure_hadoop.job -job cia-hadoop.wordcount/job
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>示例2：统计浏览器类型</h2>
+
+<p>下面我们再来看一个更为实际的示例：从用户的访问日志中统计浏览器类型。</p>
+
+<h3>需求概述</h3>
+
+<p>用户访问网站时，页面中会有段JS请求，将用户的IP、User-Agent等信息发送回服务器，并记录成文本文件的形式：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='text'><span class='line'>{&quot;stamp&quot;: &quot;1346376858286&quot;, &quot;ip&quot;: &quot;58.22.113.189&quot;, &quot;agent&quot;: &quot;Mozilla/5.0 (iPad; CPU OS 5_0_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A405 Safari/7534.48.3&quot;}
+</span><span class='line'>{&quot;stamp&quot;: &quot;1346376858354&quot;, &quot;ip&quot;: &quot;116.233.51.2&quot;, &quot;agent&quot;: &quot;Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)&quot;}
+</span><span class='line'>{&quot;stamp&quot;: &quot;1346376858365&quot;, &quot;ip&quot;: &quot;222.143.28.2&quot;, &quot;agent&quot;: &quot;Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0)&quot;}
+</span><span class='line'>{&quot;stamp&quot;: &quot;1346376858423&quot;, &quot;ip&quot;: &quot;123.151.144.40&quot;, &quot;agent&quot;: &quot;Mozilla/5.0 (Windows NT 5.1) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11&quot;}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们要做的是从User-Agent中统计用户使用的浏览器类型所占比例，包括IE、Firefox、Chrome、Opera、Safari、以及其它。</p>
+
+<h3>User-Agent中的浏览器类型</h3>
+
+<p>由于一些<a href="http://webaim.org/blog/user-agent-string-history/">历史原因</a>，User-Agent中的信息是比较凌乱的，浏览器厂商会随意添加信息，甚至仿造其它浏览器的内容。因此在过滤时，我们需要做些额外的处理。Mozilla的<a href="https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent">这篇文章</a>很好地概括了如何从User-Agent中获取浏览器类型，大致如下：</p>
+
+<ul>
+<li>IE: MSIE xyz</li>
+<li>Firefox: Firefox/xyz</li>
+<li>Chrome: Chrome/xyz</li>
+<li>Opera: Opera/xyz</li>
+<li>Safari: Safari/xyz, 且不包含 Chrome/xyz 和 Chromium/xyz</li>
+</ul>
+
+
+<h3>解析JSON字符串</h3>
+
+<p>Clojure除了内置函数之外，周边还有一个名为<code>clojure.contrib</code>的类库，其中囊括了各类常用功能，包括JSON处理。目前<code>clojure.contrib</code>中的各个组件已经分开发行，读者可以到 https://github.com/clojure 中浏览。</p>
+
+<p>处理JSON字符串时，首先在项目声明文件中添加依赖项<code>[org.clojure/data.json "0.2.1"]</code>，然后就能使用了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">require</span> <span class="o">&#39;</span><span class="p">[</span><span class="nv">clojure.data.json</span> <span class="ss">:as</span> <span class="nv">json</span><span class="p">])</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">json/read-str</span> <span class="s">&quot;{\&quot;a\&quot;:1,\&quot;b\&quot;:2}&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span><span class="s">&quot;a&quot;</span> <span class="mi">1</span>, <span class="s">&quot;b&quot;</span> <span class="mi">2</span><span class="p">}</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">json/write-str</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+</span><span class='line'><span class="s">&quot;[1,2,3]&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>正则表达式</h3>
+
+<p>Clojure提供了一系列的内置函数来使用正则表达式，其实质上是对<code>java.util.regex</code>命名空间的包装。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">ptrn</span> <span class="o">#</span><span class="s">&quot;[0-9]+&quot;</span><span class="p">)</span> <span class="c1">; #&quot;...&quot;是定义正则表达式对象的简写形式</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">ptrn</span> <span class="p">(</span><span class="nb">re-pattern </span><span class="s">&quot;[0-9]+&quot;</span><span class="p">))</span> <span class="c1">; 和上式等价</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">re-matches </span><span class="nv">ptrn</span> <span class="s">&quot;123&quot;</span><span class="p">)</span> <span class="c1">; 完全匹配</span>
+</span><span class='line'><span class="s">&quot;123&quot;</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">re-find </span><span class="nv">ptrn</span> <span class="s">&quot;a123&quot;</span><span class="p">)</span> <span class="c1">; 返回第一个匹配项</span>
+</span><span class='line'><span class="s">&quot;123&quot;</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">re-seq </span><span class="nv">ptrn</span> <span class="s">&quot;a123b456&quot;</span><span class="p">)</span> <span class="c1">; 返回匹配项序列（惰性序列）</span>
+</span><span class='line'><span class="p">(</span><span class="s">&quot;123&quot;</span> <span class="s">&quot;456&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">re-find </span><span class="o">#</span><span class="s">&quot;([a-z]+)/([0-9]+)&quot;</span> <span class="s">&quot;a/1&quot;</span><span class="p">)</span> <span class="c1">; 子模式</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;a/1&quot;</span> <span class="s">&quot;a&quot;</span> <span class="s">&quot;1&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">m</span> <span class="p">(</span><span class="nb">re-matcher </span><span class="o">#</span><span class="s">&quot;([a-z]+)/([0-9]+)&quot;</span> <span class="s">&quot;a/1 b/2&quot;</span><span class="p">))</span> <span class="c1">; 返回一个Matcher对象</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">re-find </span><span class="nv">m</span><span class="p">)</span> <span class="c1">; 返回第一个匹配</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;a/1&quot;</span> <span class="s">&quot;a&quot;</span> <span class="s">&quot;1&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">re-groups </span><span class="nv">m</span><span class="p">)</span> <span class="c1">; 获取当前匹配</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;a/1&quot;</span> <span class="s">&quot;a&quot;</span> <span class="s">&quot;1&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">re-find </span><span class="nv">m</span><span class="p">)</span> <span class="c1">; 返回下一个匹配，或nil</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;b/2&quot;</span> <span class="s">&quot;b&quot;</span> <span class="s">&quot;2&quot;</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Map函数</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">json-decode</span> <span class="p">[</span><span class="nv">s</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">try</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">json/read-str</span> <span class="nv">s</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">catch</span> <span class="nv">Exception</span> <span class="nv">e</span><span class="p">)))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="k">def </span><span class="nv">rule-set</span> <span class="p">{</span><span class="s">&quot;ie&quot;</span> <span class="p">(</span><span class="nb">partial re-find </span><span class="o">#</span><span class="s">&quot;(?i)MSIE [0-9]+&quot;</span><span class="p">)</span>
+</span><span class='line'>               <span class="s">&quot;chrome&quot;</span> <span class="p">(</span><span class="nb">partial re-find </span><span class="o">#</span><span class="s">&quot;(?i)Chrome/[0-9]+&quot;</span><span class="p">)</span>
+</span><span class='line'>               <span class="s">&quot;firefox&quot;</span> <span class="p">(</span><span class="nb">partial re-find </span><span class="o">#</span><span class="s">&quot;(?i)Firefox/[0-9]+&quot;</span><span class="p">)</span>
+</span><span class='line'>               <span class="s">&quot;opera&quot;</span> <span class="p">(</span><span class="nb">partial re-find </span><span class="o">#</span><span class="s">&quot;(?i)Opera/[0-9]+&quot;</span><span class="p">)</span>
+</span><span class='line'>               <span class="s">&quot;safari&quot;</span> <span class="o">#</span><span class="p">(</span><span class="nb">and </span><span class="p">(</span><span class="nb">re-find </span><span class="o">#</span><span class="s">&quot;(?i)Safari/[0-9]+&quot;</span> <span class="nv">%</span><span class="p">)</span>
+</span><span class='line'>                              <span class="p">(</span><span class="nb">not </span><span class="p">(</span><span class="nb">re-find </span><span class="o">#</span><span class="s">&quot;(?i)Chrom(e|ium)/[0-9]+&quot;</span> <span class="nv">%</span><span class="p">)))</span>
+</span><span class='line'>               <span class="p">})</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">get-type</span> <span class="p">[</span><span class="nv">ua</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">rule</span> <span class="p">(</span><span class="nb">first </span><span class="p">(</span><span class="nb">filter </span><span class="o">#</span><span class="p">((</span><span class="nb">second </span><span class="nv">%</span><span class="p">)</span> <span class="nv">ua</span><span class="p">)</span> <span class="nv">rule-set</span><span class="p">))]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nb">first </span><span class="nv">rule</span><span class="p">)</span>
+</span><span class='line'>    <span class="s">&quot;other&quot;</span><span class="p">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">my-map</span> <span class="p">[</span><span class="nb">key </span><span class="nv">value</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="nb">when-let </span><span class="p">[</span><span class="nv">ua</span> <span class="p">(</span><span class="nb">get </span><span class="p">(</span><span class="nf">json-decode</span> <span class="nv">value</span><span class="p">)</span> <span class="s">&quot;agent&quot;</span><span class="p">)]</span>
+</span><span class='line'>    <span class="p">[[(</span><span class="nf">get-type</span> <span class="nv">ua</span><span class="p">)</span> <span class="mi">1</span><span class="p">]]))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>json-decode</code>函数是对<code>json/read-str</code>的包装，当JSON字符串无法正确解析时返回<code>nil</code>，而非异常终止。</p>
+
+<p><code>rule-set</code>是一个<code>map</code>类型，键是浏览器名称，值是一个函数，这里都是匿名函数。<code>partial</code>用于构造新的函数，<code>(partial + 1)</code>和<code>#(+ 1 %)</code>、<code>(fn [x] (+ 1 x))</code>是等价的，可以将其看做是为函数<code>+</code>的第一个参数定义了默认值。正则表达式中的<code>(?i)</code>表示匹配时不区分大小写。</p>
+
+<p><code>get-type</code>函数中，<code>(filter #((second %) ua) rule-set)</code>会用<code>rule-set</code>中的正则表达式逐一去和User-Agent字符串进行匹配，并返回第一个匹配项，也就是浏览器类型；没有匹配到的则返回<code>other</code>。</p>
+
+<h3>单元测试</h3>
+
+<p>我们可以编写一组单元测试来检验上述<code>my-map</code>函数是否正确：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="c1">;; test/cia_hadoop/browser_test.clj</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">cia-hadoop.browser-test</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:use</span> <span class="nv">clojure.test</span>
+</span><span class='line'>        <span class="nv">clojure-hadoop.job</span>
+</span><span class='line'>        <span class="nv">cia-hadoop.browser</span><span class="p">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nf">deftest</span> <span class="nv">test-my-map</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="p">[[</span><span class="s">&quot;ie&quot;</span> <span class="mi">1</span><span class="p">]]</span> <span class="p">(</span><span class="nf">my-map</span> <span class="mi">0</span> <span class="s">&quot;{\&quot;agent\&quot;:\&quot;MSIE 6.0\&quot;}&quot;</span><span class="p">)))</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="p">[[</span><span class="s">&quot;chrome&quot;</span> <span class="mi">1</span><span class="p">]]</span> <span class="p">(</span><span class="nf">my-map</span> <span class="mi">0</span> <span class="s">&quot;{\&quot;agent\&quot;:\&quot;Chrome/20.0 Safari/6533.2\&quot;}&quot;</span><span class="p">)))</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="p">[[</span><span class="s">&quot;other&quot;</span> <span class="mi">1</span><span class="p">]]</span> <span class="p">(</span><span class="nf">my-map</span> <span class="mi">0</span> <span class="s">&quot;{\&quot;agent\&quot;:\&quot;abc\&quot;}&quot;</span><span class="p">)))</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">nil? </span><span class="p">(</span><span class="nf">my-map</span> <span class="mi">0</span> <span class="s">&quot;{&quot;</span><span class="p">))))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nf">deftest</span> <span class="nv">test-browser</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nf">run</span> <span class="nv">job</span><span class="p">)))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中<code>deftest</code>和<code>is</code>都是<code>clojure.test</code>命名空间下定义的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>lein <span class="nb">test </span>cia-hadoop.browser-test
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>小结</h2>
+
+<p>本章我们简单介绍了Hadoop这一用于大数据处理的开源项目，以及如何借助clojure-hadoop类库编写MapReduce脚本，并在本地和集群上运行。Hadoop已经将大数据处理背后的种种细节都包装了起来，用户只需编写Map和Reduce函数，而借助Clojure语言，这一步也变的更为轻松和高效。Apache Hadoop是一个生态圈，其周边有很多开源项目，像Hive、HBase等，这里再推荐一个使用Clojure语言在Hadoop上执行查询的工具：<a href="https://github.com/nathanmarz/cascalog">cascalog</a>。它的作者是<a href="http://nathanmarz.com/">Nathan Marz</a>，也是我们下一章的主题——Storm实时计算框架——的作者。</p>
+
+<p>本文涉及到的源码可以到 https://github.com/jizhang/cia-hadoop 中查看。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-09T16:43:00+08:00" pubdate data-updated="true">Feb 9<span>th</span>, 2013</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/tutorial/'>Tutorial</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/" title="Previous Post: Homebrew is just like gentoo portage">&laquo; Homebrew is just like gentoo portage</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/03/01/using-pypi-provided-by-anjuke/" title="Next Post: 使用安居客提供的PyPI镜像">使用安居客提供的PyPI镜像 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/27/fork-and-zombie-process/">fork()与僵尸进程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1/">Perl入门实战：JVM监控脚本（上）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/07/currying-and-partial-application/">柯里化与偏应用（JavaScript描述）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2013/02/09/cia-hadoop/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2013/02/09/cia-hadoop/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

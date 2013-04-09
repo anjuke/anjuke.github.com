@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Tutorial | Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/blog/categories/tutorial/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2013-03-13T12:15:00+08:00</updated>
+  <updated>2013-04-09T08:47:46+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -12,6 +12,904 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Perl入门实战：JVM监控脚本（下）]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/"/>
+    <updated>2013-03-28T15:28:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2</id>
+    <content type="html"><![CDATA[<h2>套接字</h2>
+
+<p>使用套接字（Socket）进行网络通信的基本流程是：</p>
+
+<ul>
+<li>服务端：监听端口、等待连接、接收请求、发送应答；</li>
+<li>客户端：连接服务端、发送请求、接收应答。</li>
+</ul>
+
+
+<p>```perl
+use IO::Socket::INET;</p>
+
+<p>my $server = IO::Socket::INET->new(</p>
+
+<pre><code>LocalPort =&gt; 10060,
+Type =&gt; SOCK_STREAM,
+Reuse =&gt; 1,
+Listen =&gt; SOMAXCONN
+</code></pre>
+
+<p>) || die "服务创建失败\n";</p>
+
+<p>while (my $client = $server->accept()) {</p>
+
+<pre><code>my $line = &lt;$client&gt;;
+chomp($line);
+
+if ($line =~ /^JVMPORT ([0-9]+)$/) {
+    print "RECV $1\n";
+    print $client "OK\n";
+} else {
+    print "ERROR $line\n";
+    print $client "ERROR\n";
+}
+
+close($client);
+</code></pre>
+
+<p>}</p>
+
+<p>close($server);
+```</p>
+
+<!--more-->
+
+
+<ul>
+<li><code>IO::Socket::INET</code>是一个内置模块，<code>::</code>符号用来分隔命名空间。</li>
+<li><code>-&gt;new</code>运算符是用来创建一个类的实例的，这涉及到面向对象编程，我们暂且忽略。</li>
+<li><code>(key1 =&gt; value1, key2 =&gt; value2)</code>是用来定义一个哈希表的，也就是键值对。这里是将哈系表作为参数传递给了<code>new</code>函数。请看以下示例。对于哈系表的进一步操作，我们这里暂不详述。</li>
+</ul>
+
+
+<p>```perl
+sub hello {</p>
+
+<pre><code>my %params = @_;
+print "Hello, $params{'name'}!\n";
+</code></pre>
+
+<p>}</p>
+
+<p>hello('name' => 'Jerry'); # 输出 Hello, Jerry!
+```</p>
+
+<ul>
+<li><code>while (...) {...}</code>是另一种循环结构，当圆括号的表达式为真就会执行大括号中的语句。</li>
+<li><code>$server-&gt;accept()</code>表示调用<code>$server</code>对象的<code>accept()</code>函数，用来接受一个连接。执行这个函数时进程会阻塞（进入睡眠），当有连接过来时才会唤醒，并将该连接赋值给<code>$client</code>变量。</li>
+<li><code>&lt;...&gt;</code>运算符表示从文件中读取一行，如：</li>
+</ul>
+
+
+<p>```perl
+open my $fd, '&lt;', '/proc/diskstats';
+while (my $line = &lt;$fd>) {</p>
+
+<pre><code>print $line;
+</code></pre>
+
+<p>}
+```</p>
+
+<p>由于套接字也可以作为文件来看待，所以就能使用<code>&lt;...&gt;</code>运算符。关于<code>open</code>函数和其他文件操作，读者可参考<a href="http://perl5maven.com/open-and-read-from-files">这篇文章</a>。</p>
+
+<ul>
+<li><code>chomp()</code>函数用来将字符串末尾的换行符去掉。它的用法也比较奇特，不是<code>$line = chomp($line)</code>，而是<code>chomp($line)</code>，这里<code>$line</code>是一次引用传递。</li>
+<li>细心的读者会发现，第二句<code>print</code>增加了<code>$client</code>，可以猜到它是用来指定<code>print</code>的输出目标。默认情况下是标准输出。</li>
+</ul>
+
+
+<p>我们打开两个终端，一个终端执行服务端，另一个终端直接用Bash去调用。</p>
+
+<p>```bash</p>
+
+<h1>客户端</h1>
+
+<p>$ echo 'JVMPORT 2181' | nc 127.0.0.1 10060
+OK
+$ echo 'hello' | nc 127.0.0.1 10060
+ERROR</p>
+
+<h1>服务端</h1>
+
+<p>$ ./socket-server.pl
+RECV 2181
+ERROR hello
+```</p>
+
+<p>至于客户端，还请读者自行完成，可参考<a href="http://perldoc.perl.org/IO/Socket/INET.html">相关文档</a>。</p>
+
+<h2>子进程</h2>
+
+<p>上述代码中有这样一个问题：当客户端建立了连接，但迟迟没有发送内容，那么服务端就会阻塞在<code>$line = &lt;$client&gt;</code>这条语句，无法接收其他请求。有三种解决方案：</p>
+
+<ol>
+<li>服务端读取信息时采用一定的超时机制，如果3秒内还不能读到完整的一行就断开连接。可惜Perl中并没有提供边界的方法来实现这一机制，需要自行使用<code>IO::Select</code>这样的模块来编写，比较麻烦。</li>
+<li>接受新的连接后打开一个子进程或线程来处理连接，这样就不会因为一个连接挂起而使整个服务不可用。</li>
+<li>使用非阻塞事件机制，当有读写操作时才会去处理。</li>
+</ol>
+
+
+<p>这里我们使用第二种方案，即打开子进程来处理请求。</p>
+
+<p>```perl
+use IO::Socket::INET;</p>
+
+<p>sub REAPER {</p>
+
+<pre><code>my $pid;
+while (($pid = waitpid(-1, 'WNOHANG')) &gt; 0) {
+    print "SIGCHLD $pid\n";
+}
+</code></pre>
+
+<p>}</p>
+
+<p>my $interrupted = 0;
+sub INTERRUPTER {</p>
+
+<pre><code>$interrupted = 1;
+</code></pre>
+
+<p>}</p>
+
+<p>$SIG{CHLD} = &amp;REAPER;
+$SIG{TERM} = &amp;INTERRUPTER;
+$SIG{INT} = &amp;INTERRUPTER;</p>
+
+<p>my $server = ...;</p>
+
+<p>while (!$interrupted) {</p>
+
+<pre><code>if (my $client = $server-&gt;accept()) {
+
+    my $pid = fork();
+
+    if ($pid &gt; 0) {
+        close($client);
+        print "PID $pid\n";
+    } elsif ($pid == 0) {
+        close($server);
+
+        my $line = &lt;$client&gt;;
+        ...
+        close($client);
+        exit;
+
+    } else {
+        print "fork()调用失败\n";
+    }
+}
+</code></pre>
+
+<p>}</p>
+
+<p>close($server);
+```</p>
+
+<p>我们先看下半部分的代码。系统执行<code>fork()</code>函数后，会将当前进程的所有内容拷贝一份，以新的进程号来运行，即子进程。通过<code>fork()</code>的返回值可以知道当前进程是父进程还是子进程：大于0的是父进程；等于0的是子进程。子进程中的代码做了省略，执行完后直接<code>exit</code>。</p>
+
+<p>上半部分的信号处理是做什么用的呢？这就是在多进程模型中需要特别注意的问题：僵尸进程。具体可以参考<a href="http://shzhangji.com/blog/2013/03/27/fork-and-zombie-process/">这篇文章</a>。</p>
+
+<p>而<code>$interrupted</code>变量则是用来控制程序是否继续执行的。当进程收到<code>SIGTERM</code>或<code>SIGINT</code>信号时，该变量就会置为真，使进程自然退出。</p>
+
+<p>为何不直接使用<code>while (my $client = $server-&gt;accept()) {...}</code>呢？因为子进程退出时会向父进程发送<code>SIGCHLD</code>信号，而<code>accept()</code>函数在接收到任何信号后都会中断并返回空，使得<code>while</code>语句退出。</p>
+
+<h2>命令行参数</h2>
+
+<p>这个服务脚本所监听的端口后是固写在脚本中的，如果想通过命令行指定呢？我们可以使用Perl的内置模块<code>Getopt::Long</code>。</p>
+
+<p>```perl
+use Getopt::Long;
+use Pod::Usage;</p>
+
+<p>my $help = 0;
+my $port = 10060;</p>
+
+<p>GetOptions(</p>
+
+<pre><code>'help|?' =&gt; \$help,
+'port=i' =&gt; \$port
+</code></pre>
+
+<p>) || pod2usage(2);
+pod2usage(1) if $help;</p>
+
+<p>print "PORT $port\n";</p>
+
+<p><strong>END</strong></p>
+
+<p>=head1 NAME</p>
+
+<p>getopt</p>
+
+<p>=head1 SYNOPSIS</p>
+
+<p>getopt.pl [options]</p>
+
+<p> Options:
+   -help brief help message
+   -port bind to tcp port</p>
+
+<p>=cut
+```</p>
+
+<p>使用方法是：</p>
+
+<p>```bash
+$ ./getopt.pl -h
+Usage:</p>
+
+<pre><code>getopt.pl [options]
+...
+</code></pre>
+
+<p>$ ./getopt.pl
+PORT 10060
+$ ./getopt.pl -p 12345
+PORT 12345
+```</p>
+
+<p><code>'port=i' =&gt; \$port</code>表示从命令行中接收名为<code>-port</code>的参数，并将接收到的值转换为整数（<code>i</code>指整数）。<code>\$</code>又是一种引用传递了，这里暂不详述。</p>
+
+<p>至于<code>||</code>运算符，之前在建立<code>$server</code>时也遇到过，它实际上是一种逻辑运算符，表示“或”的关系。这里的作用则是“如果GetOptions返回的值不为真，则程序退出”。</p>
+
+<p><code>pod2usage(1) if $help</code>表示如果<code>$help</code>为真则执行<code>pod2usage(1)</code>。你也可以写为<code>$help &amp;&amp; pod2usage(1)</code>。</p>
+
+<p>我们再来看看<code>__END__</code>之后的代码，它是一种Pod文档（Plain Old Documentation），可以是单独的文件，也可以像这样直接附加到Perl脚本末尾。具体格式可以参考<a href="http://perldoc.perl.org/perlpod.html">perlpod</a>。<code>pod2usage()</code>函数顾名思义是将附加的Pod文档转化成帮助信息显示在控制台上。</p>
+
+<h2>小结</h2>
+
+<p>完整的脚本可以见这个链接<a href="https://github.com/jizhang/zabbix-templates/blob/master/jvm/jvm-service.pl">jvm-service.pl</a>。调用该服务的脚本可以见<a href="https://github.com/jizhang/zabbix-templates/blob/master/jvm/jvm-check.pl">jvm-check.pl</a>。</p>
+
+<p>Perl语言历史悠久，语法丰富，还需多使用、多积累才行。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Perl入门实战：JVM监控脚本（上）]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1/"/>
+    <updated>2013-03-26T23:00:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1</id>
+    <content type="html"><![CDATA[<p>由于最近在搭建Zabbix监控服务，需要制作各类监控的模板，如iostat、Nginx、MySQL等，因此会写一些脚本来完成数据采集的工作。又因为近期对Perl语言比较感兴趣，因此决定花些时间学一学，写一个脚本来练练手，于是就有了这样一份笔记。</p>
+
+<h2>需求描述</h2>
+
+<p>我们将编写一个获取JVM虚拟机状态信息的脚本：</p>
+
+<ol>
+<li>启动一个服务进程，通过套接字接收形如“JVMPORT 2181”的请求；</li>
+<li>执行<code>netstat</code>命令，根据端口获取进程号；</li>
+<li>执行<code>jstat</code>命令获取JVM的GC信息；<code>jstack</code>获取线程信息；<code>ps -o pcpu,rss</code>获取CPU和内存使用情况；</li>
+<li>将以上信息返回给客户端；</li>
+</ol>
+
+
+<p>之所以需要这样一个服务是因为Zabbix Agent会运行在zabbix用户下，无法获取运行在其他用户下的JVM信息。</p>
+
+<p>此外，Zabbix Agent也需要编写一个脚本来调用上述服务，这个在文章末尾会给出范例代码。</p>
+
+<!-- more -->
+
+
+<h2>Hello, world!</h2>
+
+<p>还是要不免俗套地来一个helloworld，不过我们的版本会稍稍丰富些：</p>
+
+<p>```perl</p>
+
+<h1>!/usr/bin/perl</h1>
+
+<p>use strict;
+my $name = 'Jerry';
+print "Hello, $name!\n"; # 输出 Hello, Jerry!
+```</p>
+
+<p>将该文件保存为<code>hello.pl</code>，可以用两种方式执行：</p>
+
+<p><code>bash
+$ perl hello.pl
+Hello, Jerry!
+$ chmod 755 hello.pl
+$ ./hello.pl
+Hello, Jerry!
+</code></p>
+
+<ul>
+<li>所有的语句都以分号结尾，因此一行中可以有多条语句，但并不提倡这样做。</li>
+<li><code>use</code>表示加载某个模块，加载<a href="http://search.cpan.org/~rjbs/perl-5.16.3/lib/strict.pm"><code>strict</code>模块</a>表示会对当前文件的语法做出一些规范和约束。比如将<code>my $name ...</code>前的<code>my</code>去掉，执行后Perl解释器会报错。建议坚持使用该模块。</li>
+<li><code>$name</code>，一个Perl变量。<code>$</code>表示该变量是一个标量，可以存放数值、字符串等基本类型。其它符号有<code>@</code>和<code>%</code>，分别对应数组和哈希表。</li>
+<li><code>my</code>表示声明一个变量，类似的有<code>our</code>、<code>local</code>等，将来接触到变量作用域时会了解。</li>
+<li>字符串可以用单引号或双引号括起来，区别是双引号中的变量会被替换成实际值以及进行转移，单引号则不会。如<code>'Hello, $name!\n'</code>中的<code>$name</code>和<code>\n</code>会按原样输出，而不是替换为“Jerry”和换行符。</li>
+<li><code>print</code>语句用于将字符串输出到标准输出上。</li>
+<li><code>#</code>表示注释。</li>
+</ul>
+
+
+<h2>正则表达式</h2>
+
+<p>我们第一个任务是从“JVMPORT 2181”这样的字符串中提取“2181”这个端口号。解决方案当然是使用正则，而且Perl的强项之一正是文本处理：</p>
+
+<p>```perl
+my $line = 'JVMPORT 2181';
+if ($line =~ /<sup>JVMPORT</sup> ([0-9]+)$/) {</p>
+
+<pre><code>print $1, "\n"; # 输出 2181
+</code></pre>
+
+<p>} else {</p>
+
+<pre><code>print '匹配失败', "\n";
+</code></pre>
+
+<p>}
+```</p>
+
+<p>这里假设你知道如何使用正则表达式。</p>
+
+<ul>
+<li><code>=~</code>运算符表示将变量和正则表达式进行匹配，如果匹配成功则返回真，失败则返回假。</li>
+<li>匹配成功后，Perl会对全局魔术变量——<code>$0</code>至<code>$9</code>进行赋值，分别表示正则表达式完全匹配到的字符串、第一个子模式匹配到的字符串、第二个子模式，依此类推。</li>
+<li><code>if...else...</code>是条件控制语句，其中<code>...} else if (...</code>可以简写为<code>...} elsif (...</code>。</li>
+</ul>
+
+
+<h2>调用命令行</h2>
+
+<p>使用反引号（即大键盘数字1左边的按键）：</p>
+
+<p><code>perl
+my $uname = `uname`;
+print $uname; # 输出 Linux
+my $pid = '1234';
+$line = `ps -ef | grep $pid`; # 支持管道符和变量替换
+</code></p>
+
+<p>对于返回多行结果的命令，我们需要对每一行的内容进行遍历，因此会使用数组和<code>foreach</code>语句：</p>
+
+<p><code>``perl
+my $pid;
+my $jvmport = '2181';
+my @netstat =</code>netstat -lntp 2>/dev/null`;
+foreach my $line (@netstat) {</p>
+
+<pre><code>if ($line =~ /.*?:$jvmport\s.*?([0-9]+)\/java\s*$/) {
+    $pid = $1;
+    last;
+}
+</code></pre>
+
+<p>}
+if ($pid) {</p>
+
+<pre><code>print $pid, "\n";
+</code></pre>
+
+<p>} else {</p>
+
+<pre><code>print '端口不存在', "\n";
+</code></pre>
+
+<p>}
+```</p>
+
+<ul>
+<li><code>$pid</code>变量的结果是2181端口对应的进程号。</li>
+<li>这个正则可能稍难理解，但对照<code>netstat</code>的输出结果来看就可以了。</li>
+<li><code>foreach</code>是循环语句的一种，用来遍历一个数组的元素，这里则是遍历<code>netstat</code>命令每一行的内容。注意，<code>foreach</code>可以直接用<code>for</code>代替，即<code>for my $line (@netstat) { ... }</code>。</li>
+<li><code>last</code>表示退出循环。如果要进入下一次循环，可使用<code>next</code>语句。</li>
+</ul>
+
+
+<h2>数组</h2>
+
+<p>下面我们要根据进程号来获取JVM的GC信息：（“2017”为上文获取到的进程号）</p>
+
+<p><code>bash
+$ jstat -gc 2017
+ S0C    S1C    S0U    S1U      EC       EU        OC         OU       PC     PU    YGC     YGCT    FGC    FGCT     GCT   
+192.0  192.0   0.0    50.1   1792.0   682.8     4480.0     556.3    21248.0 9483.2      3    0.008   0      0.000    0.008
+</code></p>
+
+<p>如何将以上输出结果转换为以下形式？</p>
+
+<p><code>
+s0c 192.0
+s1c 192.0
+...
+</code></p>
+
+<p>这时我们就需要更多地使用数组这一数据结构：</p>
+
+<p><code>``perl
+my $pid = 2017;
+my @jstat =</code>jstat -gc $pid`;</p>
+
+<p>$jstat[0] =~ s/<sup>\s+|\s+$//;</sup>
+$jstat[1] =~ s/<sup>\s+|\s+$//;</sup></p>
+
+<p>my @kv_keys = split(/\s+/, $jstat[0]);
+my @kv_vals = split(/\s+/, $jstat[1]);</p>
+
+<p>my $result = '';
+for my $i (0 .. $#kv_keys) {</p>
+
+<pre><code>$result .= "$kv_keys[$i] $kv_vals[$i]\n";
+</code></pre>
+
+<p>}</p>
+
+<p>print $result;
+```</p>
+
+<ul>
+<li>使用<code>$jstat[0]</code>获取数组的第一个元素，数组的下标从0开始，注意这里的<code>$</code>符号，而非<code>@</code>。</li>
+<li><code>$#kv_keys</code>返回的是数组最大的下标，而非数组的长度。</li>
+<li><code>for my $i (0 .. 10) {}</code>则是另一种循环结果，<code>$i</code>的值从0到10（含0和10）。</li>
+</ul>
+
+
+<p>对于正则表达式，这里也出现了两个新的用法：</p>
+
+<ul>
+<li><code>s/A/B/</code>表示将A的值替换为B，上述代码中是将首尾的空格去除；</li>
+<li><code>split(A, B)</code>函数表示将字符串B按照正则A进行分割，并返回一个数组。</li>
+</ul>
+
+
+<p>另外在学习过程中还发现了这样一种写法：</p>
+
+<p>```perl
+my @jstat;</p>
+
+<p>$jstat[0] =~ s/<sup>\s+|\s+$//;</sup>
+$jstat[1] =~ s/<sup>\s+|\s+$//;</sup></p>
+
+<p>map { s/<sup>\s+|\s+$//</sup> } @jstat;
+```</p>
+
+<p><code>map</code>函数会对数组中的每个元素应用第一个参数指向的函数（这里是一个匿名函数），当需要处理的数组元素很多时，这种是首选做法。具体内容读者可以自己去了解。</p>
+
+<h2>函数</h2>
+
+<p>我们可以用以下命令来获取指定进程的CPU和内存使用率：</p>
+
+<p><code>bash
+$ ps -o pcpu,rss -p 2017
+%CPU   RSS
+ 0.1 21632
+</code></p>
+
+<p>格式和<code>jstat</code>是一样的，为了不再写一遍上文中的代码，我们可以将其封装为函数。</p>
+
+<p>```perl
+sub kv_parse {</p>
+
+<pre><code>my @kv_data = @_;
+
+map { s/^\s+|\s+$// } @kv_data;
+
+my @kv_keys = split(/\s+/, $kv_data[0]);
+my @kv_vals = split(/\s+/, $kv_data[1]);
+
+my $result = '';
+for my $i (0 .. $#kv_keys) {
+    $result .= "$kv_keys[$i] $kv_vals[$i]\n";
+}
+
+return $result;
+</code></pre>
+
+<p>}</p>
+
+<p>my $pid = 2017;
+my @jstat = <code>jstat -gc $pid</code>;
+my @ps = <code>ps -o pcpu,rss -p $pid</code>;</p>
+
+<p>print kv_parse(@jstat);
+print kv_parse(@ps);
+```</p>
+
+<p><code>sub</code>表示定义一个函数（subroutine），和其他语言不同的是，它没有参数列表，获取参数使用的是魔术变量<code>@_</code>：</p>
+
+<p>```perl
+sub hello {</p>
+
+<pre><code>my $name1 = $_[0];
+$name1 = shift @_;
+my $name2 = shift(@_);
+my $name3 = shift;
+</code></pre>
+
+<p>}</p>
+
+<p>hello('111', '222', '333');
+hello '111', '222', '333';
+&amp;hello('111', '222', '333');
+```</p>
+
+<ul>
+<li><code>$_[0]</code>和<code>shift @_</code>返回的都是第一参数。不同的是，<code>shift</code>函数会将这个参数从<code>@_</code>数组中移除；</li>
+<li><code>shift @_</code>和<code>shift(@_)</code>是等价的，因为调用函数时参数列表可以不加括号；</li>
+<li><code>shift @_</code>和只写<code>shift</code>也是等价的，该函数若不指定参数，则默认使用<code>@_</code>数组。</li>
+<li><code>&amp;</code>符号也是比较特别的，主要作用有两个：一是告诉Perl解释器<code>hello</code>将是一个用户定义的函数，这样就不会和Perl原生关键字冲突；二是忽略函数原型（prototype）。具体可以参考这篇文章：<a href="https://www.socialtext.net/perl5/subroutines_called_with_the_ampersand">Subroutines Called With The Ampersand</a>。</li>
+</ul>
+
+
+<p>当传递一个数组给函数时，该数组不会被作为<code>@_</code>的第一个元素，而是作为<code>@_</code>本身。这也是很特别的地方。当传递多个数组，Perl会将这些数组进行拼接：</p>
+
+<p>```perl
+sub hello {</p>
+
+<pre><code>for my $i (@_) {
+    print $i;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>my @arr1 = (1, 2); # 使用圆括号定义一个数组，元素以逗号分隔。
+my @arr2 = (3, 4);</p>
+
+<p>hello @arr1, @arr2; # 输出 1234
+```</p>
+
+<h2>小结</h2>
+
+<p>对于初学者来讲，本文的信息量可能有些大了。但如果你已经有一定的编程经验（包括Bash），应该可以理解这些内容。</p>
+
+<p>Perl文化的特色是“不只一种做法来完成一件事情”，所以我们可以看到很多不同的写法。但也有一些是大家普遍接受的写法，所以也算是一种规范吧。</p>
+
+<p>下一章我们会继续完成这个监控脚本。</p>
+
+<p>PS：本文的示例代码可以从<a href="https://github.com/jizhang/perl-jvm-monitoring-example">Github</a>中下载。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Clojure实战(4)：编写Hadoop MapReduce脚本]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2013/02/09/cia-hadoop/"/>
+    <updated>2013-02-09T16:43:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2013/02/09/cia-hadoop</id>
+    <content type="html"><![CDATA[<h2>Hadoop简介</h2>
+
+<p>众所周知，我们已经进入了大数据时代，每天都有PB级的数据需要处理、分析，从中提取出有用的信息。Hadoop就是这一时代背景下的产物。它是Apache基金会下的开源项目，受<a href="http://en.wikipedia.org/wiki/Apache_Hadoop#Papers">Google两篇论文</a>的启发，采用分布式的文件系统HDFS，以及通用的MapReduce解决方案，能够在数千台物理节点上进行分布式并行计算。</p>
+
+<p>对于Hadoop的介绍这里不再赘述，读者可以<a href="http://hadoop.apache.org/">访问其官网</a>，或阅读<a href="http://product.dangdang.com/main/product.aspx?product_id=21127813">Hadoop权威指南</a>。</p>
+
+<p>Hadoop项目是由Java语言编写的，运行在JVM之上，因此我们可以直接使用Clojure来编写MapReduce脚本，这也是本文的主题。Hadoop集群的搭建不在本文讨论范围内，而且运行MapReduce脚本也无需搭建测试环境。</p>
+
+<!-- more -->
+
+
+<h2>clojure-hadoop类库</h2>
+
+<p>Hadoop提供的API是面向Java语言的，如果不想在Clojure中过多地操作Java对象，那就需要对API进行包装（wrapper），好在已经有人为我们写好了，它就是<a href="https://github.com/alexott/clojure-hadoop">clojure-hadoop</a>。</p>
+
+<p>从clojure-hadoop的项目介绍中可以看到，它提供了不同级别的包装，你可以选择完全规避对Hadoop类型和对象的操作，使用纯Clojure语言来编写脚本；也可以部分使用Hadoop对象，以提升性能（因为省去了类型转换过程）。这里我们选择前一种，即完全使用Clojure语言。</p>
+
+<h2>示例1：Wordcount</h2>
+
+<p>Wordcount，统计文本文件中每个单词出现的数量，可以说是数据处理领域的“Hello, world!”。这一节我们就通过它来学习如何编写MapReduce脚本。</p>
+
+<h3>Leiningen 2</h3>
+
+<p>前几章我们使用的项目管理工具<code>lein</code>是1.7版的，而前不久Leiningen 2已经正式发布了，因此从本章开始我们的示例都会基于新版本。新版<code>lein</code>的安装过程也很简单：</p>
+
+<p><code>bash
+$ cd ~/bin
+$ wget https://raw.github.com/technomancy/leiningen/stable/bin/lein
+$ chmod 755 lein
+$ lein repl
+user=&gt;
+</code></p>
+
+<p>其中，<code>lein repl</code>这一步会下载<code>lein</code>运行时需要的文件，包括Clojure 1.4。</p>
+
+<h3>新建项目</h3>
+
+<p><code>bash
+$ lein new cia-hadoop
+</code></p>
+
+<p>编辑<code>project.clj</code>文件，添加依赖项<code>clojure-hadoop "1.4.1"</code>，尔后执行<code>lein deps</code>。</p>
+
+<h3>Map和Reduce</h3>
+
+<p>MapReduce，简称mapred，是Hadoop的核心概念之一。可以将其理解为处理问题的一种方式，即将大问题拆分成多个小问题来分析和解决，最终合并成一个结果。其中拆分的过程就是Map，合并的过程就是Reduce。</p>
+
+<p>以Wordcount为例，将一段文字划分成一个个单词的过程就是Map。这个过程是可以并行执行的，即将文章拆分成多个段落，每个段落分别在不同的节点上执行划分单词的操作。这个过程结束后，我们便可以统计各个单词出现的次数，这也就是Reduce的过程。同样，Reduce也是可以并发执行的。整个过程如下图所示：</p>
+
+<p><img src="/images/2013/02/cia-hadoop/wordcount.png" alt="Wordcount" /></p>
+
+<p>中间Shuffle部分的功能是将Map输出的数据按键排序，交由Reduce处理。整个过程全部由Hadoop把控，开发者只需编写<code>Map</code>和<code>Reduce</code>函数，这也是Hadoop强大之处。</p>
+
+<h4>编写Map函数</h4>
+
+<p>在本示例中，我们处理的原始数据是文本文件，Hadoop会逐行读取并调用Map函数。Map函数会接收到两个参数：<code>key</code>是一个长整型，表示该行在整个文件中的偏移量，很少使用；<code>value</code>则是该行的内容。以下是将一行文字拆分成单词的Map函数：</p>
+
+<p>```clojure
+;; src/cia_hadoop/wordcount.clj</p>
+
+<p>(ns cia-hadoop.wordcount
+  (:require [clojure-hadoop.wrap :as wrap]</p>
+
+<pre><code>        [clojure-hadoop.defjob :as defjob])
+</code></pre>
+
+<p>  (:import [java.util StringTokenizer])
+  (:use clojure-hadoop.job))</p>
+
+<p>(defn my-map [key value]
+  (map (fn [token] [token 1])</p>
+
+<pre><code>   (enumeration-seq (StringTokenizer. value))))
+</code></pre>
+
+<p>```</p>
+
+<p>可以看到，这是一个纯粹的Clojure函数，并没有调用Hadoop的API。函数体虽然只有两行，但还是包含了很多知识点的：</p>
+
+<p><code>(map f coll)</code>函数的作用是将函数<code>f</code>应用到序列<code>coll</code>的每个元素上，并返回一个新的序列。如<code>(map inc [1 2 3])</code>会对每个元素做加1操作（参考<code>(doc inc)</code>），返回<code>[2 3 4]</code>。值得一提的是，<code>map</code>函数返回的是一个惰性序列（lazy sequence），即序列元素不会一次性完全生成，而是在遍历过程中逐个生成，这在处理元素较多的序列时很有优势。</p>
+
+<p><code>map</code>函数接收的参数自然不会只限于Clojure内部函数，我们可以将自己定义的函数传递给它：</p>
+
+<p>```clojure
+(defn my-inc [x]
+  (+ x 1))</p>
+
+<p>(map my-inc [1 2 3]) ; -> [2 3 4]
+```</p>
+
+<p>我们更可以传递一个匿名函数给<code>map</code>。上一章提过，定义匿名函数的方式是使用<code>fn</code>，另外还可使用<code>#(...)</code>简写：</p>
+
+<p><code>clojure
+(map (fn [x] (+ x 1)) [1 2 3])
+(map #(+ % 1) [1 2 3])
+</code></p>
+
+<p>对于含有多个参数的情况：</p>
+
+<p><code>clojure
+((fn [x y] (+ x y)) 1 2) ; -&gt; 3
+(#(+ %1 %2) 1 2) ; -&gt; 3
+</code></p>
+
+<p><code>my-map</code>中的<code>(fn [token] [token 1])</code>即表示接收参数<code>token</code>，返回一个向量<code>[token 1]</code>，其作用等价于<code>#(vector % 1)</code>。为何是<code>[token 1]</code>，是因为Hadoop的数据传输都是以键值对的形式进行的，如<code>["apple" 1]</code>即表示“apple”这个单词出现一次。</p>
+
+<p><a href="http://docs.oracle.com/javase/6/docs/api/java/util/StringTokenizer.html">StringTokenizer</a>则是用来将一行文字按空格拆分成单词的。他的返回值是<code>Enumeration</code>类型，Clojure提供了<code>enumeration-seq</code>函数，可以将其转换成序列进行操作。</p>
+
+<p>所以最终<code>my-map</code>函数的作用就是：将一行文字按空格拆分成单词，返回一个形如<code>[["apple" 1] ["orange" 1] ...]</code>的序列。</p>
+
+<h4>编写Reduce函数</h4>
+
+<p>从上文的图表中可以看到，Map函数处理完成后，Hadoop会对结果按照键进行排序，并使用<code>key, [value1 value2 ...]</code>的形式调用Reduce函数。在clojure-hadoop中，Reduce函数的第二个参数是一个函数，其返回结果才是值的序列：</p>
+
+<p><code>clojure
+(defn my-reduce [key values-fn]
+  [[key (reduce + (values-fn))]])
+</code></p>
+
+<p>和Map函数相同，Reduce函数的返回值也是一个序列，其元素是一个个<code>[key value]</code>。注意，函数体中的<code>(reduce f coll)</code>是Clojure的内置函数，其作用是：取<code>coll</code>序列的第1、2个元素作为参数执行函数<code>f</code>，将结果和<code>coll</code>序列的第3个元素作为参数执行函数<code>f</code>，依次类推。因此<code>(reduce + [1 2 3])</code>等价于<code>(+ (+ 1 2) 3)</code>。</p>
+
+<h4>定义脚本</h4>
+
+<p>有了Map和Reduce函数，我们就可以定义一个完整的脚本了：</p>
+
+<p><code>clojure
+(defjob/defjob job
+  :map my-map
+  :map-reader wrap/int-string-map-reader
+  :reduce my-reduce
+  :input-format :text
+  :output-format :text
+  :compress-output false
+  :replace true
+  :input "README.md"
+  :output "out-wordcount")
+</code></p>
+
+<p>简单说明一下这些配置参数：<code>:map</code>和<code>:reduce</code>分别指定Map和Reduce函数；<code>map-reader</code>表示读取数据文件时采用键为<code>int</code>、值为<code>string</code>的形式；<code>:input-format</code>至<code>compress-output</code>指定了输入输出的文件格式，这里采用非压缩的文本形式，方便阅览；<code>:replace</code>表示每次执行时覆盖上一次的结果；<code>:input</code>和<code>:output</code>则是输入的文件和输出的目录。</p>
+
+<h4>执行脚本</h4>
+
+<p>我们可以采用Clojure的测试功能来执行脚本：</p>
+
+<p>```clojure
+;; test/cia_hadoop/wordcount_test.clj</p>
+
+<p>(ns cia-hadoop.wordcount-test
+  (:use clojure.test</p>
+
+<pre><code>    clojure-hadoop.job
+    cia-hadoop.wordcount))
+</code></pre>
+
+<p>(deftest test-wordcount
+  (is (run job)))
+```</p>
+
+<p>尔后执行：</p>
+
+<p><code>bash
+$ lein test cia-hadoop.wordcount-test
+...
+13/02/14 00:25:52 INFO mapred.JobClient:  map 0% reduce 0%
+..
+13/02/14 00:25:58 INFO mapred.JobClient:  map 100% reduce 100%
+...
+$ cat out-wordcount/part-r-00000
+...
+"java"  1
+"lein"  3
+"locally"   2
+"on"    1
+...
+</code></p>
+
+<p>如果想要将MapReduce脚本放到Hadoop集群中执行，可以采用以下命令：</p>
+
+<p><code>bash
+$ lein uberjar
+$ hadoop jar target/cia-hadoop-0.1.0-SNAPSHOT-standalone.jar clojure_hadoop.job -job cia-hadoop.wordcount/job
+</code></p>
+
+<h2>示例2：统计浏览器类型</h2>
+
+<p>下面我们再来看一个更为实际的示例：从用户的访问日志中统计浏览器类型。</p>
+
+<h3>需求概述</h3>
+
+<p>用户访问网站时，页面中会有段JS请求，将用户的IP、User-Agent等信息发送回服务器，并记录成文本文件的形式：</p>
+
+<p><code>text
+{"stamp": "1346376858286", "ip": "58.22.113.189", "agent": "Mozilla/5.0 (iPad; CPU OS 5_0_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A405 Safari/7534.48.3"}
+{"stamp": "1346376858354", "ip": "116.233.51.2", "agent": "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"}
+{"stamp": "1346376858365", "ip": "222.143.28.2", "agent": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0)"}
+{"stamp": "1346376858423", "ip": "123.151.144.40", "agent": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11"}
+</code></p>
+
+<p>我们要做的是从User-Agent中统计用户使用的浏览器类型所占比例，包括IE、Firefox、Chrome、Opera、Safari、以及其它。</p>
+
+<h3>User-Agent中的浏览器类型</h3>
+
+<p>由于一些<a href="http://webaim.org/blog/user-agent-string-history/">历史原因</a>，User-Agent中的信息是比较凌乱的，浏览器厂商会随意添加信息，甚至仿造其它浏览器的内容。因此在过滤时，我们需要做些额外的处理。Mozilla的<a href="https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent">这篇文章</a>很好地概括了如何从User-Agent中获取浏览器类型，大致如下：</p>
+
+<ul>
+<li>IE: MSIE xyz</li>
+<li>Firefox: Firefox/xyz</li>
+<li>Chrome: Chrome/xyz</li>
+<li>Opera: Opera/xyz</li>
+<li>Safari: Safari/xyz, 且不包含 Chrome/xyz 和 Chromium/xyz</li>
+</ul>
+
+
+<h3>解析JSON字符串</h3>
+
+<p>Clojure除了内置函数之外，周边还有一个名为<code>clojure.contrib</code>的类库，其中囊括了各类常用功能，包括JSON处理。目前<code>clojure.contrib</code>中的各个组件已经分开发行，读者可以到 https://github.com/clojure 中浏览。</p>
+
+<p>处理JSON字符串时，首先在项目声明文件中添加依赖项<code>[org.clojure/data.json "0.2.1"]</code>，然后就能使用了：</p>
+
+<p><code>clojure
+user=&gt; (require '[clojure.data.json :as json])
+user=&gt; (json/read-str "{\"a\":1,\"b\":2}")
+{"a" 1, "b" 2}
+user=&gt; (json/write-str [1 2 3])
+"[1,2,3]"
+</code></p>
+
+<h3>正则表达式</h3>
+
+<p>Clojure提供了一系列的内置函数来使用正则表达式，其实质上是对<code>java.util.regex</code>命名空间的包装。</p>
+
+<p><code>clojure
+user=&gt; (def ptrn #"[0-9]+") ; #"..."是定义正则表达式对象的简写形式
+user=&gt; (def ptrn (re-pattern "[0-9]+")) ; 和上式等价
+user=&gt; (re-matches ptrn "123") ; 完全匹配
+"123"
+user=&gt; (re-find ptrn "a123") ; 返回第一个匹配项
+"123"
+user=&gt; (re-seq ptrn "a123b456") ; 返回匹配项序列（惰性序列）
+("123" "456")
+user=&gt; (re-find #"([a-z]+)/([0-9]+)" "a/1") ; 子模式
+["a/1" "a" "1"]
+user=&gt; (def m (re-matcher #"([a-z]+)/([0-9]+)" "a/1 b/2")) ; 返回一个Matcher对象
+user=&gt; (re-find m) ; 返回第一个匹配
+["a/1" "a" "1"]
+user=&gt; (re-groups m) ; 获取当前匹配
+["a/1" "a" "1"]
+user=&gt; (re-find m) ; 返回下一个匹配，或nil
+["b/2" "b" "2"]
+</code></p>
+
+<h3>Map函数</h3>
+
+<p>```clojure
+(defn json-decode [s]
+  (try</p>
+
+<pre><code>(json/read-str s)
+(catch Exception e)))
+</code></pre>
+
+<p>(def rule-set {"ie" (partial re-find #"(?i)MSIE [0-9]+")</p>
+
+<pre><code>           "chrome" (partial re-find #"(?i)Chrome/[0-9]+")
+           "firefox" (partial re-find #"(?i)Firefox/[0-9]+")
+           "opera" (partial re-find #"(?i)Opera/[0-9]+")
+           "safari" #(and (re-find #"(?i)Safari/[0-9]+" %)
+                          (not (re-find #"(?i)Chrom(e|ium)/[0-9]+" %)))
+           })
+</code></pre>
+
+<p>(defn get-type [ua]
+  (if-let [rule (first (filter #((second %) ua) rule-set))]</p>
+
+<pre><code>(first rule)
+"other"))
+</code></pre>
+
+<p>(defn my-map [key value]
+  (when-let [ua (get (json-decode value) "agent")]</p>
+
+<pre><code>[[(get-type ua) 1]]))
+</code></pre>
+
+<p>```</p>
+
+<p><code>json-decode</code>函数是对<code>json/read-str</code>的包装，当JSON字符串无法正确解析时返回<code>nil</code>，而非异常终止。</p>
+
+<p><code>rule-set</code>是一个<code>map</code>类型，键是浏览器名称，值是一个函数，这里都是匿名函数。<code>partial</code>用于构造新的函数，<code>(partial + 1)</code>和<code>#(+ 1 %)</code>、<code>(fn [x] (+ 1 x))</code>是等价的，可以将其看做是为函数<code>+</code>的第一个参数定义了默认值。正则表达式中的<code>(?i)</code>表示匹配时不区分大小写。</p>
+
+<p><code>get-type</code>函数中，<code>(filter #((second %) ua) rule-set)</code>会用<code>rule-set</code>中的正则表达式逐一去和User-Agent字符串进行匹配，并返回第一个匹配项，也就是浏览器类型；没有匹配到的则返回<code>other</code>。</p>
+
+<h3>单元测试</h3>
+
+<p>我们可以编写一组单元测试来检验上述<code>my-map</code>函数是否正确：</p>
+
+<p>```clojure
+;; test/cia_hadoop/browser_test.clj</p>
+
+<p>(ns cia-hadoop.browser-test
+  (:use clojure.test</p>
+
+<pre><code>    clojure-hadoop.job
+    cia-hadoop.browser))
+</code></pre>
+
+<p>(deftest test-my-map
+  (is (= [["ie" 1]] (my-map 0 "{\"agent\":\"MSIE 6.0\"}")))
+  (is (= [["chrome" 1]] (my-map 0 "{\"agent\":\"Chrome/20.0 Safari/6533.2\"}")))
+  (is (= [["other" 1]] (my-map 0 "{\"agent\":\"abc\"}")))
+  (is (nil? (my-map 0 "{"))))</p>
+
+<p>(deftest test-browser
+  (is (run job)))
+```</p>
+
+<p>其中<code>deftest</code>和<code>is</code>都是<code>clojure.test</code>命名空间下定义的。</p>
+
+<p><code>bash
+$ lein test cia-hadoop.browser-test
+</code></p>
+
+<h2>小结</h2>
+
+<p>本章我们简单介绍了Hadoop这一用于大数据处理的开源项目，以及如何借助clojure-hadoop类库编写MapReduce脚本，并在本地和集群上运行。Hadoop已经将大数据处理背后的种种细节都包装了起来，用户只需编写Map和Reduce函数，而借助Clojure语言，这一步也变的更为轻松和高效。Apache Hadoop是一个生态圈，其周边有很多开源项目，像Hive、HBase等，这里再推荐一个使用Clojure语言在Hadoop上执行查询的工具：<a href="https://github.com/nathanmarz/cascalog">cascalog</a>。它的作者是<a href="http://nathanmarz.com/">Nathan Marz</a>，也是我们下一章的主题——Storm实时计算框架——的作者。</p>
+
+<p>本文涉及到的源码可以到 https://github.com/jizhang/cia-hadoop 中查看。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Clojure实战(3)：使用Noir框架开发博客(下)]]></title>
@@ -711,356 +1609,6 @@ mysql&gt; CREATE TABLE</code>article` (</p>
 <h2>小结</h2>
 
 <p>这一章我们学习了如何配置Eclipse以编写Leiningen项目；如何使用表单和接受参数，特别是表单验证和错误信息的提示；最后我们演示了如何将数据保存到MySQL中，并使用连接池来优化项目。下一节我们将为博客增加用户登录的功能，以讲解Cookie和Session的使用。我们还会学习如何对Leiningen项目进行打包和发布，并尝试将我们的博客发布到PaaS平台Heroku上去。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Clojure实战(1)：使用Noir框架开发博客(上)]]></title>
-    <link href="http://arch.corp.anjuke.com/blog/2012/11/25/cia-noir-1/"/>
-    <updated>2012-11-25T16:58:00+08:00</updated>
-    <id>http://arch.corp.anjuke.com/blog/2012/11/25/cia-noir-1</id>
-    <content type="html"><![CDATA[<h2>前言</h2>
-
-<p>为什么要学习一门新的语言？我的想法很简单，平时OO、PO代码写多了，却从未接触过函数式编程，不免有些遗憾。考察下来，Clojure可以用来尝尝鲜，所以就决定学一学。为了给自己的学习留下些记录，就有了这样一份教程。</p>
-
-<p>Clojure已经有一些不错的教程，如<a href="http://java.ociweb.com/mark/">Mark Volkmann</a>的<a href="http://java.ociweb.com/mark/clojure/article.html">Clojure - Functional Programming for the JVM</a>，Storm的主要贡献者<a href="http://xumingming.sinaapp.com/">徐明明</a>也对这个教程做了<a href="http://xumingming.sinaapp.com/302/clojure-functional-programming-for-the-jvm-clojure-tutorial/">全文翻译</a>。还有一些不错的书籍，像<a href="http://oreilly.com/">O'Reilly</a>的<a href="http://www.amazon.com/Clojure-Programming-Chas-Emerick/dp/1449394701">Clojure Programming</a>，都值得一读。我是从Mark的教程开始学起的，对其中没有提到的部分则是参考了Clojure Programming这本书。Clojure的<a href="http://clojure.org/">官方网站</a>上有详尽的<a href="http://clojure.github.com/clojure/">API参考</a>，可以作为工具书查阅。</p>
-
-<p>但是，上面提到的教程都是针对Clojure语言本身的，从 <em>Hello, world!</em> 开始，讲解Clojure的各种语法，关键字，结构等等。虽然Clojure的语法已经足够吸引你的眼球，在<a href="http://en.wikipedia.org/wiki/Read-eval-print_loop">REPL</a>中敲击Clojure代码已经是一种莫大的乐趣了，但似乎还有些不够，我们想看到一个用Clojure编写的应用程序！</p>
-
-<p>因为平时都是做Web开发，所以先从一个Web框架入手会是不错的选择，因此这份教程会从使用<a href="http://webnoir.org/">Noir</a>框架搭建一个博客开始，带你领略Clojure的魅力。</p>
-
-<!-- more -->
-
-
-<h2>一句话概述Clojure</h2>
-
-<p><strong>Clojure是一种运行在JVM平台上的函数式编程语言。</strong></p>
-
-<ul>
-<li><a href="http://en.wikipedia.org/wiki/Jvm">JVM平台</a>：历史悠久，应用广泛，成熟稳定。Clojure可以和Java程序交互，调用各种类库，与现有系统整合。</li>
-<li><a href="http://en.wikipedia.org/wiki/Functional_programming">函数式编程</a>：<a href="http://en.wikipedia.org/wiki/LISP">Lisp</a>的一种方言，表达力强，是解决高并发问题的利器。</li>
-</ul>
-
-
-<h2>安装Clojure</h2>
-
-<p>Clojure是以一个Jar包发行的，可以到<a href="http://clojure.org/getting_started">官网下载</a>后使用<code>java -jar</code>命令运行。而在实际开发中，我们会选择使用<a href="https://github.com/technomancy/leiningen">Leiningen</a>或<a href="http://maven.apache.org/">Maven</a>来管理Clojure项目，本教程将以Leiningen（命令行是<code>lein</code>）作为项目管理工具进行讲解。</p>
-
-<h3>安装Leiningen</h3>
-
-<p><code>lein</code>目前有1.x和2.x两个版本，后者还在alpha阶段。使用以下命令安装<code>lein</code> 1.x版本：</p>
-
-<p><code>bash
-$ cd ~/bin # 假设$HOME/bin目录在系统的$PATH中
-$ wget https://raw.github.com/technomancy/leiningen/stable/bin/lein
-$ chmod 755 lein
-$ lein self-install
-$ lein repl
-REPL started; server listening on localhost port 1096
-user=&gt;
-</code></p>
-
-<p>这样就已经安装好了<code>lein</code>和Clojure环境，并启动了一个REPL，可以直接运行Clojure代码：</p>
-
-<p><code>clojure
-user=&gt; (+ 1 2)
-3
-user=&gt;
-</code></p>
-
-<p>这里出现了Clojure的两个特点：圆括号和前缀表达式。Clojure的基本语法是<code>(fn1 arg1 (fn2 arg2 arg3))</code>。函数是Clojure中的“一等公民”，它即是可执行的代码，又是一种数据（类似闭包的概念）。以后我们会慢慢熟悉。</p>
-
-<h3>新建项目</h3>
-
-<p><code>bash
-$ lein new proj
-$ find proj
-proj
-proj/project.clj
-proj/src/proj/core.clj
-$ cat proj/project.clj
-(defproject proj "1.0.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :dependencies [[org.clojure/clojure "1.3.0"]])
-</code></p>
-
-<p><code>lein new</code>命令用来创建一个Clojure项目骨架，最重要的文件是<code>project.clj</code>，它声明了项目的基本属性以及依赖包。</p>
-
-<p><code>lein plugin</code>命令可以用来管理lein的插件，我们可以通过安装lein-noir插件来生成基于Noir的项目骨架：</p>
-
-<p><code>bash
-$ lein plugin install lein-noir 1.2.1
-$ lein noir new blog
-$ find blog
-blog
-blog/project.clj
-blog/resources/public/css/reset.css
-blog/resources/public/img
-blog/resources/public/js
-blog/src/blog/models
-blog/src/blog/server.clj
-blog/src/blog/views/common.clj
-blog/src/blog/views/welcome.clj
-</code></p>
-
-<p>我们可以直接运行这个项目：</p>
-
-<p><code>bash
-$ cd blog
-$ lein run
-Starting server...
-2012-11-29 22:34:39.174:INFO::jetty-6.1.25
-2012-11-29 22:34:39.237:INFO::Started SocketConnector@0.0.0.0:8080
-</code></p>
-
-<p>浏览http://localhost:8080，就能看到项目的页面了。</p>
-
-<h2>Noir项目的基本结构</h2>
-
-<h3>项目基本信息：project.clj</h3>
-
-<p>Clojure文件都是以<code>.clj</code>为扩展名的。项目根目录下的project.clj文件包含了一些基本信息，我们逐一分析：</p>
-
-<p>```clojure
-(defproject blog "0.1.0-SNAPSHOT"</p>
-
-<pre><code>        :description "FIXME: write this!"
-        :dependencies [[org.clojure/clojure "1.3.0"]
-                       [noir "1.2.1"]]
-        :main blog.server)
-</code></pre>
-
-<p>```</p>
-
-<p><a href="http://clojuredocs.org/leiningen/leiningen.core/defproject">defproject</a>是Leiningen定义的一个<a href="http://clojure.org/macros">宏</a>，用来描述项目的基本信息。宏在Clojure中是一个很重要的语言特性，简单地说，开发者可以用宏创造出新的语法。</p>
-
-<p>:description、:main等是一种直接量(literal)，我们称之为关键字(keyword)，通常以<code>:</code>开头，主要用来作为哈希表(map)中的键名，这里则用来表示项目的某种信息，从名称上应该很好理解。</p>
-
-<p><code>[1 ["b", false]]</code>中的<code>[...]</code>表示一个向量(vector)，它的元素可以是任意类型，元素之间以空格或逗号分隔。这行代码也展示了Clojure中其他几种直接量：数值型、字符串、布尔型。</p>
-
-<p>依赖项的描述也很直观，<code>[groupId/artifactId "version"]</code>。Clojure使用了和Maven相似的包命名方式，当groupId和artifactId相同时，可以进行简写，如<code>[noir "1.2.1"]</code>等价于<code>[noir/noir "1.2.1"]</code>，这也是Clojure鼓励的做法。对依赖项进行修改后，可以运行<code>lein deps</code>命令进行安装。lein会先从<a href="https://clojars.org">Clojars</a>上查找和下载，不存在时再到<a href="http://search.maven.org/">Maven中央仓库</a>中搜索。</p>
-
-<p>最后，:main顾名思义指向的是程序入口，它配置的是一个命名空间，其中会包含一个<code>-main</code>方法（注意方法名中的<code>-</code>）。Leiningen项目的目录结构也是按照命名空间来的，这点和Java一致。</p>
-
-<h3>入口文件：src/blog/server.clj</h3>
-
-<p>```clojure
-(ns blog.server
-  (:require [noir.server :as server]))</p>
-
-<p>(server/load-views "src/blog/views/")</p>
-
-<p>(defn -main [&amp; m]
-  (let [mode (keyword (or (first m) :dev))</p>
-
-<pre><code>    port (Integer. (get (System/getenv) "PORT" "8080"))]
-(server/start port {:mode mode
-                    :ns 'blog})))
-</code></pre>
-
-<p>```</p>
-
-<p>ns宏用于定义当前的命名空间，:require表示导入其它命名空间，:as则是将为导入的命名空间设置别名。注意这些关键字及其用法都是在ns宏中定义的，这也是为什么说宏可以用来创造新的语法。</p>
-
-<p>关于命名空间，你在执行<code>lein repl</code>的时候可能会注意到，当在blog项目下执行时，提示符是<code>blog.server=&gt;</code>，而在其他目录下执行时是<code>user=&gt;</code>，因为user是Clojure默认的命名空间，可以通过<code>(ns myspace)</code>来切换成<code>myspace=&gt;</code>。</p>
-
-<p><code>server/load-views</code>表示调用<code>server</code>命名空间下的<code>load-views</code>函数，后面的<code>src/blog/views/</code>则是函数的参数。在大多数语言中，函数名称不能包含特殊字符，如<code>-</code>，但Clojure中的变量名、函数名、关键字等都可以包含诸如*、+、!、>这样的特殊字符。其中一些字符是有特定含义的，如关键字必须以<code>:</code>开头，以<code>::</code>开头的则表示仅在当前命名空间中有效。这些约定需要注意。</p>
-
-<p>defn宏用来定义一个函数，基本用法是<code>(defn 函数名 [参数列表] 语句1 语句2)</code>。如果参数数量不定，可以使用这样的语法<code>[arg1 arg2 &amp; args]</code>，这样当函数接收四个参数时，后两个参数会作为一个向量赋值给args变量。</p>
-
-<p>关于let，它是继“宏”和“函数”之后出现的第三个术语，“特殊形式”(Special Form)。我们暂时不去了解它们之间的关系，先来看看let的作用。设想这样一个场景，我们在调用一个函数之前会准备一些参数传送给它，这些参数仅在函数内部可见，函数处理完后就会销毁。let则是将参数准备和函数调用这两步整合了起来。它的语法是<code>(let [变量1 表达式1 变量2 表达式2] 语句1 语句2)</code>，举例来说，尝试在REPL中执行以下命令，思考一下结果是如何得出的：</p>
-
-<p><code>clojure
-user=&gt; (let [x 1 y (+ 2 3)] (+ x y))
-6
-user=&gt;
-</code></p>
-
-<p>入口文件中的表达式看起来有些复杂，但逐步拆解后就会明白：</p>
-
-<p><code>clojure
-user=&gt; (def m []) ; 定义一个变量，它是一个空向量，正如不带参数调用-main函数时一样。Clojure中分号表示注释。
-user=&gt; (first m) ; 获取向量（序列）的第一个元素，这里为空。
-nil
-user=&gt; (or (first m) :dev) ; 从左往右执行参数，若结果不为空(nil)则停止执行，并返回该结果。
-:dev
-user=&gt; (keyword (or (first m) :dev)) ; 获取关键字。由于传入的参数可能是一个关键字、一个变量、或一个字符串，因此使用keyword函数返回一个关键字类型。
-:dev
-</code></p>
-
-<p>经过处理，mode变量包含了:dev这个关键字，且作用域仅在(let ...)中有效。</p>
-
-<p>再来看看port变量，这里涉及到了与Java类的交互：</p>
-
-<p><code>clojure
-user=&gt; (System/getenv) ; 这里的System不是一个命名空间，而是Java的一个类。通过这种方式我们调用了System类的静态方法getenv，并返回了一个Map类实例。
-java.util.Collections$UnmodifiableMap
-user=&gt; (get (System/getenv) "PORT" "8080") ; 这里的get不是Map实例的get方法，而是Clojure中的一个函数，用于返回哈希表(map)中的值，不存在则返回一个默认值。
-"8080"
-user=&gt; (.get (System/getenv) "PORT") ; 这才是调用Map实例的get方法，注意点号和函数的参数。
-nil
-user=&gt; (Integer. (get (System/getenv) "PORT" "8080")) ; 又是一个和Java交互的语法：创建实例。它和以下语法等价：
-8080
-user=&gt; (new Integer (get (System/getenv) "PORT" "8080"))
-8080
-</code></p>
-
-<p>关于map再补充一点，它虽然是Clojure的一种数据类型，但底层其实是Map接口一个实现，因此以下语法是合法的。类似的情况在Clojure中还有很多。</p>
-
-<p><code>clojure
-user=&gt; (def m {:a 1, :b 2}) ; map的语法是{键1 值1 键2 值2}，为了加强可读性，这里使用了逗号分隔了两组键值，Clojure在编译时会将逗号转换成空格。
-user=&gt; (&lt; (get m :a) (.get m :b)) ; 1 &lt; 2
-true
-</code></p>
-
-<p>参数的赋值就结束了，后面的代码也很好理解：调用server命名空间下的start函数，参数是监听端口和一组由map表示的参数。这里blog之前的单引号需要注意，表示其后的代码不需要进行解析(evaluate)，在表示命空间名时都需要加上（ns宏除外），如：</p>
-
-<p><code>clojure
-user=&gt; (require 'noir.server) ; 引入一个命名空间，使用noir.server/start调用方法。
-user=&gt; (alias 'server 'noir.server) ; 设置别名。
-user=&gt; (refer 'noir.server) ; 将该命名空间下的变量导入当当前命名空间中，即可以直接使用(start ...)调用。
-user=&gt; (use 'noir.server) ; 同时完成require和refer。
-</code></p>
-
-<p><strong>小贴士</strong></p>
-
-<p>这一节中我们引入了不少Clojure的函数、宏、特殊形式，有时会需要查阅这些函数的用法。除了上网查找API文档，还可以在REPL中使用<code>doc</code>和<code>source</code>函数来返回某个函数或宏的文档和源码：</p>
-
-<p>```clojure</p>
-
-<h2>user=> (doc first)</h2>
-
-<p>clojure.core/first
-([coll])
-  Returns the first item in the collection. Calls seq on its</p>
-
-<pre><code>argument. If coll is nil, returns nil.
-</code></pre>
-
-<p>```</p>
-
-<h3>基本页面：src/blog/views/welcome.clj</h3>
-
-<p>入口文件中的<code>load-views</code>函数会将指定目录下的所有文件都包含进来，这些文件中定义的是URL路由以及页面内容，以welcome.clj为例：</p>
-
-<p>```clojure
-(ns blog.views.welcome
-  (:require [blog.views.common :as common]</p>
-
-<pre><code>        [noir.content.getting-started])
-</code></pre>
-
-<p>  (:use [noir.core :only [defpage]]</p>
-
-<pre><code>    [hiccup.core :only [html]]))
-</code></pre>
-
-<p>(defpage "/welcome" []</p>
-
-<pre><code>     (common/layout
-       [:p "Welcome to blog"]))
-</code></pre>
-
-<p>```</p>
-
-<p>我们先跳过这些代码，来看看如何定义一个新的页面。将以下代码添加到welcome.clj尾部，然后执行<code>lein run</code>。</p>
-
-<p>```clojure
-(defpage "/greeting" []</p>
-
-<pre><code>     (html
-       [:h1 "Hello, world!"]))
-</code></pre>
-
-<p>```</p>
-
-<p>访问 http://127.0.0.1:8080/greeting 就能看到一个新的页面了，页面源码是<code>&lt;h1&gt;Hello, world!&lt;/h1&gt;</code>。</p>
-
-<p>defpage是Noir的一个宏，用来定义URL和它返回的页面内容。URL的定义有很多其他用法，如POST方式、截取参数等，我们稍后都会用到。页面内容方面，可以直接返回字符串，如<code>(defpage "/greeting" [] "Hello, world!")</code>，也可以使用Hiccup构建HTML页面。<a href="https://github.com/weavejester/hiccup">Hiccup</a>是Noir默认的模板引擎，简单来说就是用Clojure来写HTML。一个完整的页面示例如下：</p>
-
-<p>```clojure
-(ns ...
-  (:use ...</p>
-
-<pre><code>    [hiccup.page-helpers :only [html4]]))
-</code></pre>
-
-<p>(defpage "/greeting" []</p>
-
-<pre><code>     (html4
-       [:head
-         [:title "Greeting"]]
-       [:body
-         [:h1 "Hello, world!"]]))
-</code></pre>
-
-<p>```</p>
-
-<p>生成的HTML是：</p>
-
-<p>```html
-&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-  <head></p>
-
-<pre><code>&lt;title&gt;Greeting&lt;/title&gt;
-</code></pre>
-
-<p>  </head>
-  <body></p>
-
-<pre><code>&lt;h1&gt;Hello, world!&lt;/h1&gt;
-</code></pre>
-
-<p>  </body>
-</html>
-```</p>
-
-<p>其中，html和html4都是Hiccup定义的宏。html仅将接收到的参数转换为HTML代码，html4则是会添加相应版本的<code>&lt;!DOCTYPE&gt;</code>和<code>&lt;html&gt;</code>标签。要使用这些宏需要引入相应的命名空间。:only则表示只引入命名空间中特定的宏。</p>
-
-<p>关于命名空间中出现的<code>-</code>，Clojure在编译时会自动转换成<code>_</code>，从而确保程序在JVM中运行时不会出现问题。</p>
-
-<h3>页面模板：src/blog/views/common.clj</h3>
-
-<p>回到系统生成的welcome.clj文件，它并没有使用html或html4，而是调用了一个<code>common/layout</code>函数。那么让我们看看common.clj中这个函数的定义：</p>
-
-<p>```clojure
-(ns blog.views.common
-  (:use [noir.core :only [defpartial]]</p>
-
-<pre><code>    [hiccup.page-helpers :only [include-css html5]]))
-</code></pre>
-
-<p>(defpartial layout [&amp; content]</p>
-
-<pre><code>        (html5
-          [:head
-           [:title "blog"]
-           (include-css "/css/reset.css")]
-          [:body
-           [:div#wrapper
-            content]]))
-</code></pre>
-
-<p>```</p>
-
-<p>defpartial是Noir的一个宏，用来定义一段可复用的HTML代码。当然我们也可以将其定义为一个函数（用<code>defn</code>替换掉<code>defpartial</code>），不会有什么区别。官方文档的解释是使用defpartial会比较容易辨认。</p>
-
-<p><code>include-css</code>是一个函数，用来生成<code>&lt;link&gt;</code>标签。<code>[:div#wrapper ...]</code>会生成<code>&lt;div id="wrapper"&gt;...&lt;/div&gt;</code>。更多Hiccup的语法可以到<a href="http://www.webnoir.org/tutorials/html">这个页面</a>浏览一下。</p>
-
-<h3>默认首页：noir.content.getting-started</h3>
-
-<p>我们在代码中并没有看到<code>(defpage "/" [] ...)</code>这样的定义，那为什么网站根目录会出现一个默认页面呢？答案在<code>noir.content.getting-started</code>这个命名空间中，可以<a href="https://github.com/noir-clojure/noir/blob/master/src/noir/content/getting_started.clj">点击这里</a>查看它的源码。要取消这个默认页面，可以在welcome.clj的:require中将其删除。</p>
-
-<h3>静态资源：src/resources/public</h3>
-
-<p>Noir默认对src/resources/public目录下的文件做了路由，因此当有一个资源文件位于src/resources/public/css/reset.css时，可以通过http://127.0.0.1:8080/css/reset.css访问。</p>
-
-<p>值得一提的是，Noir项目本身依赖于两个开源项目：<a href="https://github.com/ring-clojure/ring">ring</a>和<a href="https://github.com/weavejester/compojure/tree/master/src">compojure</a>，前者对HTTP请求进行了封装，提供了一套类似Python WSGI的API；后者则是专门提供URL路由功能的类库。如对静态资源的路由，实质上Noir是调用了compojure提供的resources函数，函数中又调用ring提供的GET、wrap-file-info等函数响应请求。</p>
-
-<h2>小结</h2>
-
-<p>本章讲述了Clojure环境的搭建，特别是项目管理工具<code>lein</code>的一般使用。通过对Noir项目骨架的分析，我们一窥Clojure的语法，接触了变量、直接量、函数、宏、命名空间的一些用法，并能结合Noir和Hiccup写出简单的页面来。下一章我们将讲解如何使用Noir编写表单页面进行交互，以及Clojure如何连接数据库，对博文进行增删改查等操作。</p>
 ]]></content>
   </entry>
   

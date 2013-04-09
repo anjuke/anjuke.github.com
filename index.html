@@ -9,7 +9,34 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content="主要提示：安居客现在拥有了自己的PyPI镜像，直接使用http://pypi.corp.anjuke.com/simple ，就可以节省重复去公网下载模块的流量与时间。 Welcome to the Python World! &hellip;">
+  <meta name="description" content="套接字 使用套接字（Socket）进行网络通信的基本流程是： 服务端：监听端口、等待连接、接收请求、发送应答；
+客户端：连接服务端、发送请求、接收应答。 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+use &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -76,6 +103,312 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-28T15:28:00+08:00" pubdate data-updated="true">Mar 28<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>套接字</h2>
+
+<p>使用套接字（Socket）进行网络通信的基本流程是：</p>
+
+<ul>
+<li>服务端：监听端口、等待连接、接收请求、发送应答；</li>
+<li>客户端：连接服务端、发送请求、接收应答。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">use</span> <span class="nn">IO::Socket::</span><span class="n">INET</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nn">IO::Socket::</span><span class="n">INET</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span>
+</span><span class='line'>    <span class="n">LocalPort</span> <span class="o">=&gt;</span> <span class="mi">10060</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">Type</span> <span class="o">=&gt;</span> <span class="n">SOCK_STREAM</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">Reuse</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">Listen</span> <span class="o">=&gt;</span> <span class="n">SOMAXCONN</span>
+</span><span class='line'><span class="p">)</span> <span class="o">||</span> <span class="nb">die</span> <span class="s">&quot;服务创建失败\n&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nb">accept</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$line</span> <span class="o">=</span> <span class="sr">&lt;$client&gt;</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">chomp</span><span class="p">(</span><span class="nv">$line</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$line</span> <span class="o">=~</span><span class="sr"> /^JVMPORT ([0-9]+)$/</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">print</span> <span class="s">&quot;RECV $1\n&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">print</span> <span class="nv">$client</span> <span class="s">&quot;OK\n&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">print</span> <span class="s">&quot;ERROR $line\n&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">print</span> <span class="nv">$client</span> <span class="s">&quot;ERROR\n&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">close</span><span class="p">(</span><span class="nv">$client</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">close</span><span class="p">(</span><span class="nv">$server</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/27/fork-and-zombie-process/">Fork()与僵尸进程</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-27T20:18:00+08:00" pubdate data-updated="true">Mar 27<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>使用fork()函数派生出多个子进程来并行执行程序的不同代码块，是一种常用的编程泛型。特别是在网络编程中，父进程初始化后派生出指定数量的子进程，共同监听网络端口并处理请求，从而达到扩容的目的。</p>
+
+<p>但是，在使用fork()函数时若处理不当，很容易产生僵尸进程。根据UNIX系统的定义，僵尸进程是指子进程退出后，它的父进程没有“等待”该子进程，这样的子进程就会成为僵尸进程。何谓“等待”？僵尸进程的危害是什么？以及要如何避免？这就是本文将要阐述的内容。</p>
+
+<h2>fork()函数</h2>
+
+<p>下面这段C语言代码展示了fork()函数的使用方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="c1">// myfork.c</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#include &lt;unistd.h&gt;</span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">pid_t</span> <span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">();</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 主进程</span>
+</span><span class='line'>            <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 子进程</span>
+</span><span class='line'>            <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;fork error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="k">return</span> <span class="mi">2</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/03/27/fork-and-zombie-process/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1/">Perl入门实战：JVM监控脚本（上）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-26T23:00:00+08:00" pubdate data-updated="true">Mar 26<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>由于最近在搭建Zabbix监控服务，需要制作各类监控的模板，如iostat、Nginx、MySQL等，因此会写一些脚本来完成数据采集的工作。又因为近期对Perl语言比较感兴趣，因此决定花些时间学一学，写一个脚本来练练手，于是就有了这样一份笔记。</p>
+
+<h2>需求描述</h2>
+
+<p>我们将编写一个获取JVM虚拟机状态信息的脚本：</p>
+
+<ol>
+<li>启动一个服务进程，通过套接字接收形如“JVMPORT 2181”的请求；</li>
+<li>执行<code>netstat</code>命令，根据端口获取进程号；</li>
+<li>执行<code>jstat</code>命令获取JVM的GC信息；<code>jstack</code>获取线程信息；<code>ps -o pcpu,rss</code>获取CPU和内存使用情况；</li>
+<li>将以上信息返回给客户端；</li>
+</ol>
+
+
+<p>之所以需要这样一个服务是因为Zabbix Agent会运行在zabbix用户下，无法获取运行在其他用户下的JVM信息。</p>
+
+<p>此外，Zabbix Agent也需要编写一个脚本来调用上述服务，这个在文章末尾会给出范例代码。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/07/currying-and-partial-application/">柯里化与偏应用（JavaScript描述）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-07T20:59:00+08:00" pubdate data-updated="true">Mar 7<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>原文：<a href="http://raganwald.com/2013/03/07/currying-and-partial-application.html">http://raganwald.com/2013/03/07/currying-and-partial-application.html</a></p>
+
+<p>上周末我参加了<a href="http://wrocloverb.com/">wroc_love.rb大会</a>，其间<a href="http://steveklabnik.com/">Steve Klabnik</a>的一张PPT中提到了<a href="https://en.wikipedia.org/wiki/Partial_application">偏应用（Partial Application）</a>和<a href="https://en.wikipedia.org/wiki/Currying">柯里化（Currying）</a>，并说这两者之间的区别如今已经不重要了。但是我不这么认为。</p>
+
+<p>在这周发布的博文中，我用五种方式对<code>this</code>和闭包做了解释，但只有三到四种提到了柯里化。所以这篇博文就重点来谈谈这个。</p>
+
+<h2>函数参数的个数</h2>
+
+<p>在讲解之前，我们先明确一些术语。函数定义时会写明它所接收的参数个数（Arity）。“一元函数”（Unary）接收一个参数，“多元函数”（Polyadic）接收多个参数。还有一些特殊的名称，如“二元函数”（Binary）接收两个参数，“三元函数”（Ternary）接收三个参数等。你可以对照希腊语或拉丁语词汇来创造这些特殊的名称。</p>
+
+<p>有些函数能够接收不定数量的参数，我们称之为“可变参数函数”（Variadic）。不过这类函数、以及不接收参数的函数并不是本文讨论的重点。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/03/07/currying-and-partial-application/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -222,6 +555,53 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-09T16:43:00+08:00" pubdate data-updated="true">Feb 9<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>Hadoop简介</h2>
+
+<p>众所周知，我们已经进入了大数据时代，每天都有PB级的数据需要处理、分析，从中提取出有用的信息。Hadoop就是这一时代背景下的产物。它是Apache基金会下的开源项目，受<a href="http://en.wikipedia.org/wiki/Apache_Hadoop#Papers">Google两篇论文</a>的启发，采用分布式的文件系统HDFS，以及通用的MapReduce解决方案，能够在数千台物理节点上进行分布式并行计算。</p>
+
+<p>对于Hadoop的介绍这里不再赘述，读者可以<a href="http://hadoop.apache.org/">访问其官网</a>，或阅读<a href="http://product.dangdang.com/main/product.aspx?product_id=21127813">Hadoop权威指南</a>。</p>
+
+<p>Hadoop项目是由Java语言编写的，运行在JVM之上，因此我们可以直接使用Clojure来编写MapReduce脚本，这也是本文的主题。Hadoop集群的搭建不在本文讨论范围内，而且运行MapReduce脚本也无需搭建测试环境。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/02/09/cia-hadoop/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew Is Just Like Gentoo Portage</a></h1>
     
     
@@ -258,6 +638,55 @@
   
     <footer>
       <a rel="full-article" href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-04T20:49:00+08:00" pubdate data-updated="true">Jan 4<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>原文地址：https://github.com/bbatsov/clojure-style-guide</p>
+
+<p>这份Clojure代码规范旨在提供一系列的最佳实践，让现实工作中的Clojure程序员能够写出易于维护的代码，并能与他人协作和共享。一份反应真实需求的代码规范才能被人接收，而那些理想化的、甚至部分观点遭到程序员拒绝的代码规范注定不会长久——无论它有多出色。</p>
+
+<p>这份规范由多个章节组成，每个章节包含一组相关的规则。我会尝试去描述每条规则背后的理念（过于明显的理念我就省略了）。</p>
+
+<p>这些规则并不是我凭空想象的，它们出自于我作为一个专业软件开发工程师长久以来的工作积累，以及Clojure社区成员们的反馈和建议，还有各种广为流传的Clojure编程学习资源，如<a href="http://www.clojurebook.com/">《Clojure Programming》</a>、<a href="http://joyofclojure.com/">《The Joy of Clojure》</a>等。</p>
+
+<p>这份规范还处于编写阶段，部分章节有所缺失，内容并不完整；部分规则没有示例，或者示例还不能完全将其描述清楚。未来这些问题都会得到改进，只是请你了解这一情况。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/01/04/clojure-style-guide/">Read on &rarr;</a>
     </footer>
   
 
@@ -405,462 +834,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-12-08T12:09:00+08:00" pubdate data-updated="true">Dec 8<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>在Eclipse中编写Clojure代码</h2>
-
-<p>从这章起我们就要开始真正的编码了。Vim可能是很多程序员的选择，但如果你像我一样更喜欢GUI界面，那就来看看如何在Eclipse中编写Clojure代码吧。</p>
-
-<h3>安装Eclipse插件</h3>
-
-<p>Eclipse提供了一个Clojure插件：CounterClockwise，可以用来编写Clojure代码，进行语法高亮、调试等操作。打开Eclipse的Market Place，搜索counterclockwise关键字，点击Install即可。</p>
-
-<h3>将Leiningen项目导入Eclipse</h3>
-
-<p>由于CounterClockwise插件并没有默认使用Leiningen来管理项目，因此需要做一些额外的工作。</p>
-
-<p>在使用<code>lein new</code>命令创建项目后，在project.clj文件中增加如下一行：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defproject </span><span class="nv">...</span>
-</span><span class='line'>            <span class="ss">:dev-dependencies</span> <span class="p">[[</span><span class="nv">lein-eclipse</span> <span class="s">&quot;1.0.0&quot;</span><span class="p">]]</span>
-</span><span class='line'>            <span class="nv">...</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后依次执行<code>lein deps</code>和<code>lein eclipse</code>，会看到项目根目录下生成了.project和.classpath文件。然后就可以进入Eclipse导入这个项目了。如果使用Git进行版本控制，<code>lein</code>已经为你生成好了.gitignore文件。执行了<code>git init</code>后，就能在Eclilpse中选择Share Project菜单项，进行可视化的版本控制。</p>
-
-<h2>使用表单</h2>
-
-<p>我们现在需要编写一个新建文章的功能，它是一个简单的页面，页面上有“标题”和“内容”两个文本框，并有一个“提交”按钮。</p>
-
-<p>在src/blog/views目录下新建一个文件article.clj，输入以下内容：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">blog.views.article</span>
-</span><span class='line'>  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">blog.views.common</span> <span class="ss">:as</span> <span class="nv">common</span><span class="p">])</span>
-</span><span class='line'>  <span class="p">(</span><span class="ss">:use</span> <span class="p">[</span><span class="nv">noir.core</span><span class="p">]</span>
-</span><span class='line'>        <span class="p">[</span><span class="nv">hiccup.form-helpers</span><span class="p">]))</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">(</span><span class="nf">defpage</span> <span class="s">&quot;/blog/add&quot;</span> <span class="p">[]</span>
-</span><span class='line'>  <span class="p">(</span><span class="nf">common/layout</span>
-</span><span class='line'>    <span class="p">[</span><span class="ss">:h1</span> <span class="s">&quot;新建文章&quot;</span><span class="p">]</span>
-</span><span class='line'>    <span class="p">(</span><span class="nf">form-to</span> <span class="p">[</span><span class="ss">:post</span> <span class="s">&quot;/blog/add&quot;</span><span class="p">]</span>
-</span><span class='line'>             <span class="p">(</span><span class="nf">label</span> <span class="s">&quot;title&quot;</span> <span class="s">&quot;标题：&quot;</span><span class="p">)</span>
-</span><span class='line'>             <span class="p">(</span><span class="nf">text-field</span> <span class="p">{</span><span class="ss">:size</span> <span class="mi">50</span><span class="p">}</span> <span class="s">&quot;title&quot;</span><span class="p">)</span> <span class="p">[</span><span class="ss">:br</span><span class="p">]</span>
-</span><span class='line'>             <span class="p">(</span><span class="nf">label</span> <span class="s">&quot;content&quot;</span> <span class="s">&quot;内容：&quot;</span><span class="p">)</span>
-</span><span class='line'>             <span class="p">(</span><span class="nf">text-area</span> <span class="p">{</span><span class="ss">:rows</span> <span class="mi">20</span> <span class="ss">:cols</span> <span class="mi">50</span><span class="p">}</span> <span class="s">&quot;content&quot;</span><span class="p">)</span> <span class="p">[</span><span class="ss">:br</span><span class="p">]</span>
-</span><span class='line'>             <span class="p">(</span><span class="nf">submit-button</span> <span class="s">&quot;提交&quot;</span><span class="p">))))</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><code>defpage</code>和<code>common/layout</code>我们之前已经见到过，前者定义了URL<code>/blog/add</code>指向的页面，后者则是套用了一个模板。<code>[:h1 ...]</code>和<code>[:br]</code>也应该熟悉，它们是Hiccup的语法，分别生成<code>&lt;h1&gt;...&lt;/h1&gt;</code>和<code>&lt;br&gt;</code>标签。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/12/08/cia-noir-2/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-11-25T16:58:00+08:00" pubdate data-updated="true">Nov 25<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>前言</h2>
-
-<p>为什么要学习一门新的语言？我的想法很简单，平时OO、PO代码写多了，却从未接触过函数式编程，不免有些遗憾。考察下来，Clojure可以用来尝尝鲜，所以就决定学一学。为了给自己的学习留下些记录，就有了这样一份教程。</p>
-
-<p>Clojure已经有一些不错的教程，如<a href="http://java.ociweb.com/mark/">Mark Volkmann</a>的<a href="http://java.ociweb.com/mark/clojure/article.html">Clojure - Functional Programming for the JVM</a>，Storm的主要贡献者<a href="http://xumingming.sinaapp.com/">徐明明</a>也对这个教程做了<a href="http://xumingming.sinaapp.com/302/clojure-functional-programming-for-the-jvm-clojure-tutorial/">全文翻译</a>。还有一些不错的书籍，像<a href="http://oreilly.com/">O&#8217;Reilly</a>的<a href="http://www.amazon.com/Clojure-Programming-Chas-Emerick/dp/1449394701">Clojure Programming</a>，都值得一读。我是从Mark的教程开始学起的，对其中没有提到的部分则是参考了Clojure Programming这本书。Clojure的<a href="http://clojure.org/">官方网站</a>上有详尽的<a href="http://clojure.github.com/clojure/">API参考</a>，可以作为工具书查阅。</p>
-
-<p>但是，上面提到的教程都是针对Clojure语言本身的，从 <em>Hello, world!</em> 开始，讲解Clojure的各种语法，关键字，结构等等。虽然Clojure的语法已经足够吸引你的眼球，在<a href="http://en.wikipedia.org/wiki/Read-eval-print_loop">REPL</a>中敲击Clojure代码已经是一种莫大的乐趣了，但似乎还有些不够，我们想看到一个用Clojure编写的应用程序！</p>
-
-<p>因为平时都是做Web开发，所以先从一个Web框架入手会是不错的选择，因此这份教程会从使用<a href="http://webnoir.org/">Noir</a>框架搭建一个博客开始，带你领略Clojure的魅力。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/11/25/cia-noir-1/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-11-18T19:20:00+08:00" pubdate data-updated="true">Nov 18<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>作者：<a href="http://www.aosabook.org/en/intro1.html#ziade-tarek">Tarek Ziadé</a>，翻译：<a href="mailto:zhangji87@gmail.com">张吉</a></p>
-
-<p>原文：<a href="http://www.aosabook.org/en/packaging.html">http://www.aosabook.org/en/packaging.html</a></p>
-
-<h2>14.1 简介</h2>
-
-<p>对于如何安装软件，目前有两种思想流派。第一种是说软件应该自给自足，不依赖于其它任何部件，这点在Windows和Mac OS X系统中很流行。这种方式简化了软件的管理：每个软件都有自己独立的“领域”，安装和卸载它们不会对操作系统产生影响。如果软件依赖一项不常见的类库，那么这个类库一定是包含在软件安装包之中的。</p>
-
-<p>第二种流派，主要在类Linux的操作系统中盛行，即软件应该是由一个个独立的、小型的软件包组成的。类库被包含在软件包中，包与包之间可以有依赖关系。安装软件时需要查找和安装它所依赖的其他特定版本的软件包。这些依赖包通常是从一个包含所有软件包的中央仓库中获取的。这种理念也催生了Linux发行版中那些复杂的依赖管理工具，如<code>dpkg</code>和<code>RPM</code>。它们会跟踪软件包的依赖关系，并防止两个软件使用了版本相冲突的第三方包。</p>
-
-<p>以上两种流派各有优劣。高度模块化的系统可以使得更新和替换某个软件包变的非常方便，因为每个类库都只有一份，所有依赖于它的应用程序都能因此受益。比如，修复某个类库的安全漏洞可以立刻应用到所有程序中，而如果应用程序使用了自带的类库，那安全更新就很难应用进去了，特别是在类库版本不一致的情况下更难处理。</p>
-
-<p>不过这种“模块化”也被一些开发者视为缺点，因为他们无法控制应用程序的依赖关系。他们希望提供一个独立和稳定的软件运行环境，这样就不会在系统升级后遭遇各种依赖方面的问题。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/11/18/aosa-python-packaging/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-11-16T23:54:00+08:00" pubdate data-updated="true">Nov 16<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>作者：<a href="http://www.aosabook.org/en/intro2.html#potter-susan">Susan Potter</a>，翻译：<a href="mailto:zhangji87@gmail.com">张吉</a></p>
-
-<p>原文：<a href="http://www.aosabook.org/en/git.html">http://www.aosabook.org/en/git.html</a></p>
-
-<h2>6.1 Git概述</h2>
-
-<p>Git能够让不同的协作者通过一个点对点的仓库网络对数据内容（通常是代码，当然不仅限于代码）进行维护。它支持分布式的工作流程，能够让数据内容临时分离，并最终合并到一起。</p>
-
-<p>本章将阐述Git的内部实现是如何提供以上功能的，以及它和其他版本控制系统（VCS）的区别。</p>
-
-<h2>6.2 Git起源</h2>
-
-<p>为了更好地理解Git的设计思想，我们有必要先了解一下Git项目的发源地——Linux内核开发社区——所面临的问题。</p>
-
-<p>Linux内核开发与其他商业软件项目有很大不同，因为它的开发者众多，且每个开发者的参与程度和对Linux内核代码的理解有很大差异。多年以来，内核代码一直都是以Tar压缩文件以及补丁的形式维护的，而当时的核心开发团队一直在寻找一个能够满足他们各方面需求的版本控制系统。</p>
-
-<p>Git就是在这样的背景下于2005年作为一款开源软件诞生的。当时，Linux内核代码通过两种版本控制系统进行维护，BitKeeper和CVS，分别由两组核心开发团队使用。BitKeeper相较于当时颇为流行的CVS，提供了一种不同的历史展示方式。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/11/16/aosa-git/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-31T18:00:00+08:00" pubdate data-updated="true">Oct 31<span>st</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
-
-<p>Storm UI提供了基本的监控界面，可以查看当前时点集群内脚本的运行情况，其中比较重要的是消息吞吐量（Transferred）和处理延迟（Process latency）。不足的是，这套系统没有记录时序数据，因此想看一段时间内的趋势图，或是做脚本上下线的负载监控，Storm UI就无能为力了。</p>
-
-<p>不过，Storm Nimbus开放了一套Thrift API，可以使用他获取各类信息。下面就介绍一下如何使用Python编写监控程序，定时获取脚本运行状态（吞吐量和延迟），并在监控系统中出图。</p>
-
-<h3>安装Thrift API</h3>
-
-<p><a href="http://thrift.apache.org/">Thrift</a>是Apache基金会下的一个项目，定义了一套面向服务程序的通信协议。它使用Thrift的<a href="http://thrift.apache.org/docs/idl/">IDL</a>定义接口，通过一个工具转换成不同语言的客户端，供其他程序调用。</p>
-
-<p>可以<a href="http://archive.apache.org/dist/thrift/0.7.0/">点此下载Thrift源码包</a>，因为Storm使用的Thrift版本是0.7.0，所以建议安装该版本。</p>
-
-<p>安装过程即 ./configure &amp;&amp; make &amp;&amp; sudo make install，安装完成后PATH会多出thrift这个命令。</p>
-
-<h3>生成Storm Thrift API代码文件</h3>
-
-<p>Storm Thrift API的定义文件在源码中提供，可以从Github中克隆相应的分支，并执行thrift命令：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ git clone -b 0.7.0 git://github.com/nathanmarz/storm.git
-</span><span class='line'>$ cd storm/src
-</span><span class='line'>$ thrift --gen py storm.thrift
-</span><span class='line'>$ cd gen-py</span></code></pre></td></tr></table></div></figure>
-
-
-<p>源码中似乎已经提供了py这个文件夹，也可以直接使用。</p>
-
-<h3>获取某个Topology的吞吐量和延迟</h3>
-
-<p>首先在Python项目中添加如下依赖：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>setup(install_requires=['thrift==0.7.0'])</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以下代码会找到集群中名为access_log的脚本，记录filter（Bolt）的吞吐量和延迟数。由于Storm Thrift API返回值的组织方式比较复杂，所以需要多多参考刚才生成的gen-py包中的内容。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="c">#连接到Storm Nimbus Thrift Server：</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">socket</span> <span class="o">=</span> <span class="n">TSocket</span><span class="o">.</span><span class="n">TSocket</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">nimbus_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">nimbus_port</span><span class="p">)</span>
-</span><span class='line'><span class="n">transport</span> <span class="o">=</span> <span class="n">TTransport</span><span class="o">.</span><span class="n">TFramedTransport</span><span class="p">(</span><span class="n">socket</span><span class="p">)</span>
-</span><span class='line'><span class="n">protocol</span> <span class="o">=</span> <span class="n">TBinaryProtocol</span><span class="o">.</span><span class="n">TBinaryProtocol</span><span class="p">(</span><span class="n">transport</span><span class="p">)</span>
-</span><span class='line'><span class="n">nimbus</span> <span class="o">=</span> <span class="n">Nimbus</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">protocol</span><span class="p">)</span>
-</span><span class='line'><span class="n">transport</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
-</span><span class='line'>
-</span><span class='line'><span class="c">#获取集群内脚本信息，得到脚本ID：</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">cluster_info</span> <span class="o">=</span> <span class="n">nimbus</span><span class="o">.</span><span class="n">getClusterInfo</span><span class="p">()</span>
-</span><span class='line'><span class="n">topology_id</span> <span class="o">=</span> <span class="bp">None</span>
-</span><span class='line'><span class="k">for</span> <span class="n">topology</span> <span class="ow">in</span> <span class="n">cluster_info</span><span class="o">.</span><span class="n">topologies</span><span class="p">:</span>
-</span><span class='line'><span class="k">if</span> <span class="n">topology</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;access_log&#39;</span><span class="p">:</span>
-</span><span class='line'>    <span class="n">topology_id</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">id</span>
-</span><span class='line'>
-</span><span class='line'><span class="c"># 获取脚本信息，计算吞吐量和延迟毫秒数</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">topology_info</span> <span class="o">=</span> <span class="n">nimbus</span><span class="o">.</span><span class="n">getTopologyInfo</span><span class="p">(</span><span class="n">topology_id</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">transferred</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span class='line'><span class="n">filter_latencies</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span class='line'><span class="k">for</span> <span class="n">executor_info</span> <span class="ow">in</span> <span class="n">topology_info</span><span class="o">.</span><span class="n">executors</span><span class="p">:</span>
-</span><span class='line'>    <span class="c"># 600表示10分钟内的均值</span>
-</span><span class='line'>    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">transferred</span><span class="p">[</span><span class="s">&#39;600&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
-</span><span class='line'>        <span class="n">transferred</span> <span class="o">+=</span> <span class="n">v</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">component_id</span> <span class="o">==</span> <span class="s">&#39;filter&#39;</span><span class="p">:</span>
-</span><span class='line'>        <span class="n">latencies</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span class='line'>        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">specific</span><span class="o">.</span><span class="n">bolt</span><span class="o">.</span><span class="n">process_ms_avg</span><span class="p">[</span><span class="s">&#39;600&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
-</span><span class='line'>            <span class="n">latencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">filter_latencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">latencies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">latencies</span><span class="p">))</span>
-</span><span class='line'><span class="n">filter_latency</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">filter_latencies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">filter_latencies</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后就可以将计算得到的transferred和filter_latency输出到监控系统中绘图了。</p>
-
-<h3>注意事项</h3>
-
-<p>在调试的过程中，有时会尝试用telnet查看Storm Thrift Server是否存活，一旦这样操作就会导致Nimbus挂起，无法自动退出。和作者确认过，这是Thrift自身的Bug，目前还没有解决方法。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-30T10:29:00+08:00" pubdate data-updated="true">Oct 30<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/084c149bb5a1769082ef794c6dcd1a91"></p>
-
-<p>之前我们有提到<a href="/blog/2012/10/15/solr-guildeline/">Solr的使用的一些规范</a>，这次我们深入实例。</p>
-
-<p>我们从access log中找出一些查询耗时比较高的查询,跟去&#8221;深入solr实战&#8221;中提到的修改方式,做了一些更改,查询结果没有变化但是速度出现下降</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/10/30/solr-guideline-in-action/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -876,11 +849,35 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/27/fork-and-zombie-process/">fork()与僵尸进程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1/">Perl入门实战：JVM监控脚本（上）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/07/currying-and-partial-application/">柯里化与偏应用（JavaScript描述）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
       </li>
     
       <li class="post">
+        <a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a>
       </li>
     
       <li class="post">
@@ -889,30 +886,6 @@
     
       <li class="post">
         <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
       </li>
     
   </ul>

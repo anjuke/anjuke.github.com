@@ -4,7 +4,7 @@
   <title><![CDATA[Category: mogilefs | Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/blog/categories/mogilefs/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2013-03-13T12:15:00+08:00</updated>
+  <updated>2013-04-09T08:47:46+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -18,7 +18,7 @@
     <link href="http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading/"/>
     <updated>2012-05-16T10:20:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2012/05/16/mogilefs-code-reading</id>
-    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/78811efe9c142e0898c049686e25594d"></p>
+    <content type="html"><![CDATA[<p>{%img right http://0.gravatar.com/avatar/78811efe9c142e0898c049686e25594d %}</p>
 
 <ul>
 <li><a href="/blog/2012/05/16/mogilefs-code-reading-1">MogileFS启动流程</a></li>
@@ -39,7 +39,9 @@
     <content type="html"><![CDATA[<!-- more -->
 
 
-<p><blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=perl-ipc'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote></p>
+<p>{% blockquote 王惠达, http://blog-wanghuida.rhcloud.com/article.php?f=perl-ipc %}
+看了几天mogilefs源码，分享一下
+{% endblockquote %}</p>
 
 <p>```perl</p>
 
@@ -137,7 +139,9 @@ exit 0;
     <content type="html"><![CDATA[<!-- more -->
 
 
-<p><blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=perl-epoll'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote></p>
+<p>{% blockquote 王惠达, http://blog-wanghuida.rhcloud.com/article.php?f=perl-epoll %}
+看了几天mogilefs源码，分享一下
+{% endblockquote %}</p>
 
 <blockquote><p>优势：当有事件时才会增加到@events，无需遍历</p>
 
@@ -228,7 +232,9 @@ for($i = 0; $i &lt; $evcount; $i++){
     <content type="html"><![CDATA[<!-- more -->
 
 
-<p><blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=perl-poll'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote></p>
+<p>{% blockquote 王惠达, http://blog-wanghuida.rhcloud.com/article.php?f=perl-poll %}
+看了几天mogilefs源码，分享一下
+{% endblockquote %}</p>
 
 <blockquote><p>明显的缺点，需要遍历所有的socket</p></blockquote>
 
@@ -317,7 +323,9 @@ sleep(1);
     <content type="html"><![CDATA[<!-- more -->
 
 
-<p><blockquote><p>看了几天mogilefs源码，分享一下</p><footer><strong>王惠达,</strong> <cite><a href='http://blog-wanghuida.rhcloud.com/article.php?f=mogilefs-read'>blog-wanghuida.rhcloud.com/&hellip;</a></cite></footer></blockquote></p>
+<p>{% blockquote 王惠达, http://blog-wanghuida.rhcloud.com/article.php?f=mogilefs-read %}
+看了几天mogilefs源码，分享一下
+{% endblockquote %}</p>
 
 <h2>客户端读取文件代码</h2>
 

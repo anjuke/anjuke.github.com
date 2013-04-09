@@ -4,7 +4,7 @@
   <title><![CDATA[Category: guide | Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/blog/categories/guide/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2013-03-13T12:15:00+08:00</updated>
+  <updated>2013-04-09T08:47:46+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -18,7 +18,7 @@
     <link href="http://arch.corp.anjuke.com/blog/2012/07/09/readme-driven-development/"/>
     <updated>2012-07-09T14:36:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2012/07/09/readme-driven-development</id>
-    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
+    <content type="html"><![CDATA[<p>{%img right http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa %}</p>
 
 <p>中文翻译：<a href="https://twitter.com/AReverie">陈磊</a> AReverie<br/>
 英文原文：<a href="http://tom.preston-werner.com/2010/08/23/readme-driven-development.html">Tom Preston-Werner</a></p>
@@ -54,7 +54,7 @@
     <link href="http://arch.corp.anjuke.com/blog/2012/05/09/the-twelve-factor-app/"/>
     <updated>2012-05-09T17:48:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2012/05/09/the-twelve-factor-app</id>
-    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/7cdf5b1c46308979e3bf81390b0c8639"></p>
+    <content type="html"><![CDATA[<p>{%img right http://0.gravatar.com/avatar/7cdf5b1c46308979e3bf81390b0c8639 %}</p>
 
 <p>中文翻译：<a href="https://github.com/liangshan/">梁山</a>
 英文原文：<a href="http://www.12factor.net/">Adam Wiggins</a></p>

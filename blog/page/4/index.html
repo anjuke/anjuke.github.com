@@ -9,7 +9,7 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content="文档来源 Getting the Gist of Markdown&#8217;s Formatting Syntax 這頁提供了 Markdown 簡單的概觀給想使用的人， 語法說明 頁提供了完整詳細的文件，說明每項功能，但是 Markdown 其實很簡單就可以上手，這頁文件提供了一些範例， &hellip;">
+  <meta name="description" content="">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -76,6 +76,405 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/05/16/mogilefs-code-reading-1/">MogileFS启动流程</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-16T10:11:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"></div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/05/16/mogilefs-code-reading-1/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/05/09/the-twelve-factor-app/">The Twelve-Factor App</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-09T17:48:00+08:00" pubdate data-updated="true">May 9<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/7cdf5b1c46308979e3bf81390b0c8639"></p>
+
+<p>中文翻译：<a href="https://github.com/liangshan/">梁山</a>
+英文原文：<a href="http://www.12factor.net/">Adam Wiggins</a></p>
+
+<p><em><a href="https://github.com/anjuke/12factor/issues">翻译问题反馈</a></em></p>
+
+<h4>简介</h4>
+
+<p>如今，软件通常会作为一种服务来交付，它们被称为“互联网应用程序”（web apps），或“软件即服务”（SaaS）。这篇“<strong><em>互联网应用的十二要素</em></strong>”为构建如下的互联网应用程序提供了指导方法：</p>
+
+<ul>
+<li>使用<strong>标准化</strong>流程自动配置，从而使新的开发者花费最少的学习成本加入这个项目；</li>
+<li>和操作系统之间尽可能的<strong>划清界限</strong>，在各个系统中提供<strong>最大的可移植性</strong>；</li>
+<li>适合<strong>部署</strong>在现代的<strong>云计算平台</strong>，从而在服务器和系统管理方面节省资源；</li>
+<li>将开发环境和生产环境的<strong>差异降至最低</strong>，并使用<strong>持续交付</strong>实施敏捷开发；</li>
+<li>可以在工具、架构和开发流程不发生明显变化的前提下实现<strong>扩展</strong>；</li>
+</ul>
+
+
+<p>这套理论适用于任意语言和后端服务（数据库、消息队列、缓存等）开发的应用程序。</p>
+
+<h4>背景</h4>
+
+<p>本文的贡献者参与过数以百计的应用程序的开发和部署，并通过<a href="http://www.heroku.com/">Heroku</a>平台间接见证了数十万应用程序的开发，运作以及扩展的过程。</p>
+
+<p>本文综合了我们关于SaaS应用几乎所有的经验和智慧，是开发此类应用的理想实践标准，并特别关注于应用程序如何保持良性成长，开发者之间如何进行有效的代码协作，以及如何<a href="http://blog.heroku.com/archives/2011/6/28/the_new_heroku_4_erosion_resistance_explicit_contracts/">避免软件污染</a>。</p>
+
+<p>我们的初衷是分享在现代软件开发过程中发现的一些系统性问题，并加深对这些问题的认识。我们提供了讨论这些问题时所需的共享词汇，同时使用相关术语给出一套针对这些问题的广义解决方案。本文格式的灵感来自于Martin Fowler的书籍：<a href="http://books.google.com/books/about/Patterns_of_enterprise_application_archi.html?id=FyWZt5DdvFkC"><em>Patterns of Enterprise Application Architecture</em></a>，<a href="http://books.google.com/books/about/Refactoring.html?id=1MsETFPD3I0C"><em>Refactoring</em></a>。</p>
+
+<h4>读者应该是哪些人？</h4>
+
+<p>任何SaaS应用的开发人员；部署和管理此类应用的运维工程师。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/05/09/the-twelve-factor-app/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/04/24/gitcorp-faq/">GitCorp FAQ</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-04-24T14:12:00+08:00" pubdate data-updated="true">Apr 24<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>怎样获得自己的代码仓库目录?</h3>
+
+<p>首先以公司的域用户登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，找到<a href="http://git.corp.anjuke.com/account/public_keys">管理SSH公钥</a>的页面。然后根据提示增加你的SSH公钥。提交之后，系统将创建和域用户名相同名称的目录，作为你的代码仓库的根目录。</p>
+
+<p>GitCorp允许一个帐号拥有多个公钥，这样你可以在不同的机器上访问你的代码仓库而不需要共享私钥。</p>
+
+<h3>怎样新建用户代码仓库?</h3>
+
+<p>登录<a href="http://git.corp.anjuke.com">GitCorp</a>站点，选择&#8221;Repo&#8221;菜单，然后点击&#8221;New&#8221;按钮创建新的代码仓库。创建代码仓库名要求输入仓库名称($REPO)和描述，新的仓库将建立这你的个人目录($USER)下。</p>
+
+<p>之后可以通过以下命令，将代码仓库克隆到本地。</p>
+
+<pre><code>git clone git@git.corp.anjuke.com:($USER)/($REPO)
+</code></pre>
+
+<p>或者在本地已经有代码仓库了，就可以push到GitCorp的用户目录下。</p>
+
+<pre><code>git remote add origin git@git.corp.anjuke.com:($USER)/($REPO)
+git push origin master
+</code></pre>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/04/24/gitcorp-faq/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/03/01/problem-spider-requests/">Problem: Spider Requests</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-03-01T16:39:00+08:00" pubdate data-updated="true">Mar 1<span>st</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>我们看下面这张图表，它显示的是2012年2月28日二手房房源列表页的HTTP请求情况。</p>
+
+<p><img src="/medias/20120301/soj-vs-spiders.png" alt="SOJ vs Spider" /></p>
+
+<ul>
+<li><p><span style="color:#e0b000"><strong>黄色</strong></span>的部分是SOJ上记录的请求数量</p>
+
+<p>这部分基本体现了正常浏览器的访问次数。</p></li>
+<li><p><span style="color:#008000"><strong>绿色</strong></span>的部分是LB访问日志上记录的百度爬虫访问数量</p>
+
+<p>百度爬虫在一天中的每小时访问数量基本不变，占我们全部请求量的15%左右。</p></li>
+<li><p><span style="color:#0000ff"><strong>蓝色</strong></span>的部是LB访问日志上记录的其他访问数量。</p>
+
+<p>这部分访问量占全天请求数量的大部分，我们不清楚是具体都什么样的请求。估计是各类爬虫。</p></li>
+</ul>
+
+
+<p>现在我们发现有50%以上的请求是机器人，而这些请求一样消耗我们的服务器资源。机器人和真正的用户对网站的需求可能是不一样的。例如，用户访问的时候希望页面的更新是实时的；搜索引擎爬虫希望页面尽量快，但是对页面更新没有那么高的要求。</p>
+
+<p>能不能区分对待这些请求？做到提高网站的响应速度，节省服务资源，还能更好地满足两类访问者的需求？</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/02/28/gitcorp-flow-recommendation/">GitCorp Flow - 安居客Git开发流程建议</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-28T09:13:00+08:00" pubdate data-updated="true">Feb 28<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>这里我们说一下使用gitcorp来进行源代码管理的开发流程建议。在gitcorp里，每个工程师都可以创建自己的个人目录。除了个人目录外，有这么几个&#8221;官方&#8221;原始代码仓库</p>
+
+<ul>
+<li><a href="http://git.corp.anjuke.com/cgit/anjuke">anjuke</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/aifang">aifang</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/haozu">haozu</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/jinpu">jinpu</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/mobile">mobile</a></li>
+<li><a href="http://git.corp.anjuke.com/cgit/corp">corp</a></li>
+</ul>
+
+
+<h2>代码仓库 - Git Repositories</h2>
+
+<h3>原始代码仓库</h3>
+
+<p>在这篇文章的例子中，我们以<code>git@git.corp.anjuke.com:corp/flow-demo.git</code>为原始代码仓库。文章后面提到的origin都是指原始代码仓库。</p>
+
+<p>origin上只包含有正式的分支，例如: <strong>master</strong>，<strong>beta</strong>和<strong>ga</strong>。</p>
+
+<ul>
+<li><p><strong>master</strong>
+主要的开发分支，待发布的新功能都在这个分支上。通常对这个分支进行每日构建、集成测试等；新的功能开发也都在这个分支的基础上进行。</p></li>
+<li><p><strong>beta</strong>
+这个分支将发布到预发布环境，通常其HEAD指向当前的预发布版本。在确定需要发布代码到预发布环境时，将代码从master分支合并到beta分支。</p></li>
+<li><p><strong>ga</strong>
+这个分支将发布到对外公开的环境，通常其HEAD指向当前的对外公开版本。在确定预发布版本可以对外公开时，将代码从beta分支合并到ga分支。</p></li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/02/28/gitcorp-flow-recommendation/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/02/27/markdown-syntax/">Markdown: Syntax</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-27T18:29:00+08:00" pubdate data-updated="true">Feb 27<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><a href="https://github.com/othree/markdown-syntax-zhtw/blob/master/syntax.md">文档来源</a></p>
+
+<p><strong>NOTE:</strong> This is Traditional Chinese Edition Document of
+Markdown Syntax. If you are seeking for English Edition
+Document. Please refer to <a href="http://daringfireball.net/projects/markdown/syntax">Markdown: Syntax</a>.</p>
+
+<ul>
+<li><a href="#overview">概述</a>
+
+<ul>
+<li><a href="#philosophy">哲學</a></li>
+<li><a href="#html">行內 HTML</a></li>
+<li><a href="#autoescape">特殊字元自動轉換</a></li>
+</ul>
+</li>
+<li><a href="#block">區塊元素</a>
+
+<ul>
+<li><a href="#p">段落和換行</a></li>
+<li><a href="#header">標題</a></li>
+<li><a href="#blockquote">區塊引言</a></li>
+<li><a href="#list">清單</a></li>
+<li><a href="#precode">程式碼區塊</a></li>
+<li><a href="#hr">分隔線</a></li>
+</ul>
+</li>
+<li><a href="#span">區段元素</a>
+
+<ul>
+<li><a href="#link">連結</a></li>
+<li><a href="#em">強調</a></li>
+<li><a href="#code">程式碼</a></li>
+<li><a href="#img">圖片</a></li>
+</ul>
+</li>
+<li><a href="#misc">其它</a>
+
+<ul>
+<li><a href="#backslash">跳脫字元</a></li>
+<li><a href="#autolink">自動連結</a></li>
+</ul>
+</li>
+<li><a href="#acknowledgement">感謝</a></li>
+</ul>
+
+
+<p><strong>注意：</strong>這份文件是用 Markdown 寫的，你可以<a href="https://github.com/othree/markdown-syntax-zhtw/blob/master/syntax.md">看看它的原始檔</a> 。</p>
+
+<hr />
+
+<h2 id="overview">概述</h2>
+
+
+
+
+<h3 id="philosophy">哲學</h3>
+
+
+<p>Markdown 的目標是實現「易讀易寫」。</p>
+
+<p>不過最需要強調的便是它的可讀性。一份使用 Markdown 格式撰寫的文件應該可以直接以純文字發佈，並且看起來不會像是由許多標籤或是格式指令所構成。Markdown 語法受到一些既有 text-to-HTML 格式的影響，包括 <a href="http://docutils.sourceforge.net/mirror/setext.html">Setext</a>、<a href="http://www.aaronsw.com/2002/atx/">atx</a>、<a href="http://textism.com/tools/textile/">Textile</a>、<a href="http://docutils.sourceforge.net/rst.html">reStructuredText</a>、<a href="http://www.triptico.com/software/grutatxt.html">Grutatext</a> 和 <a href="http://ettext.taint.org/doc/">EtText</a>，然而最大靈感來源其實是純文字的電子郵件格式。</p>
+
+<p>因此 Markdown 的語法全由標點符號所組成，並經過嚴謹慎選，是為了讓它們看起來就像所要表達的意思。像是在文字兩旁加上星號，看起來就像*強調*。Markdown 的清單看起來，嗯，就是清單。假如你有使用過電子郵件，區塊引言看起來就真的像是引用一段文字。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/02/27/markdown-syntax/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -359,340 +758,6 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/01/07/semver/">版本号的语义命名法 2.0.0-rc.1</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-01-07T16:27:00+08:00" pubdate data-updated="true">Jan 7<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>翻译: <a href="http://git.corp.anjuke.com/cgit/jizhang/semver.git/">jizhang</a></p>
-
-<p>在软件管理过程中，随着系统规模的扩大，会有越来越多的模块被加入进来，包与包之间的依赖关系往往会让我们陷入痛苦的境地。</p>
-
-<p>当系统中有很多依赖关系存在时，发布新版本的包会成为一场恶梦。如果依赖过于紧密，就可能会产生“版本锁”，即发布包的新版本时需要发布其依赖包的新版本；如果依赖关系很松散，这样还是会陷入混乱，因为需要对更多的包进行兼容。这些问题往往会成为项目向前推进的绊脚石。</p>
-
-<p>为了解决这个问题，我拟定了一组简单的规则，用来规范软件发布中的版本号命名。在实施这组规则之前，我们需要一套API接口。这个接口可以是一组文档，也可以是代码实现。最重要的是，这套API接口必须是明确和精准的。在确认了这套API接口之后，对它的任何改动都要通过特定的版本号递增规则来进行。假设版本号的格式为X.Y.Z（主版本.次版本.补丁）。修复Bug会递增补丁版本，向前兼容的API修改或新增功能会递增次版本，向前不兼容的API修改会递增主版本。</p>
-
-<p>我给这套规则起名为“版本号的语义命名法”。在这种规则下，版本号的递增过程是带有特定含义的。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/01/07/semver/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/12/30/gitcorp-faq/">GitCorp FAQ</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-12-30T14:12:00+08:00" pubdate data-updated="true">Dec 30<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><a href="/blog/2012/04/24/gitcorp-faq/">FAQ更新，请访问新地址</a></p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/12/30/gitcorp-faq/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/11/28/multi-string-search/">多关键字的文本精确匹配搜索</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-11-28T22:22:00+08:00" pubdate data-updated="true">Nov 28<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>基本的要求是对给定的一个文本块进行关键字匹配，进行匹配的关键字是多个，而且可能非常多(成千上万)，然后输出各个匹配到的关键字的位置。这可用用作关键字的高亮显示，当然也可用进行敏感词过滤。</p>
-
-<p>参考linux命令行<code>fgrep</code></p>
-
-<h2>功能</h2>
-
-<p>输入一段文本，输出匹配到的关键字在输入文本中的位置。</p>
-
-<p>例如，关键词列表：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'># 关键字    类型(可选)
-</span><span class='line'>安居客      公司名称
-</span><span class='line'>二手房      通用名词</span></code></pre></td></tr></table></div></figure>
-
-
-<p>待查询文本为：</p>
-
-<blockquote><p><em>安居客，是安居客集团旗下国内最大的专业二手房网站。自2007年上线至今的短短4年时间里，安居客凭借其“专业二手房搜索引擎”的核心竞争力在业内独树一帜。通过对用户需求的精准把握、海量的二手房房源、精准的搜索功能、强大的产品研发能力，为用户提供最佳找房体验。目前，安居客的足迹已经遍布全国超过29个城市，注册用户超过1000万。</em></p></blockquote>
-
-<p>输出结果为:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>[
-</span><span class='line'>  (安居客, 公司名称, 0),
-</span><span class='line'>  (二手房, 通用名词, 69),
-</span><span class='line'>  (安居客, 公司名称, 134),
-</span><span class='line'>  (二手房, 通用名词, 161),
-</span><span class='line'>  (二手房, 通用名词, 275),
-</span><span class='line'>  (安居客, 公司名称, 392)
-</span><span class='line'>]</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/11/28/multi-string-search/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/11/03/hanzi-to-pinyin/">汉字转拼音服务规范</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-11-03T22:22:00+08:00" pubdate data-updated="true">Nov 3<span>rd</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>我们希望安居客的搜索引擎能够更好的做到同音字的容错，采用拼音容错是一个不错的方法。因此，需要一个将汉字转换为拼音的组件。同时，汉字转拼音组件还可以有多个用途，例如以拼音的首字母来检索小区名、人名等。</p>
-
-<p>这样我们需要一个通用的将汉字转换为拼音的服务。</p>
-
-<h2>功能</h2>
-
-<p>基本功能就是中文拉丁化，输入一段中文文本，输出转变为汉语拼音的文本。</p>
-
-<p>要求原文中的全角标点符号、空格等应该转为对应的半脚符号。原汉字与英文间如果没有空格分隔，转换为拼音后应该加入空格分隔。</p>
-
-<p>例如，“<strong>我的英文名是Bob。</strong>” 转化后为&#8217;<strong>wo de ying wen ming shi Bob.</strong>&#8217;</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/11/03/hanzi-to-pinyin/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter5/">ZMQ 指南 - 第五章 高级发布-订阅模式</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#105;&#108;&#116;&#x6f;&#x3a;&#112;&#104;&#x40;&#105;&#x6d;&#x61;&#116;&#x69;&#x78;&#46;&#x63;&#x6f;&#109;">&#112;&#104;&#x40;&#105;&#109;&#x61;&#x74;&#x69;&#120;&#x2e;&#x63;&#x6f;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#x6d;&#x61;&#105;&#108;&#x74;&#111;&#x3a;&#106;&#105;&#122;&#x68;&#x61;&#x6e;&#103;&#x40;&#x61;&#110;&#x6a;&#x75;&#107;&#101;&#x2e;&#x63;&#x6f;&#x6d;">&#106;&#105;&#122;&#x68;&#x61;&#110;&#103;&#64;&#97;&#110;&#x6a;&#117;&#x6b;&#x65;&#x2e;&#x63;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
-
-<p>第三章和第四章讲述了ZMQ中请求-应答模式的一些高级用法。如果你已经能够彻底理解了，那我要说声恭喜。这一章我们会关注发布-订阅模式，使用上层模式封装，提升ZMQ发布-订阅模式的性能、可靠性、状态同步及安全机制。</p>
-
-<p>本章涉及的内容有：</p>
-
-<ul>
-<li>处理慢订阅者（自杀的蜗牛模式）</li>
-<li>高速订阅者（黑箱模式）</li>
-<li>构建一个共享键值缓存（克隆模式）</li>
-</ul>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter5/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter4/">ZMQ 指南 - 第四章 可靠的请求-应答模式</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#x69;&#x6c;&#x74;&#111;&#x3a;&#112;&#104;&#x40;&#x69;&#x6d;&#97;&#x74;&#x69;&#x78;&#46;&#99;&#111;&#x6d;">&#x70;&#x68;&#x40;&#105;&#x6d;&#x61;&#116;&#x69;&#120;&#46;&#x63;&#x6f;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#x6c;&#116;&#x6f;&#x3a;&#106;&#105;&#122;&#104;&#x61;&#x6e;&#103;&#64;&#97;&#110;&#x6a;&#x75;&#107;&#x65;&#x2e;&#x63;&#111;&#109;">&#106;&#105;&#122;&#x68;&#97;&#110;&#103;&#x40;&#x61;&#x6e;&#x6a;&#117;&#107;&#x65;&#46;&#x63;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
-
-<p>第三章中我们使用实例介绍了高级请求-应答模式，本章我们会讲述请求-应答模式的可靠性问题，并使用ZMQ提供的套接字类型组建起可靠的请求-应答消息系统。</p>
-
-<p>本章将介绍的内容有：</p>
-
-<ul>
-<li>客户端请求-应答</li>
-<li>最近最少使用队列</li>
-<li>心跳机制</li>
-<li>面向服务的队列</li>
-<li>基于磁盘（脱机）队列</li>
-<li>主从备份服务</li>
-<li>无中间件的请求-应答</li>
-</ul>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter4/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; Older</a>
@@ -710,11 +775,35 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/27/fork-and-zombie-process/">fork()与僵尸进程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1/">Perl入门实战：JVM监控脚本（上）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/07/currying-and-partial-application/">柯里化与偏应用（JavaScript描述）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
       </li>
     
       <li class="post">
+        <a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a>
       </li>
     
       <li class="post">
@@ -723,30 +812,6 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
     
       <li class="post">
         <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
       </li>
     
   </ul>

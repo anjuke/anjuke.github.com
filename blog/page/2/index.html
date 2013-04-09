@@ -9,7 +9,7 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content=" 为什么会想到要使用lvm呢，因为家里的主力下载机是一台PC，她又是我的主要平时使用的机子（除开mac外），经常要对下载那个分区进行整理，装个游戏，压制点视频音乐有时候分区会很紧张，然而跨分区是很复杂的操作。这就让我想到了linux下面的lvm功能。 ">
+  <meta name="description" content="在Eclipse中编写Clojure代码 从这章起我们就要开始真正的编码了。Vim可能是很多程序员的选择，但如果你像我一样更喜欢GUI界面，那就来看看如何在Eclipse中编写Clojure代码吧。 安装Eclipse插件 Eclipse提供了一个Clojure插件： &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -76,6 +76,462 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-08T12:09:00+08:00" pubdate data-updated="true">Dec 8<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>在Eclipse中编写Clojure代码</h2>
+
+<p>从这章起我们就要开始真正的编码了。Vim可能是很多程序员的选择，但如果你像我一样更喜欢GUI界面，那就来看看如何在Eclipse中编写Clojure代码吧。</p>
+
+<h3>安装Eclipse插件</h3>
+
+<p>Eclipse提供了一个Clojure插件：CounterClockwise，可以用来编写Clojure代码，进行语法高亮、调试等操作。打开Eclipse的Market Place，搜索counterclockwise关键字，点击Install即可。</p>
+
+<h3>将Leiningen项目导入Eclipse</h3>
+
+<p>由于CounterClockwise插件并没有默认使用Leiningen来管理项目，因此需要做一些额外的工作。</p>
+
+<p>在使用<code>lein new</code>命令创建项目后，在project.clj文件中增加如下一行：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defproject </span><span class="nv">...</span>
+</span><span class='line'>            <span class="ss">:dev-dependencies</span> <span class="p">[[</span><span class="nv">lein-eclipse</span> <span class="s">&quot;1.0.0&quot;</span><span class="p">]]</span>
+</span><span class='line'>            <span class="nv">...</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后依次执行<code>lein deps</code>和<code>lein eclipse</code>，会看到项目根目录下生成了.project和.classpath文件。然后就可以进入Eclipse导入这个项目了。如果使用Git进行版本控制，<code>lein</code>已经为你生成好了.gitignore文件。执行了<code>git init</code>后，就能在Eclilpse中选择Share Project菜单项，进行可视化的版本控制。</p>
+
+<h2>使用表单</h2>
+
+<p>我们现在需要编写一个新建文章的功能，它是一个简单的页面，页面上有“标题”和“内容”两个文本框，并有一个“提交”按钮。</p>
+
+<p>在src/blog/views目录下新建一个文件article.clj，输入以下内容：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">ns </span><span class="nv">blog.views.article</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">blog.views.common</span> <span class="ss">:as</span> <span class="nv">common</span><span class="p">])</span>
+</span><span class='line'>  <span class="p">(</span><span class="ss">:use</span> <span class="p">[</span><span class="nv">noir.core</span><span class="p">]</span>
+</span><span class='line'>        <span class="p">[</span><span class="nv">hiccup.form-helpers</span><span class="p">]))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="nf">defpage</span> <span class="s">&quot;/blog/add&quot;</span> <span class="p">[]</span>
+</span><span class='line'>  <span class="p">(</span><span class="nf">common/layout</span>
+</span><span class='line'>    <span class="p">[</span><span class="ss">:h1</span> <span class="s">&quot;新建文章&quot;</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">form-to</span> <span class="p">[</span><span class="ss">:post</span> <span class="s">&quot;/blog/add&quot;</span><span class="p">]</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">label</span> <span class="s">&quot;title&quot;</span> <span class="s">&quot;标题：&quot;</span><span class="p">)</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">text-field</span> <span class="p">{</span><span class="ss">:size</span> <span class="mi">50</span><span class="p">}</span> <span class="s">&quot;title&quot;</span><span class="p">)</span> <span class="p">[</span><span class="ss">:br</span><span class="p">]</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">label</span> <span class="s">&quot;content&quot;</span> <span class="s">&quot;内容：&quot;</span><span class="p">)</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">text-area</span> <span class="p">{</span><span class="ss">:rows</span> <span class="mi">20</span> <span class="ss">:cols</span> <span class="mi">50</span><span class="p">}</span> <span class="s">&quot;content&quot;</span><span class="p">)</span> <span class="p">[</span><span class="ss">:br</span><span class="p">]</span>
+</span><span class='line'>             <span class="p">(</span><span class="nf">submit-button</span> <span class="s">&quot;提交&quot;</span><span class="p">))))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>defpage</code>和<code>common/layout</code>我们之前已经见到过，前者定义了URL<code>/blog/add</code>指向的页面，后者则是套用了一个模板。<code>[:h1 ...]</code>和<code>[:br]</code>也应该熟悉，它们是Hiccup的语法，分别生成<code>&lt;h1&gt;...&lt;/h1&gt;</code>和<code>&lt;br&gt;</code>标签。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/12/08/cia-noir-2/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-25T16:58:00+08:00" pubdate data-updated="true">Nov 25<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>前言</h2>
+
+<p>为什么要学习一门新的语言？我的想法很简单，平时OO、PO代码写多了，却从未接触过函数式编程，不免有些遗憾。考察下来，Clojure可以用来尝尝鲜，所以就决定学一学。为了给自己的学习留下些记录，就有了这样一份教程。</p>
+
+<p>Clojure已经有一些不错的教程，如<a href="http://java.ociweb.com/mark/">Mark Volkmann</a>的<a href="http://java.ociweb.com/mark/clojure/article.html">Clojure - Functional Programming for the JVM</a>，Storm的主要贡献者<a href="http://xumingming.sinaapp.com/">徐明明</a>也对这个教程做了<a href="http://xumingming.sinaapp.com/302/clojure-functional-programming-for-the-jvm-clojure-tutorial/">全文翻译</a>。还有一些不错的书籍，像<a href="http://oreilly.com/">O&#8217;Reilly</a>的<a href="http://www.amazon.com/Clojure-Programming-Chas-Emerick/dp/1449394701">Clojure Programming</a>，都值得一读。我是从Mark的教程开始学起的，对其中没有提到的部分则是参考了Clojure Programming这本书。Clojure的<a href="http://clojure.org/">官方网站</a>上有详尽的<a href="http://clojure.github.com/clojure/">API参考</a>，可以作为工具书查阅。</p>
+
+<p>但是，上面提到的教程都是针对Clojure语言本身的，从 <em>Hello, world!</em> 开始，讲解Clojure的各种语法，关键字，结构等等。虽然Clojure的语法已经足够吸引你的眼球，在<a href="http://en.wikipedia.org/wiki/Read-eval-print_loop">REPL</a>中敲击Clojure代码已经是一种莫大的乐趣了，但似乎还有些不够，我们想看到一个用Clojure编写的应用程序！</p>
+
+<p>因为平时都是做Web开发，所以先从一个Web框架入手会是不错的选择，因此这份教程会从使用<a href="http://webnoir.org/">Noir</a>框架搭建一个博客开始，带你领略Clojure的魅力。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/11/25/cia-noir-1/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-18T19:20:00+08:00" pubdate data-updated="true">Nov 18<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>作者：<a href="http://www.aosabook.org/en/intro1.html#ziade-tarek">Tarek Ziadé</a>，翻译：<a href="mailto:zhangji87@gmail.com">张吉</a></p>
+
+<p>原文：<a href="http://www.aosabook.org/en/packaging.html">http://www.aosabook.org/en/packaging.html</a></p>
+
+<h2>14.1 简介</h2>
+
+<p>对于如何安装软件，目前有两种思想流派。第一种是说软件应该自给自足，不依赖于其它任何部件，这点在Windows和Mac OS X系统中很流行。这种方式简化了软件的管理：每个软件都有自己独立的“领域”，安装和卸载它们不会对操作系统产生影响。如果软件依赖一项不常见的类库，那么这个类库一定是包含在软件安装包之中的。</p>
+
+<p>第二种流派，主要在类Linux的操作系统中盛行，即软件应该是由一个个独立的、小型的软件包组成的。类库被包含在软件包中，包与包之间可以有依赖关系。安装软件时需要查找和安装它所依赖的其他特定版本的软件包。这些依赖包通常是从一个包含所有软件包的中央仓库中获取的。这种理念也催生了Linux发行版中那些复杂的依赖管理工具，如<code>dpkg</code>和<code>RPM</code>。它们会跟踪软件包的依赖关系，并防止两个软件使用了版本相冲突的第三方包。</p>
+
+<p>以上两种流派各有优劣。高度模块化的系统可以使得更新和替换某个软件包变的非常方便，因为每个类库都只有一份，所有依赖于它的应用程序都能因此受益。比如，修复某个类库的安全漏洞可以立刻应用到所有程序中，而如果应用程序使用了自带的类库，那安全更新就很难应用进去了，特别是在类库版本不一致的情况下更难处理。</p>
+
+<p>不过这种“模块化”也被一些开发者视为缺点，因为他们无法控制应用程序的依赖关系。他们希望提供一个独立和稳定的软件运行环境，这样就不会在系统升级后遭遇各种依赖方面的问题。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/11/18/aosa-python-packaging/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-16T23:54:00+08:00" pubdate data-updated="true">Nov 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>作者：<a href="http://www.aosabook.org/en/intro2.html#potter-susan">Susan Potter</a>，翻译：<a href="mailto:zhangji87@gmail.com">张吉</a></p>
+
+<p>原文：<a href="http://www.aosabook.org/en/git.html">http://www.aosabook.org/en/git.html</a></p>
+
+<h2>6.1 Git概述</h2>
+
+<p>Git能够让不同的协作者通过一个点对点的仓库网络对数据内容（通常是代码，当然不仅限于代码）进行维护。它支持分布式的工作流程，能够让数据内容临时分离，并最终合并到一起。</p>
+
+<p>本章将阐述Git的内部实现是如何提供以上功能的，以及它和其他版本控制系统（VCS）的区别。</p>
+
+<h2>6.2 Git起源</h2>
+
+<p>为了更好地理解Git的设计思想，我们有必要先了解一下Git项目的发源地——Linux内核开发社区——所面临的问题。</p>
+
+<p>Linux内核开发与其他商业软件项目有很大不同，因为它的开发者众多，且每个开发者的参与程度和对Linux内核代码的理解有很大差异。多年以来，内核代码一直都是以Tar压缩文件以及补丁的形式维护的，而当时的核心开发团队一直在寻找一个能够满足他们各方面需求的版本控制系统。</p>
+
+<p>Git就是在这样的背景下于2005年作为一款开源软件诞生的。当时，Linux内核代码通过两种版本控制系统进行维护，BitKeeper和CVS，分别由两组核心开发团队使用。BitKeeper相较于当时颇为流行的CVS，提供了一种不同的历史展示方式。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/11/16/aosa-git/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-31T18:00:00+08:00" pubdate data-updated="true">Oct 31<span>st</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
+
+<p>Storm UI提供了基本的监控界面，可以查看当前时点集群内脚本的运行情况，其中比较重要的是消息吞吐量（Transferred）和处理延迟（Process latency）。不足的是，这套系统没有记录时序数据，因此想看一段时间内的趋势图，或是做脚本上下线的负载监控，Storm UI就无能为力了。</p>
+
+<p>不过，Storm Nimbus开放了一套Thrift API，可以使用他获取各类信息。下面就介绍一下如何使用Python编写监控程序，定时获取脚本运行状态（吞吐量和延迟），并在监控系统中出图。</p>
+
+<h3>安装Thrift API</h3>
+
+<p><a href="http://thrift.apache.org/">Thrift</a>是Apache基金会下的一个项目，定义了一套面向服务程序的通信协议。它使用Thrift的<a href="http://thrift.apache.org/docs/idl/">IDL</a>定义接口，通过一个工具转换成不同语言的客户端，供其他程序调用。</p>
+
+<p>可以<a href="http://archive.apache.org/dist/thrift/0.7.0/">点此下载Thrift源码包</a>，因为Storm使用的Thrift版本是0.7.0，所以建议安装该版本。</p>
+
+<p>安装过程即 ./configure &amp;&amp; make &amp;&amp; sudo make install，安装完成后PATH会多出thrift这个命令。</p>
+
+<h3>生成Storm Thrift API代码文件</h3>
+
+<p>Storm Thrift API的定义文件在源码中提供，可以从Github中克隆相应的分支，并执行thrift命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git clone -b 0.7.0 git://github.com/nathanmarz/storm.git
+</span><span class='line'>$ cd storm/src
+</span><span class='line'>$ thrift --gen py storm.thrift
+</span><span class='line'>$ cd gen-py</span></code></pre></td></tr></table></div></figure>
+
+
+<p>源码中似乎已经提供了py这个文件夹，也可以直接使用。</p>
+
+<h3>获取某个Topology的吞吐量和延迟</h3>
+
+<p>首先在Python项目中添加如下依赖：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>setup(install_requires=['thrift==0.7.0'])</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以下代码会找到集群中名为access_log的脚本，记录filter（Bolt）的吞吐量和延迟数。由于Storm Thrift API返回值的组织方式比较复杂，所以需要多多参考刚才生成的gen-py包中的内容。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="c">#连接到Storm Nimbus Thrift Server：</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">socket</span> <span class="o">=</span> <span class="n">TSocket</span><span class="o">.</span><span class="n">TSocket</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">nimbus_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">nimbus_port</span><span class="p">)</span>
+</span><span class='line'><span class="n">transport</span> <span class="o">=</span> <span class="n">TTransport</span><span class="o">.</span><span class="n">TFramedTransport</span><span class="p">(</span><span class="n">socket</span><span class="p">)</span>
+</span><span class='line'><span class="n">protocol</span> <span class="o">=</span> <span class="n">TBinaryProtocol</span><span class="o">.</span><span class="n">TBinaryProtocol</span><span class="p">(</span><span class="n">transport</span><span class="p">)</span>
+</span><span class='line'><span class="n">nimbus</span> <span class="o">=</span> <span class="n">Nimbus</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">protocol</span><span class="p">)</span>
+</span><span class='line'><span class="n">transport</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'><span class="c">#获取集群内脚本信息，得到脚本ID：</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">cluster_info</span> <span class="o">=</span> <span class="n">nimbus</span><span class="o">.</span><span class="n">getClusterInfo</span><span class="p">()</span>
+</span><span class='line'><span class="n">topology_id</span> <span class="o">=</span> <span class="bp">None</span>
+</span><span class='line'><span class="k">for</span> <span class="n">topology</span> <span class="ow">in</span> <span class="n">cluster_info</span><span class="o">.</span><span class="n">topologies</span><span class="p">:</span>
+</span><span class='line'><span class="k">if</span> <span class="n">topology</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;access_log&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="n">topology_id</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">id</span>
+</span><span class='line'>
+</span><span class='line'><span class="c"># 获取脚本信息，计算吞吐量和延迟毫秒数</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">topology_info</span> <span class="o">=</span> <span class="n">nimbus</span><span class="o">.</span><span class="n">getTopologyInfo</span><span class="p">(</span><span class="n">topology_id</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">transferred</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'><span class="n">filter_latencies</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span class='line'><span class="k">for</span> <span class="n">executor_info</span> <span class="ow">in</span> <span class="n">topology_info</span><span class="o">.</span><span class="n">executors</span><span class="p">:</span>
+</span><span class='line'>    <span class="c"># 600表示10分钟内的均值</span>
+</span><span class='line'>    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">transferred</span><span class="p">[</span><span class="s">&#39;600&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+</span><span class='line'>        <span class="n">transferred</span> <span class="o">+=</span> <span class="n">v</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">component_id</span> <span class="o">==</span> <span class="s">&#39;filter&#39;</span><span class="p">:</span>
+</span><span class='line'>        <span class="n">latencies</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span class='line'>        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">executor_info</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">specific</span><span class="o">.</span><span class="n">bolt</span><span class="o">.</span><span class="n">process_ms_avg</span><span class="p">[</span><span class="s">&#39;600&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+</span><span class='line'>            <span class="n">latencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">filter_latencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">latencies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">latencies</span><span class="p">))</span>
+</span><span class='line'><span class="n">filter_latency</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">filter_latencies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">filter_latencies</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后就可以将计算得到的transferred和filter_latency输出到监控系统中绘图了。</p>
+
+<h3>注意事项</h3>
+
+<p>在调试的过程中，有时会尝试用telnet查看Storm Thrift Server是否存活，一旦这样操作就会导致Nimbus挂起，无法自动退出。和作者确认过，这是Thrift自身的Bug，目前还没有解决方法。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-30T10:29:00+08:00" pubdate data-updated="true">Oct 30<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/084c149bb5a1769082ef794c6dcd1a91"></p>
+
+<p>之前我们有提到<a href="/blog/2012/10/15/solr-guildeline/">Solr的使用的一些规范</a>，这次我们深入实例。</p>
+
+<p>我们从access log中找出一些查询耗时比较高的查询,跟去&#8221;深入solr实战&#8221;中提到的修改方式,做了一些更改,查询结果没有变化但是速度出现下降</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/10/30/solr-guideline-in-action/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -386,989 +842,6 @@ review工具，他提供了便捷、强大的功能来帮助开发者更顺利�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/02/zc-dot-buildout-workflow/">zc.buildout Workflow</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-02T14:44:00+08:00" pubdate data-updated="true">Oct 2<span>nd</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
-
-<p>This article aims to provide a concrete workflow of using zc.buildout to deploy development and production environment.</p>
-
-<h2>Project Structure (BuildOut SKELeton)</h2>
-
-<p>Here is a minimum application structure with zc.buildout.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>git clone git@github.com:jizhang/boskel.git
-</span><span class='line'><span class="nv">$ </span>find boskel
-</span><span class='line'>boskel
-</span><span class='line'>boskel/.gitignore
-</span><span class='line'>boskel/bootstrap.py
-</span><span class='line'>boskel/buildout.cfg
-</span><span class='line'>boskel/offline.cfg
-</span><span class='line'>boskel/setup.py
-</span><span class='line'>boskel/src
-</span><span class='line'>boskel/src/boskel
-</span><span class='line'>boskel/src/boskel/__init__.py
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>Development Environment</h2>
-
-<p>To initiate the application:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd </span>boskel
-</span><span class='line'><span class="nv">$ </span>python bootstrap.py --distribute
-</span><span class='line'><span class="nv">$ </span>bin/buildout
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Now, a fully functional and isolated python environment has been built. Try the following commands:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>bin/python
-</span><span class='line'>&gt;&gt;&gt; import boskel
-</span><span class='line'>&gt;&gt;&gt;
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>It shows the bin/python interpreter is able to find the newly created boskel package.</p>
-
-<p>Here are something you may want to catch up:</p>
-
-<ul>
-<li><p><strong>bootstrap.py</strong> Since not everyone has installed zc.buildout locally (by pip install zc.buildout), an initiation script is included. It will download the latest distribute package (it defaults to use setuptools, but distribute package is a replacement and better choice) and zc.buildout packages. It&#8217;ll generate bin/buildout script, which is the hero of this article.</p></li>
-<li><p><strong>buildout.cfg</strong> A typical buildout configuration file. In detail, the &#8216;develop = .&#8217; tells buildout to find pakcage in the current directory, which must includes a setup.py script. And &#8216;interpreter = python&#8217; indicates that a new interpreter bin/python should be generated. This special interpreter is made capable of finding all the dependencies of this application.</p></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>cat buildout.cfg
-</span><span class='line'><span class="o">[</span>buildout<span class="o">]</span>
-</span><span class='line'><span class="nv">parts</span> <span class="o">=</span> python
-</span><span class='line'><span class="nv">develop</span> <span class="o">=</span> .
-</span><span class='line'>
-</span><span class='line'><span class="o">[</span>python<span class="o">]</span>
-</span><span class='line'><span class="nv">recipe</span> <span class="o">=</span> zc.recipe.egg
-</span><span class='line'><span class="nv">interpreter</span> <span class="o">=</span> python
-</span><span class='line'><span class="nv">eggs</span> <span class="o">=</span>
-</span><span class='line'>    boskel
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><strong>setup.py</strong> A standard package setup script. &#8216;packages&#8217; and &#8216;package_dir&#8217; option should be written as is shown, since it&#8217;s a convention of buildout to put all source code in an &#8216;src&#8217; folder.</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>cat setup.py
-</span><span class='line'>from setuptools import setup, find_packages
-</span><span class='line'>
-</span><span class='line'>setup<span class="o">(</span>
-</span><span class='line'>    <span class="nv">name</span><span class="o">=</span><span class="s1">&#39;boskel&#39;</span>,
-</span><span class='line'>    <span class="nv">version</span><span class="o">=</span><span class="s1">&#39;0.1.0&#39;</span>,
-</span><span class='line'>    <span class="nv">packages</span><span class="o">=</span>find_packages<span class="o">(</span><span class="s1">&#39;src&#39;</span><span class="o">)</span>,
-</span><span class='line'>    <span class="nv">package_dir</span><span class="o">={</span><span class="s1">&#39;&#39;</span>: <span class="s1">&#39;src&#39;</span><span class="o">}</span>,
-</span><span class='line'>    <span class="nv">zip_safe</span><span class="o">=</span>False,
-</span><span class='line'>    <span class="nv">install_requires</span><span class="o">=[</span>
-</span><span class='line'>    <span class="o">]</span>
-</span><span class='line'><span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><strong>offline.cfg</strong> This file will be used to run buildout in a remote server without internet access.</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>cat offline.cfg
-</span><span class='line'><span class="o">[</span>buildout<span class="o">]</span>
-</span><span class='line'><span class="nv">extends</span> <span class="o">=</span> buildout.cfg
-</span><span class='line'>download-cache <span class="o">=</span> downloads
-</span><span class='line'>install-from-cache <span class="o">=</span> <span class="nb">true</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>Production Environment</h2>
-
-<p>When deploying to a production environment, dependency isolation is very important, unless one plans to deploy only one application per server, then he may install all the packages globally. Otherwise, an environment isolation tool should be chosen, and virtualenv is a good one.</p>
-
-<p>A typical procedure is as below:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">local</span> <span class="nv">$ </span>python setup.py sdist
-</span><span class='line'><span class="nb">local</span> <span class="nv">$ </span>scp xxx-0.1.tar.gz user@remote:/path/to/dist
-</span><span class='line'>remote <span class="nv">$ </span><span class="nb">source </span>venv/bin/activate
-</span><span class='line'>remote <span class="nv">$ </span>python setup.py install
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>The dependencies need to be uploaded and installed into the venv first.</p>
-
-<p>As for buildout, we can also use the above approach, deploying with virtualenv. But what if our new distribution&#8217;s dependency tree is conflict with the previous package. Or I have to setup different virtual environments for production and staging release. So, a better solution is to use buildout for every distribution.</p>
-
-<p>The main problem of building-out application on remote servers is dependency handling, since most of the time, there won&#8217;t be internet accessibility in those servers.</p>
-
-<p>There&#8217;re two solutions, one is setting up a pypi repository with <a href="http://pypi.python.org/pypi/collective.eggproxy">eggproxy</a>. It will cache the eggs downloaded from internet for further use.</p>
-
-<p>Another approach is to install from local cache, as is described below.</p>
-
-<p>zc.buildout has an offline mode (bin/buildout -o, which is also useful when developing, since it will not try to checkout the latest packages, making the building much faster). We can trigger this behavior in configuration file, as is shown in the offline.cfg. The &#8216;download-cache&#8217; option indicates where to find the packages. Obviously there should be only one download-cache per server, and whether to use absolute path or a symbolic link to the path is your call.</p>
-
-<p>How about the zc.buildout package itself? In development environment, we use bootstrap.py to install it, but there&#8217;s not offline-mode bootstrap.py available. So my answer to it is setting up a virtualenv which includes a zc.buildout package. To setup this venv:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">cd </span>virtualenv-x.x.x
-</span><span class='line'><span class="nv">$ </span>python setup.py install
-</span><span class='line'><span class="nv">$ </span>virtualenv venv --distribute
-</span><span class='line'><span class="nv">$ </span><span class="nb">source </span>venv/bin/activate
-</span><span class='line'><span class="nv">$ </span><span class="nb">cd </span>zc.buildout-x.x.x
-</span><span class='line'><span class="nv">$ </span>python setup.py install
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Later, we can use the venv/bin/buildout script to run buildout (no activation needed).</p>
-
-<p>Here&#8217;s the deploying procedure:</p>
-
-<ol>
-<li>Export the source code from git repository, and rsync it to remote server.</li>
-<li>Make a symbolic link to the download cache.</li>
-<li>Execute venv/bin/buildout -c offline.cfg</li>
-</ol>
-
-
-<p>We can use <a href="http://docs.fabfile.org/en/1.4.3/index.html">Fabric</a> to do the job. Here&#8217;s an example task:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="kn">from</span> <span class="nn">fabric.api</span> <span class="kn">import</span> <span class="n">lcd</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">cd</span><span class="p">,</span> <span class="n">run</span>
-</span><span class='line'><span class="kn">from</span> <span class="nn">fabric.contrib.project</span> <span class="kn">import</span> <span class="n">rsync_project</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@task</span>
-</span><span class='line'><span class="k">def</span> <span class="nf">deploy</span><span class="p">(</span><span class="n">rev</span><span class="o">=</span><span class="s">&#39;master&#39;</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">with</span> <span class="n">lcd</span><span class="p">(</span><span class="s">&#39;~/boskel&#39;</span><span class="p">):</span>
-</span><span class='line'>        <span class="n">local</span><span class="p">(</span><span class="s">&#39;git clone --mirror git@github.com:jizhang/boskel.git&#39;</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">local</span><span class="p">(</span><span class="s">&#39;git remote update&#39;</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">rev</span> <span class="o">=</span> <span class="n">local</span><span class="p">(</span><span class="s">&#39;git rev-parse </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">rev</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">prefix</span> <span class="o">=</span> <span class="s">&#39;boskel-</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">rev</span><span class="p">[:</span><span class="mi">7</span><span class="p">]</span>
-</span><span class='line'>        <span class="n">local</span><span class="p">(</span><span class="s">&#39;git archive --prefix=</span><span class="si">%s</span><span class="s">/ --format=tar </span><span class="si">%s</span><span class="s"> | tar xf - -C </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>\
-</span><span class='line'>              <span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">rev</span><span class="p">,</span> <span class="s">&#39;~/boskel/dist&#39;</span><span class="p">))</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">rsync_project</span><span class="p">(</span><span class="s">&#39;/path/to/boskel/dist&#39;</span><span class="p">,</span> <span class="s">&#39;~/boskel/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">prefix</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">with</span> <span class="n">cd</span><span class="p">(</span><span class="s">&#39;/path/to/boskel/dist/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">prefix</span><span class="p">):</span>
-</span><span class='line'>        <span class="n">run</span><span class="p">(</span><span class="s">&#39;ln -s -n -f </span><span class="si">%s</span><span class="s"> downloads&#39;</span> <span class="o">%</span> <span class="s">&#39;/path/to/download-cache&#39;</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">run</span><span class="p">(</span><span class="s">&#39;/path/to/venv/bin/buildout -c offline.cfg&#39;</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>Conclusion</h2>
-
-<p>Here we combined buildout and virtualenv to setup isolated environment for every distribution. But two things need to be improved:</p>
-
-<ol>
-<li>collective.eggproxy is better than local cache.</li>
-<li>It&#8217;s unnecessary to build application in every server. We should use a dedicated server to build the pakcage and rsync these files to other servers.</li>
-</ol>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/09/08/a-workaround-for-flask-werkzeugs-incompatibility-with-buildout/">A Workaround for Flask Werkzeug&#8217;s Incompatibility With Buildout</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-09-08T21:13:00+08:00" pubdate data-updated="true">Sep 8<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
-
-<p>Normally, we can use the following snippet to run a flask application:</p>
-
-<p>$ cat index.py</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
-</span><span class='line'><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">from_object</span><span class="p">(</span><span class="s">&#39;myproject.default_settings&#39;</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@app.route</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
-</span><span class='line'><span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
-</span><span class='line'>    <span class="k">return</span> <span class="s">&#39;Hello, world!&#39;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
-</span><span class='line'>    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>$ python index.py</p>
-
-<p>But when it comes to buildout, things go wrong:</p>
-
-<p>$ cat buildout.cfg</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="p">[</span><span class="n">buildout</span><span class="p">]</span>
-</span><span class='line'><span class="n">parts</span> <span class="o">=</span> <span class="n">myproject</span>
-</span><span class='line'><span class="n">develop</span> <span class="o">=</span> <span class="o">.</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="n">myproject</span><span class="p">]</span>
-</span><span class='line'><span class="n">recipe</span> <span class="o">=</span> <span class="n">zc</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">egg</span>
-</span><span class='line'><span class="n">interpreter</span> <span class="o">=</span> <span class="n">python</span>
-</span><span class='line'><span class="n">eggs</span> <span class="o">=</span>
-</span><span class='line'>    <span class="n">myproject</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>$ cat src/myproject/<strong>init</strong>.py</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
-</span><span class='line'><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">from_object</span><span class="p">(</span><span class="s">&#39;myproject.default_settings&#39;</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@app.route</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
-</span><span class='line'><span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
-</span><span class='line'>    <span class="k">return</span> <span class="s">&#39;Hello, world!&#39;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>$ cat index.py</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="kn">from</span> <span class="nn">myproject</span> <span class="kn">import</span> <span class="n">app</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
-</span><span class='line'>    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>$ bin/python index.py</p>
-
-<pre>
- * Running on http://127.0.0.1:5000/
- * Restarting with reloader
-Traceback (most recent call last):
-  File "index.py", line 1, in <module>
-    from myproject import app
-ImportError: No module named myproject
-</pre>
-
-
-<p>The problem is triggered by &#8220;app.config.from_object&#8230;&#8221;. When running this line (or a file is changed during development), Werkzeug will restart the application using the default python interpreter, not the one generated by buildout (i.e. bin/python), because bin/python removed itself from the sys.argv list while Werkzeug uses this to do reloading, which at last results in an ImportError.</p>
-
-<p>The solution is to generate a custom script to run the server. zc.recipe.egg:scripts recipe is ready for use. We specify an &#8216;entry-points&#8217; option, like the following:
-(actually scripts is the default recipe of zc.recipe.egg, so you can simply omit it)</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="p">[</span><span class="n">buildout</span><span class="p">]</span>
-</span><span class='line'><span class="n">parts</span> <span class="o">=</span> <span class="n">myproject</span>
-</span><span class='line'><span class="n">develop</span> <span class="o">=</span> <span class="o">.</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="n">myproject</span><span class="p">]</span>
-</span><span class='line'><span class="n">recipe</span> <span class="o">=</span> <span class="n">zc</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">egg</span>
-</span><span class='line'><span class="n">interpreter</span> <span class="o">=</span> <span class="n">python</span>
-</span><span class='line'><span class="n">entry</span><span class="o">-</span><span class="n">points</span> <span class="o">=</span> <span class="n">serve</span><span class="o">=</span><span class="n">myproject</span><span class="p">:</span><span class="n">main</span>
-</span><span class='line'><span class="n">eggs</span> <span class="o">=</span>
-</span><span class='line'>    <span class="n">myproject</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>And we need to add a main function to the package&#8217;s <strong>init</strong>.py:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-</span><span class='line'>    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Execute bin/buildout again, and a script named serve will be generated in bin directory. Run it away:</p>
-
-<p>$ bin/serve</p>
-
-<pre>
- * Running on http://127.0.0.1:5000/
- * Restarting with reloader
-</pre>
-
-
-<p>It&#8217;ll work. Also the index.py is no longer necessary.</p>
-
-<p>You can totally customize the script, like:</p>
-
-<pre>
-entry-points = script_name=project_name.module_name:function_name
-</pre>
-
-
-<p>For more information on zc.recipe.egg:scripts, visit:</p>
-
-<p><a href="http://pypi.python.org/pypi/zc.recipe.egg/1.3.2#specifying-entry-points">http://pypi.python.org/pypi/zc.recipe.egg/1.3.2#specifying-entry-points</a></p>
-
-<p>The original question can be found in the mailing list:</p>
-
-<p><a href="http://flask.pocoo.org/mailinglist/archive/2011/7/18/flask-with-buildout/">http://flask.pocoo.org/mailinglist/archive/2011/7/18/flask-with-buildout/</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/09/02/daemon-process/">深入理解daemon</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-09-02T13:11:00+08:00" pubdate data-updated="true">Sep 2<span>nd</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
-
-<p>用linux的各位巨巨应该都知道在系统里有种进程叫做<code>daemon</code>，一般理解为后台服务，它有一些特征，比如后台运行，不能直接在终端控制，用户退出登陆后也不会停止等等；有时候我们也想自己运行的脚本能够&#8221;后台运行&#8221;，往往使用的是<code>nohup</code>这个工具。那么daemon到底是什么呢?</p>
-
-<p>(如果以下解释里有任何遗漏或者错误，也欢迎指出)</p>
-
-<p>在许许多多的开源工具(例如<a href="http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/">这里</a>)里我们都能找到类似如下的代码，这2次fork被称作<code>unix magic 2 forks</code></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="k">def</span> <span class="nf">daemonize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span class='line'>    <span class="sd">&quot;&quot;&quot;</span>
-</span><span class='line'><span class="sd">    do the UNIX double-fork magic, see Stevens&#39; &quot;Advanced</span>
-</span><span class='line'><span class="sd">    Programming in the UNIX Environment&quot; for details (ISBN 0201563177)</span>
-</span><span class='line'><span class="sd">    http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16</span>
-</span><span class='line'><span class="sd">    &quot;&quot;&quot;</span>
-</span><span class='line'>    <span class="k">try</span><span class="p">:</span>
-</span><span class='line'>          <span class="n">pid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
-</span><span class='line'>        <span class="k">if</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-</span><span class='line'>                <span class="c"># exit first parent</span>
-</span><span class='line'>                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
-</span><span class='line'>        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;fork #1 failed: </span><span class="si">%d</span><span class="s"> (</span><span class="si">%s</span><span class="s">)</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">errno</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">strerror</span><span class="p">))</span>
-</span><span class='line'>        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c"># decouple from parent environment</span>
-</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">setsid</span><span class="p">()</span>
-</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">umask</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c"># do second fork</span>
-</span><span class='line'>    <span class="k">try</span><span class="p">:</span>
-</span><span class='line'>        <span class="n">pid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
-</span><span class='line'>        <span class="k">if</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-</span><span class='line'>            <span class="c"># exit from second parent</span>
-</span><span class='line'>                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
-</span><span class='line'>        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;fork #2 failed: </span><span class="si">%d</span><span class="s"> (</span><span class="si">%s</span><span class="s">)</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">errno</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">strerror</span><span class="p">))</span>
-</span><span class='line'>        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c"># redirect standard file descriptors</span>
-</span><span class='line'>    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-</span><span class='line'>    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-</span><span class='line'>    <span class="n">si</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">so</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="s">&#39;a+&#39;</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">se</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#39;a+&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">si</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
-</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">so</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
-</span><span class='line'>    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">se</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c"># write pidfile</span>
-</span><span class='line'>    <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delpid</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">pid</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
-</span><span class='line'>    <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pidfile</span><span class="p">,</span><span class="s">&#39;w+&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">pid</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>某始终没搞明白为什么需要fork 2次，所以带着疑问去找了找根源(网上很多解释都是一笔带过)。不过很遗憾的是文中写到的这个<a href="http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16">来源</a>目前已经无法访问到了，幸运的是在『advanced programming in the unix enviroment』这本书里有提到，所以某去找了找(如今我已经买了一本来看XD)。</p>
-
-<p>把关于daemon的一些特征、如何做到daemon以及稍稍探究了以下为何需要这么做，以下内容是某个人总结的。</p>
-
-<h2>daemon 的特征和必要工作</h2>
-
-<ul>
-<li>总结引用自原书13.3 daemon process</li>
-</ul>
-
-
-<blockquote><p>避免不需要的交互，并且具有以下一些特征</p>
-
-<ol>
-<li>调用umask(0)，把创建文件的mask设置成0，以保证daemon本身创建的文件不会继承父进程的mask</li>
-<li>调用fork，并让其父进程退出，这里有3层含义
-
-<ul>
-<li>如果父进程是一个shell命令，则退出就使得shell认为该进程已经终止</li>
-<li>子进程会继承父进程的group id，从而确保自己不是group leader (后面一步setsid的先决条件) [关于这个可以参考后面一段9.5 session]</li>
-<li>子进程获得一个新的进程号(PID)</li>
-</ul>
-</li>
-<li>调用setsid，创建一个新的session，这里有3个步骤含义
-
-<ul>
-<li>子进程自己成为新session的leader进程</li>
-<li>子进程自己也会成为新session里唯一一个group的leader</li>
-<li>子进程没有<code>controlling terminal</code> [关于这个可以参考后面9.6 controlling terminal]</li>
-</ul>
-</li>
-<li>更改工作路径到<code>/</code>，unix系统传统上认为一个daemon是从system boot开始一直到system halt/reboot为止一直常驻的进程，如果把工作路径设置到某个挂载上来的设备上，那么系统halt/reboot的时候设备将无法卸载(因为有进程在使用)</li>
-<li>关于不需要的文件句柄(FD)，避免daemon自身打开从其父进程那里继承过来的任何FD</li>
-<li>有些daemon会把FD0、FD1、FD2(分别是标准输入、标准输出和标准错误)，重定向到<code>/dev/null</code>，确保各种引用lib的流程都无效化(即没有依赖)</li>
-</ol>
-</blockquote>
-
-<p>典型的来说，daemon已经不再像unix系统所阐述的那样了，一般的可以认为没有交互终端控制访问进程的后台进程都可以认为是以后宗具有daemon性质的进程，所以以上步骤中第1、4步可以选择不做或者根据需要修改。</p>
-
-<p>我们再来看看其中一些有疑点的地方(个人来说)</p>
-
-<h2>什么是会话(session)</h2>
-
-<ul>
-<li>总结引用自原书9.5 session</li>
-</ul>
-
-
-<blockquote><p>一般在进程建立新session的时候，会调用<code>setsid()</code>这个函数，它会有3个必要的步骤、特征</p>
-
-<ol>
-<li>如果调用者(以下称为caller)是一个进程组的leader，那么调用会出错，(我们可以通过fork来避免，父进程退出，子进程继续运行)
-
-<ul>
-<li>关于进程组的leader，指的就是一系列PIPE或者FORK的第一个进程，例如<code>cat foo | wc -l</code>，这里2个进程一起被称作一个group，而<code>cat</code>是这个group的leader</li>
-</ul>
-</li>
-<li>caller本身称为一个session的leader(道理和group类似)，也是这个新session里仅有的进程
-
-<ul>
-<li>caller本身也称为一个group的leader，group id 就是caller的PID</li>
-</ul>
-</li>
-<li>caller本身不会有<code>controlling terminal</code>，如果在<code>setsid()</code>之前就有<code>controlling terminal</code>，那么调用就会失败
-
-<ul>
-<li>关于<code>controlliing terminal</code>，可以参考下面的9.6</li>
-</ul>
-</li>
-</ol>
-</blockquote>
-
-<h2>什么是控制终端(controlling terminal)</h2>
-
-<ul>
-<li>总结引用自原书9.6 controlling terminal</li>
-</ul>
-
-
-<blockquote><p>关于<code>controlling terminal</code>，有以下这些特征</p>
-
-<ol>
-<li>一个session仅有一个终端，可以是真正的终端，也可以是伪终端(例如我们常在X11里用的终端模拟器)</li>
-<li>建立到<code>controlling terminal</code>的进程叫做<code>controlling process</code>，通常是<code>login shell</code>(常见的例如<code>/bin/bash --login</code>)</li>
-<li>在一个session里，进程组(group)，可以分为一个前台组(foreground group)和若干个后台组(background group) (具体的可以参考unix-like系统的进程控制方面的解说)
-
-<ul>
-<li>如果有conrolling terminal的情况下，也最多只有一个前台组，其他都是后台组，如果要和controlling terminal通信，需要打开例如<code>/dev/tty</code>这样的设备</li>
-</ul>
-</li>
-<li>键盘随时按下中断键(通常是<code>ctrl+c</code>)，会给所有前台组里的进程发送<code>SIGINT</code>的信号</li>
-<li>键盘随时按下退出键(通常是<code>ctrl+bs</code>)，会给所有前台组里的进程发送<code>quit signal</code>的信号</li>
-<li>如果终端接口检测到了网络断开，则会给session leader(同时也是controlling process)发送一个hang-up的信号
-
-<ul>
-<li>这也就是为什么是session leader子进程的前台组里的程序在我们断开ssh连接后会立即终止的原因</li>
-</ul>
-</li>
-</ol>
-</blockquote>
-
-<h2>但您还未解释为什么需要fork两次?</h2>
-
-<p>在前面解释daemon的地方，第2步fork只提到了1次，那么为什么网上那么多daemon的做法里都建议使用2次<code>fork</code>呢，原书里也做了一些解释。</p>
-
-<ul>
-<li>总结引用自原书9.6 controlling terminal以及3.3 open</li>
-</ul>
-
-
-<blockquote><p>一些系统在使用daemon时建议调用2次fork，情况主要是这样的</p>
-
-<ol>
-<li>基于<code>System V</code>的Unix系统会为打开一个还未分配到任何session的终端设备，把它当作<code>controlling terminal</code>来使用
-
-<ul>
-<li><code>System V</code>在调用<code>open</code>时，如果没有指定<code>0_NOCTTY</code>这个flag就会这样</li>
-</ul>
-</li>
-<li>基于<code>BSD</code>的Unix系统会在session leader调用<code>ioctl</code>时带上<code>TIOCSCTTY</code>参数，分配一个<code>controlling terminal</code>；而如果调用时该进程恰巧已经有一个<code>controlling terminal</code>，则调用会失败，所以一般来紧跟一个<code>setsid()</code>来保证调用的正确。然后在<code>POSIX.1</code>规范中，<code>BSD</code>系统并不会使用上面提到的<code>0_NOCTTY</code>这样的参数
-
-<ul>
-<li>示例调用代码在原书19.4节</li>
-</ul>
-</li>
-</ol>
-</blockquote>
-
-<p>这样一来就可以理解了，<u><strong>第二次调用<code>fork</code>，可以保证第二个子进程不是session leader，而之后的<code>open</code>调用，也不会分配到任何<code>controlling terminal</code>，这样就保证了daemon的必要条件。</strong></u></p>
-
-<h2>那我们经常使用的nohup到底和daemon有什么区别?</h2>
-
-<p>首先，请认真<code>man nohup</code> (PIA死)</p>
-
-<p>从<a href="http://en.wikipedia.org/wiki/Nohup">维基百科的页面</a>上，我们会发现解释可以和以上这些信息结合后概括成最终下面的结论</p>
-
-<p>可以看到在session结束后，session leader会收到hang-up的信号，而<code>nohup</code>其实时给一个进程<strong>忽略</strong> <code>SIGHUP</code>信号，<u>并非真正的daemon</u>，它仅仅提供了一种想退出登陆又不愿意中断进程的选择。</p>
-
-<p>对于类似的功能，我个人强烈推荐tmux，以及类似功能的screen。它们甚至可以把session从controlling terminal上detach，换一个地方再attach上来，<strike><strong>是不折腾会死星人的好伙伴XDDDDDDDDD</strong></strike></p>
-
-<h2>方便的daemon工具?</h2>
-
-<p>而对于希望执行daemon的人来说，除了前面提到的<code>unix magic 2 forks</code>(大部分现代编程语言都提供了类似daemon这样的lib)，还可以使用debian等发行版提供的<code>/sbin/start-stop-daemon</code></p>
-
-<p>以上</p>
-
-<p>__END__</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/08/27/use-supervisord-with-storm-and-zookeeper/">Use Supervisord With Storm and ZooKeeper</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-08-27T21:25:00+08:00" pubdate data-updated="true">Aug 27<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://www.gravatar.com/avatar/b881be65f3c4f45dd68bcf0fbe6ba82b.png"></p>
-
-<p>Since both &#8216;bin/storm (nimbus|supervisor|ui)&#8217; and &#8216;bin/zkServer.sh start&#8217; tend to fork a new process to start the JVM, it&#8217;s difficult to use &#8216;supervisorctl stop &#8230;&#8217; to control the processes.</p>
-
-<p>There&#8217;re two solutions:</p>
-
-<ol>
-<li><p>Use supervisord 3.0a13 (current version is 3.0a12), which provides two options &#8216;stopasgroup, killasgroup&#8217; in [program:x] section, making it possible to stop or kill the process group. But the new release doesn&#8217;t seem to come up soon.</p></li>
-<li><p>Configure the full command to supervisord. bin/storm and bin/zkServer.sh are both control scripts. The essential part is the JVM command. For Storm, when we startup one the components (nimbus, etc.), it&#8217;ll print the full command. For ZooKeeper, use &#8216;bin/zkServer.sh print-cmd&#8217;. Remember to check whether the command includes the full path to the binaries. If not, use the &#8216;directory&#8217; option in [program:x] section.</p></li>
-</ol>
-
-
-<p>Here is a sample configuration of supervisord.conf:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>[supervisord]
-</span><span class='line'>logfile = /tmp/supervisord.log
-</span><span class='line'>
-</span><span class='line'>[supervisorctl]
-</span><span class='line'>serverurl = unix:///tmp/supervisor.sock
-</span><span class='line'>
-</span><span class='line'>[unix_http_server]
-</span><span class='line'>file = /tmp/supervisor.sock
-</span><span class='line'>
-</span><span class='line'>[rpcinterface:supervisor]
-</span><span class='line'>supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
-</span><span class='line'>
-</span><span class='line'>[program:zookeeper]
-</span><span class='line'>command = /usr/lib/jvm/java-1.7.0-openjdk.x86_64/bin/java -Dzookeeper.log.dir="." ...
-</span><span class='line'>stdout_logfile = /home/jizhang/Applications/zookeeper/zookeeper.out
-</span><span class='line'>stderr_logfile = /home/jizhang/Applications/zookeeper/zookeeper.err
-</span><span class='line'>autorestart = true
-</span><span class='line'>
-</span><span class='line'>[program:storm-nimbus]
-</span><span class='line'>command = java -server -Dstorm.home=/home/jizhang/Applications/storm -Dstorm.options= -Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib...
-</span><span class='line'>autorestart = true
-</span><span class='line'>
-</span><span class='line'>[program:storm-superviosr]
-</span><span class='line'>command = java -server -Dstorm.home=/home/jizhang/Applications/storm -Dstorm.options= -Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib ...
-</span><span class='line'>autorestart = true
-</span><span class='line'>
-</span><span class='line'>[program:storm-ui]
-</span><span class='line'>command = java -server -Dstorm.home=/home/jizhang/Applications/storm -Dstorm.options= -Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib ...
-</span><span class='line'>autorestart = true</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/07/09/readme-driven-development/">Readme驱动开发</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-07-09T14:36:00+08:00" pubdate data-updated="true">Jul 9<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
-
-<p>中文翻译：<a href="https://twitter.com/AReverie">陈磊</a> AReverie<br/>
-英文原文：<a href="http://tom.preston-werner.com/2010/08/23/readme-driven-development.html">Tom Preston-Werner</a></p>
-
-<p>我最近听到很多关于测试驱动开发、行为驱动开发、极限编程和<a href="http://zh.wikipedia.org/wiki/Scrum" title="SCRUM">SCRUM</a> 、<a href="http://zh.wikipedia.org/wiki/Scrum#Scrum.E4.BC.9A.E8.AE.AE" title="站立会议">站立会议</a> 以及其他一切如何开发出更好的软件的各种方法论及技术，然而除非开发出来的软件满足使用者的需求，否则都是一纸空谈。我换种说法吧，对于错误规格的完美实现毫无价值可言。基于同样的原则，一座没有书卷而华丽修缮的图书馆也近乎无用。如果你的软件没有解决正确的问题或者根本没人知道它到底干嘛的，那可就不好玩了。</p>
-
-<p>很好，那我们怎么解决这个问题呢？实际上比你想的要来的简单，并且其重要都足以单独列出一段。</p>
-
-<p><strong>先写Readme</strong></p>
-
-<p>首先，就像前面说的，在你动手写任何代码、测试、行为或者情景甚至任何东西前。别急别急，我明白我们都是程序猿，不是技术文枪手！但这就是你没想明白的地方。为一个软件写Readme着实非常有必要性。在给你的软件写点什么东西前，你根本不知道你要编写什么样的代码。在人人喊打的瀑布型设计和人见人爱的敏捷开发之间，我们似乎漏了点什么。别误会，瀑布型设计代价太大。它能把一个细致入微的庞大系统变成一个细致入微却全盘错误的系统。当初砍掉它是个正确的做法，但做法却矫枉过正。如今我们的项目里只有短小、糟糕的文档甚至完全不见踪影。你能想象有些项目完全没有Readme吗！</p>
-
-<p>简直难以接受！在成堆的技术规格和完全没规格之间，必然会有个平衡点。那个平衡点就是朴素简明的Readme。</p>
-
-<p>将Readme驱动开发（下文简称RDD）区别于文档驱动开发（下文简称DDD）十分重要。RDD可以理解成DDD的一个有限版本或子集。通过将你的设计文档精简成一个旨在介绍软件的单个文件，RDD能帮助你免于重蹈DDD而出现的瀑布型开发过程中出现冗长而过分细致的规格。同时，它能帮助你保持库的精简和模块化。这样一个简单的方法能帮助您免去繁琐的流程保证项目朝着正确的方向前进。</p>
-
-<p>通过写第一个Readme，您能受益于以下这些显著的优势:</p>
-
-<ul>
-<li><p>最为重要的一点是，您给于了自己一次重新审视项目，又无需每次为了改变主意而去修改代码而花去开销的机会，例如整体应该如何组织、公用API里到底应该包含哪些东西。还记得您第一次写自动化测试代码，意识到揪出全部的错误从而防止那些问题悄悄跑进代码里去吗？在项目真正编码前写一个Reame的感觉是如出一辙的。</p></li>
-<li><p>为了明确应该实现什么而去写Readme会产生一些副产品，您会得到一份写的非常棒的文档。当您在项目伊始，也就是兴奋度和动机处于最高的阶段，写一个文档会十分容易。事后再补Readme将是一种绝对的障碍，并且您会发现遗漏了许多重要的细节。</p></li>
-<li><p>如果您与一群开发者一起协同工作，将会发现会从Readme收益颇多。如果其他成员在您尚未完成项目前便可以读到这份Readme，他们将大可放心的在将与您项目有交互的代码上开始工作。如果没有预先定义好的接口，团队只能顺序地编码或者面临重新实现大量代码的窘境。</p></li>
-<li><p>基于白纸黑字的讨论将会容易的多，而在一个没有任何成文内容的讨论话题上，事情往往会演变成争论不休。把建议的解决方案写下来这样一个简单的行动，代表了一个具体的想法，从而能被讨论，迭代发展下去。</p></li>
-</ul>
-
-
-<p>把给您项目写Readme的过程当作一种真正的创造活动吧，这是您充满闪光的想法应该被表达的地方，这份文件的本意应当是阐述您的创造力和表现力。Readme应当是您代码中最为重要的一个文档，适当的做法就是首先写Readme。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/05/16/mogilefs-code-reading/">MogileFS源码学习分享</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-05-16T10:20:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/78811efe9c142e0898c049686e25594d"></p>
-
-<ul>
-<li><a href="/blog/2012/05/16/mogilefs-code-reading-1">MogileFS启动流程</a></li>
-<li><a href="/blog/2012/05/16/mogilefs-code-reading-2">MogileFS读取文件的过程</a></li>
-<li><a href="/blog/2012/05/16/mogilefs-code-reading-3">Perl使用Poll多路复用</a></li>
-<li><a href="/blog/2012/05/16/mogilefs-code-reading-4">Perl使用Epoll优化</a></li>
-<li><a href="/blog/2012/05/16/mogilefs-code-reading-5">进程间通信【IPC】</a></li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -1386,11 +859,35 @@ entry-points = script_name=project_name.module_name:function_name
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/27/fork-and-zombie-process/">fork()与僵尸进程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1/">Perl入门实战：JVM监控脚本（上）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/07/currying-and-partial-application/">柯里化与偏应用（JavaScript描述）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
       </li>
     
       <li class="post">
+        <a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a>
       </li>
     
       <li class="post">
@@ -1399,30 +896,6 @@ entry-points = script_name=project_name.module_name:function_name
     
       <li class="post">
         <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/08/cia-noir-2/">Clojure实战(2)：使用Noir框架开发博客(中)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/25/cia-noir-1/">Clojure实战(1)：使用Noir框架开发博客(上)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/18/aosa-python-packaging/">开源软件架构 - 卷1：第14章 Python打包工具</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/11/16/aosa-git/">开源软件架构 - 卷2：第6章 Git</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/31/shi-yong-thrift-apijian-kong-stormji-qun/">使用Thrift API监控Storm集群</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a>
       </li>
     
   </ul>

@@ -1,0 +1,670 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Perl入门实战：JVM监控脚本（下） - Anjuke Engineering</title>
+  <meta name="author" content="Anjuke Inc.">
+
+  
+  <meta name="description" content="套接字 使用套接字（Socket）进行网络通信的基本流程是： 服务端：监听端口、等待连接、接收请求、发送应答；
+客户端：连接服务端、发送请求、接收应答。 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+use &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://arch.corp.anjuke.com/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Anjuke Engineering" type="application/atom+xml">
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-38932031-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Anjuke Engineering</a></h1>
+  
+    <h2>技术成就梦想</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:arch.corp.anjuke.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Perl入门实战：JVM监控脚本（下）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-28T15:28:00+08:00" pubdate data-updated="true">Mar 28<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>套接字</h2>
+
+<p>使用套接字（Socket）进行网络通信的基本流程是：</p>
+
+<ul>
+<li>服务端：监听端口、等待连接、接收请求、发送应答；</li>
+<li>客户端：连接服务端、发送请求、接收应答。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">use</span> <span class="nn">IO::Socket::</span><span class="n">INET</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nn">IO::Socket::</span><span class="n">INET</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span>
+</span><span class='line'>    <span class="n">LocalPort</span> <span class="o">=&gt;</span> <span class="mi">10060</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">Type</span> <span class="o">=&gt;</span> <span class="n">SOCK_STREAM</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">Reuse</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">Listen</span> <span class="o">=&gt;</span> <span class="n">SOMAXCONN</span>
+</span><span class='line'><span class="p">)</span> <span class="o">||</span> <span class="nb">die</span> <span class="s">&quot;服务创建失败\n&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nb">accept</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$line</span> <span class="o">=</span> <span class="sr">&lt;$client&gt;</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">chomp</span><span class="p">(</span><span class="nv">$line</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$line</span> <span class="o">=~</span><span class="sr"> /^JVMPORT ([0-9]+)$/</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">print</span> <span class="s">&quot;RECV $1\n&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">print</span> <span class="nv">$client</span> <span class="s">&quot;OK\n&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">print</span> <span class="s">&quot;ERROR $line\n&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">print</span> <span class="nv">$client</span> <span class="s">&quot;ERROR\n&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">close</span><span class="p">(</span><span class="nv">$client</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">close</span><span class="p">(</span><span class="nv">$server</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<!--more-->
+
+
+<ul>
+<li><code>IO::Socket::INET</code>是一个内置模块，<code>::</code>符号用来分隔命名空间。</li>
+<li><code>-&gt;new</code>运算符是用来创建一个类的实例的，这涉及到面向对象编程，我们暂且忽略。</li>
+<li><code>(key1 =&gt; value1, key2 =&gt; value2)</code>是用来定义一个哈希表的，也就是键值对。这里是将哈系表作为参数传递给了<code>new</code>函数。请看以下示例。对于哈系表的进一步操作，我们这里暂不详述。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">hello</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">%params</span> <span class="o">=</span> <span class="nv">@_</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">print</span> <span class="s">&quot;Hello, $params{&#39;name&#39;}!\n&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">hello</span><span class="p">(</span><span class="s">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;Jerry&#39;</span><span class="p">);</span> <span class="c1"># 输出 Hello, Jerry!</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><code>while (...) {...}</code>是另一种循环结构，当圆括号的表达式为真就会执行大括号中的语句。</li>
+<li><code>$server-&gt;accept()</code>表示调用<code>$server</code>对象的<code>accept()</code>函数，用来接受一个连接。执行这个函数时进程会阻塞（进入睡眠），当有连接过来时才会唤醒，并将该连接赋值给<code>$client</code>变量。</li>
+<li><code>&lt;...&gt;</code>运算符表示从文件中读取一行，如：</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="nb">open</span> <span class="k">my</span> <span class="nv">$fd</span><span class="p">,</span> <span class="s">&#39;&lt;&#39;</span><span class="p">,</span> <span class="s">&#39;/proc/diskstats&#39;</span><span class="p">;</span>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$line</span> <span class="o">=</span> <span class="sr">&lt;$fd&gt;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">print</span> <span class="nv">$line</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由于套接字也可以作为文件来看待，所以就能使用<code>&lt;...&gt;</code>运算符。关于<code>open</code>函数和其他文件操作，读者可参考<a href="http://perl5maven.com/open-and-read-from-files">这篇文章</a>。</p>
+
+<ul>
+<li><code>chomp()</code>函数用来将字符串末尾的换行符去掉。它的用法也比较奇特，不是<code>$line = chomp($line)</code>，而是<code>chomp($line)</code>，这里<code>$line</code>是一次引用传递。</li>
+<li>细心的读者会发现，第二句<code>print</code>增加了<code>$client</code>，可以猜到它是用来指定<code>print</code>的输出目标。默认情况下是标准输出。</li>
+</ul>
+
+
+<p>我们打开两个终端，一个终端执行服务端，另一个终端直接用Bash去调用。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># 客户端</span>
+</span><span class='line'><span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;JVMPORT 2181&#39;</span> | nc 127.0.0.1 10060
+</span><span class='line'>OK
+</span><span class='line'><span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;hello&#39;</span> | nc 127.0.0.1 10060
+</span><span class='line'>ERROR
+</span><span class='line'>
+</span><span class='line'><span class="c"># 服务端</span>
+</span><span class='line'><span class="nv">$ </span>./socket-server.pl
+</span><span class='line'>RECV 2181
+</span><span class='line'>ERROR hello
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>至于客户端，还请读者自行完成，可参考<a href="http://perldoc.perl.org/IO/Socket/INET.html">相关文档</a>。</p>
+
+<h2>子进程</h2>
+
+<p>上述代码中有这样一个问题：当客户端建立了连接，但迟迟没有发送内容，那么服务端就会阻塞在<code>$line = &lt;$client&gt;</code>这条语句，无法接收其他请求。有三种解决方案：</p>
+
+<ol>
+<li>服务端读取信息时采用一定的超时机制，如果3秒内还不能读到完整的一行就断开连接。可惜Perl中并没有提供边界的方法来实现这一机制，需要自行使用<code>IO::Select</code>这样的模块来编写，比较麻烦。</li>
+<li>接受新的连接后打开一个子进程或线程来处理连接，这样就不会因为一个连接挂起而使整个服务不可用。</li>
+<li>使用非阻塞事件机制，当有读写操作时才会去处理。</li>
+</ol>
+
+
+<p>这里我们使用第二种方案，即打开子进程来处理请求。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">use</span> <span class="nn">IO::Socket::</span><span class="n">INET</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">sub </span><span class="nf">REAPER</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$pid</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">while</span> <span class="p">((</span><span class="nv">$pid</span> <span class="o">=</span> <span class="nb">waitpid</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;WNOHANG&#39;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">print</span> <span class="s">&quot;SIGCHLD $pid\n&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">my</span> <span class="nv">$interrupted</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="k">sub </span><span class="nf">INTERRUPTER</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nv">$interrupted</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$SIG</span><span class="p">{</span><span class="n">CHLD</span><span class="p">}</span> <span class="o">=</span> <span class="o">\&amp;</span><span class="n">REAPER</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$SIG</span><span class="p">{</span><span class="n">TERM</span><span class="p">}</span> <span class="o">=</span> <span class="o">\&amp;</span><span class="n">INTERRUPTER</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$SIG</span><span class="p">{</span><span class="n">INT</span><span class="p">}</span> <span class="o">=</span> <span class="o">\&amp;</span><span class="n">INTERRUPTER</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="o">...</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="nv">$interrupted</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nb">accept</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$pid</span> <span class="o">=</span> <span class="nb">fork</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nb">close</span><span class="p">(</span><span class="nv">$client</span><span class="p">);</span>
+</span><span class='line'>            <span class="k">print</span> <span class="s">&quot;PID $pid\n&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">elsif</span> <span class="p">(</span><span class="nv">$pid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nb">close</span><span class="p">(</span><span class="nv">$server</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">my</span> <span class="nv">$line</span> <span class="o">=</span> <span class="sr">&lt;$client&gt;</span><span class="p">;</span>
+</span><span class='line'>            <span class="o">...</span>
+</span><span class='line'>            <span class="nb">close</span><span class="p">(</span><span class="nv">$client</span><span class="p">);</span>
+</span><span class='line'>            <span class="nb">exit</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">print</span> <span class="s">&quot;fork()调用失败\n&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">close</span><span class="p">(</span><span class="nv">$server</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们先看下半部分的代码。系统执行<code>fork()</code>函数后，会将当前进程的所有内容拷贝一份，以新的进程号来运行，即子进程。通过<code>fork()</code>的返回值可以知道当前进程是父进程还是子进程：大于0的是父进程；等于0的是子进程。子进程中的代码做了省略，执行完后直接<code>exit</code>。</p>
+
+<p>上半部分的信号处理是做什么用的呢？这就是在多进程模型中需要特别注意的问题：僵尸进程。具体可以参考<a href="http://shzhangji.com/blog/2013/03/27/fork-and-zombie-process/">这篇文章</a>。</p>
+
+<p>而<code>$interrupted</code>变量则是用来控制程序是否继续执行的。当进程收到<code>SIGTERM</code>或<code>SIGINT</code>信号时，该变量就会置为真，使进程自然退出。</p>
+
+<p>为何不直接使用<code>while (my $client = $server-&gt;accept()) {...}</code>呢？因为子进程退出时会向父进程发送<code>SIGCHLD</code>信号，而<code>accept()</code>函数在接收到任何信号后都会中断并返回空，使得<code>while</code>语句退出。</p>
+
+<h2>命令行参数</h2>
+
+<p>这个服务脚本所监听的端口后是固写在脚本中的，如果想通过命令行指定呢？我们可以使用Perl的内置模块<code>Getopt::Long</code>。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">use</span> <span class="nn">Getopt::</span><span class="n">Long</span><span class="p">;</span>
+</span><span class='line'><span class="k">use</span> <span class="nn">Pod::</span><span class="n">Usage</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">my</span> <span class="nv">$help</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="k">my</span> <span class="nv">$port</span> <span class="o">=</span> <span class="mi">10060</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">GetOptions</span><span class="p">(</span>
+</span><span class='line'>    <span class="s">&#39;help|?&#39;</span> <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$help</span><span class="p">,</span>
+</span><span class='line'>    <span class="s">&#39;port=i&#39;</span> <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$port</span>
+</span><span class='line'><span class="p">)</span> <span class="o">||</span> <span class="n">pod2usage</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+</span><span class='line'><span class="n">pod2usage</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="nv">$help</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">print</span> <span class="s">&quot;PORT $port\n&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">__END__</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">=head1 NAME</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">getopt</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">=head1 SYNOPSIS</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">getopt.pl [options]</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp"> Options:</span>
+</span><span class='line'><span class="cp">   -help brief help message</span>
+</span><span class='line'><span class="cp">   -port bind to tcp port</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">=cut</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>使用方法是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>./getopt.pl -h
+</span><span class='line'>Usage:
+</span><span class='line'>    getopt.pl <span class="o">[</span>options<span class="o">]</span>
+</span><span class='line'>    ...
+</span><span class='line'><span class="nv">$ </span>./getopt.pl
+</span><span class='line'>PORT 10060
+</span><span class='line'><span class="nv">$ </span>./getopt.pl -p 12345
+</span><span class='line'>PORT 12345
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>'port=i' =&gt; \$port</code>表示从命令行中接收名为<code>-port</code>的参数，并将接收到的值转换为整数（<code>i</code>指整数）。<code>\$</code>又是一种引用传递了，这里暂不详述。</p>
+
+<p>至于<code>||</code>运算符，之前在建立<code>$server</code>时也遇到过，它实际上是一种逻辑运算符，表示“或”的关系。这里的作用则是“如果GetOptions返回的值不为真，则程序退出”。</p>
+
+<p><code>pod2usage(1) if $help</code>表示如果<code>$help</code>为真则执行<code>pod2usage(1)</code>。你也可以写为<code>$help &amp;&amp; pod2usage(1)</code>。</p>
+
+<p>我们再来看看<code>__END__</code>之后的代码，它是一种Pod文档（Plain Old Documentation），可以是单独的文件，也可以像这样直接附加到Perl脚本末尾。具体格式可以参考<a href="http://perldoc.perl.org/perlpod.html">perlpod</a>。<code>pod2usage()</code>函数顾名思义是将附加的Pod文档转化成帮助信息显示在控制台上。</p>
+
+<h2>小结</h2>
+
+<p>完整的脚本可以见这个链接<a href="https://github.com/jizhang/zabbix-templates/blob/master/jvm/jvm-service.pl">jvm-service.pl</a>。调用该服务的脚本可以见<a href="https://github.com/jizhang/zabbix-templates/blob/master/jvm/jvm-check.pl">jvm-check.pl</a>。</p>
+
+<p>Perl语言历史悠久，语法丰富，还需多使用、多积累才行。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Anjuke Inc.</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-28T15:28:00+08:00" pubdate data-updated="true">Mar 28<span>th</span>, 2013</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/tutorial/'>Tutorial</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/03/27/fork-and-zombie-process/" title="Previous Post: fork()与僵尸进程">&laquo; fork()与僵尸进程</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/27/fork-and-zombie-process/">fork()与僵尸进程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/26/perl-prime-in-action-jvm-monitoring-1/">Perl入门实战：JVM监控脚本（上）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/07/currying-and-partial-application/">柯里化与偏应用（JavaScript描述）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/anjuke">@anjuke</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'anjuke',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Anjuke Inc. -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'archcorp';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://arch.corp.anjuke.com/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/';
+        var disqus_url = 'http://arch.corp.anjuke.com/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
