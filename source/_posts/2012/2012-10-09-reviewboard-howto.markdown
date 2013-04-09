@@ -23,12 +23,12 @@ review工具，他提供了便捷、强大的功能来帮助开发者更顺利�
 
 使用域帐号登录
 
-{% img center /images/2012/10/reviewboard001.jpg %}
+{% img center /medias/20121009/reviewboard001.jpg %}
 
 登录后，找到右上角的`my
 account`，进入可以设置自己所在的组，这里需要设置到您所在的组，这样发送到这个组的review请求才会发送通知邮件
 
-{% img center /images/2012/10/reviewboard002.jpg %}
+{% img center /medias/20121009/reviewboard002.jpg %}
 
 ## How could I get access ?
 
@@ -73,15 +73,15 @@ aptitude install python-pip
 
 使用admin帐号登录，并选择到后台
 
-{%img center /images/2012/10/reviewboard003.jpg %}
+{%img center /medias/20121009/reviewboard003.jpg %}
 
-{%img center /images/2012/10/reviewboard004.jpg %}
+{%img center /medias/20121009/reviewboard004.jpg %}
 
-{%img center /images/2012/10/reviewboard005.jpg %}
+{%img center /medias/20121009/reviewboard005.jpg %}
 
 新建仓库，设置参考下图，这里的名字将会在后面`.reviewboardrc`里使用
 
-{%img center /images/2012/10/reviewboard006.jpg %}
+{%img center /medias/20121009/reviewboard006.jpg %}
 
 ### 配置.reviewboardrc
 
@@ -120,7 +120,7 @@ _**注意: 第一次执行会要求输入用户名和密码；当然也可以在
 
 如上图会得到一个review请求的地址，访问它，再手工上传diff文件
 
-{%img center /images/2012/10/reviewboard007.jpg %}
+{%img center /medias/20121009/reviewboard007.jpg %}
 
 此外，还需要填入一些必要的信息
 
