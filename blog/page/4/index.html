@@ -69,6 +69,7 @@
 <ul class="main-navigation">
   <li><a href="/">Blog</a></li>
   <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="https://github.com/anjuke">Code</a></li>
 </ul>
 
 </nav>
@@ -76,6 +77,45 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/05/16/mogilefs-code-reading-2/">MogileFS读取文件的过程</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-05-16T10:12:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"></div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/05/16/mogilefs-code-reading-2/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -637,127 +677,6 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/01/16/php-v2-sdk/">PHP V2 SDK 设计规范</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-01-16T16:27:00+08:00" pubdate data-updated="true">Jan 16<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>本文涉及PHP V2代码级SDK设计的规范。</p>
-
-<h2>代码</h2>
-
-<h3>目录结构和命名</h3>
-
-<p>SDK的模块代码将和客户代码在同一个运行时环境下执行，代码的命名需要注意，避免名称冲突。</p>
-
-<p>假设发布功能模块的SDK名称为<code>($SDK_NAME)</code>，其代码的根目录应该命名为:<code>app-($SDK_NAME)-shared</code>。</p>
-
-<pre><code>app-($SDK_NAME)-shared
-|
-+--- classes
-|    |    
-|    +--- $(SDK_NAME)
-|    |    |
-|    |    + API.php
-|    |
-|    + ...
-|
-+--- config
-|    |
-|    +--- database.php
-|    |
-|    +--- common.php
-|    |
-|    + ...
-|
-+--- lib
-</code></pre>
-
-<p>对使用SDK的客户代码，只需要关心一个类<code>($SDK_NAME)_API</code>，类文件位于<code>classes/($SDK_NAME)/API.php</code>。
-客户代码在需要调用模块的地方引用</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
-</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{</span><span class="nv">$SDK_NAME</span><span class="si">}</span><span class="s2">_API&quot;</span><span class="p">);</span>
-</span><span class='line'><span class="nv">$api</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$SDK_NAME</span><span class="p">)</span><span class="nx">_API</span><span class="o">::</span><span class="na">get_instance</span><span class="p">();</span>
-</span><span class='line'><span class="nv">$api</span><span class="o">-&gt;</span><span class="na">exported_func</span><span class="p">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>API文件的基本格式为：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
-</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s1">&#39;....&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s1">&#39;....&#39;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">class</span> <span class="err">($</span><span class="nc">SDK_NAME</span><span class="p">)</span><span class="nx">_API</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">const</span> <span class="no">VERSION</span> <span class="o">=</span> <span class="s1">&#39;....&#39;</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">public</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">get_instance</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>        <span class="o">...</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">exported_func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>        <span class="o">...</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/01/16/php-v2-sdk/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; Older</a>
@@ -773,6 +692,10 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/04/09/beautiful-computer-programming/">Beautiful Computer Programming</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
@@ -808,10 +731,6 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
     
       <li class="post">
         <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
       </li>
     
   </ul>

@@ -9,8 +9,8 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content=" 上面这张图就是安居客在Subversion源代码库里的代码大爆炸。 接下来的视频可以看到从2007年的一个工程师到现在三十来个工程师的爆炸过程，挺有趣的。 &#8212; CodeSwarm
-">
+  <meta name="description" content="Zhang Erning &#x65;&#x72;&#x6e;&#105;&#x6e;&#x67;&#64;&#x61;&#x6e;&#106;&#117;&#x6b;&#101;&#46;&#99;&#x6f;&#x6d;
+v1.0, July 2011 Goal &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -70,6 +70,7 @@
 <ul class="main-navigation">
   <li><a href="/">Blog</a></li>
   <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="https://github.com/anjuke">Code</a></li>
 </ul>
 
 </nav>
@@ -77,6 +78,77 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/07/16/aps/">Anjuke PHP Service 规范</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-16T22:22:00+08:00" pubdate data-updated="true">Jul 16<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Zhang Erning <a href="&#109;&#x61;&#105;&#108;&#116;&#111;&#58;&#x65;&#x72;&#110;&#105;&#x6e;&#x67;&#64;&#x61;&#x6e;&#106;&#x75;&#107;&#101;&#46;&#x63;&#111;&#109;">&#x65;&#x72;&#x6e;&#105;&#x6e;&#x67;&#64;&#x61;&#x6e;&#106;&#117;&#x6b;&#101;&#46;&#99;&#x6f;&#x6d;</a><br/>
+v1.0, July 2011</p>
+
+<h2>Goal</h2>
+
+<p>我们的目标是为PHP应用程序搭建一个轻量、灵活、高性能的异步远过程调用(RPC)的解决方案。同时也希望能够方便隔离前端的应用程序和后端的服务进程，使得产品的开发和部署更加便捷。</p>
+
+<p><strong>轻量</strong></p>
+
+<ul>
+<li>可以将服务进程与PHP应用服务部署在同一台物理服务器上</li>
+<li>一台应用服务器上能够部署多种服务进程</li>
+</ul>
+
+
+<p><strong>灵活</strong></p>
+
+<ul>
+<li>PHP应用程序可以采用进程间通讯(IPC)的方式与部署在同一服务器上的服务进程交互</li>
+<li>PHP应用程序也能够通过网络通讯(TCP)的方式与部署在其他服务器上的服务进程交互</li>
+<li>与服务进程通讯的方式可以通过配置文件调整，PHP的应用程序本身并不关心</li>
+<li>服务进程可以采用各种语言编写</li>
+</ul>
+
+
+<p><strong>高性能</strong></p>
+
+<ul>
+<li>为PHP提供异步方法调用的基本目的就是为了解决了PHP程序在处理请求的时候单线程的问题，因此不能以牺牲性能为代价</li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2011/07/16/aps/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -140,6 +212,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/04/09/beautiful-computer-programming/">Beautiful Computer Programming</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
       </li>
     
@@ -173,10 +249,6 @@
     
       <li class="post">
         <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
       </li>
     
   </ul>

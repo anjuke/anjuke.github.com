@@ -9,7 +9,7 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content="在Eclipse中编写Clojure代码 从这章起我们就要开始真正的编码了。Vim可能是很多程序员的选择，但如果你像我一样更喜欢GUI界面，那就来看看如何在Eclipse中编写Clojure代码吧。 安装Eclipse插件 Eclipse提供了一个Clojure插件： &hellip;">
+  <meta name="description" content="Session和Cookie 做网络编程的人肯定对这两个概念不陌生，因此这里就不介绍它们的定义和作用了。我们要实现的需求也很简单：用户通过一个表单登录，在当前窗口中保持登录状态，并可以选择“记住我”来免去关闭并新开窗口之后的重登录。显然，前者使用Session，后者使用Cookie。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -69,6 +69,7 @@
 <ul class="main-navigation">
   <li><a href="/">Blog</a></li>
   <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="https://github.com/anjuke">Code</a></li>
 </ul>
 
 </nav>
@@ -76,6 +77,75 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-16T20:20:00+08:00" pubdate data-updated="true">Dec 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>Session和Cookie</h2>
+
+<p>做网络编程的人肯定对这两个概念不陌生，因此这里就不介绍它们的定义和作用了。我们要实现的需求也很简单：用户通过一个表单登录，在当前窗口中保持登录状态，并可以选择“记住我”来免去关闭并新开窗口之后的重登录。显然，前者使用Session，后者使用Cookie。下面我们就来看Noir对这两者的支持。</p>
+
+<h3>Session</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">require</span> <span class="ss">&#39;noir.session</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/put!</span> <span class="ss">:username</span> <span class="s">&quot;john&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/get</span> <span class="ss">:username</span> <span class="s">&quot;nobody&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/clear!</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>很简单的API。注意<code>put!</code>函数中的<code>!</code>，和之前遇到的<code>?</code>一样，这种特殊字符是合法的函数名，但<code>!</code>习惯用来表示该方法会改变某个对象的状态，这里<code>put!</code>就表示会改变Session的状态。</p>
+
+<p>Noir还提供了一种“闪信（Flash）”机制，主要用于在页面跳转之间暂存消息。如用户登录后会跳转到首页，如果想在首页显示“登录成功”的信息，就需要用到闪信了。闪信的API也放置在<code>noir.session</code>命名空间下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">noir.session/flash-put!</span> <span class="s">&quot;登录成功&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span><span class="nf">noir.session/flash-get</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>闪信的生命周期是一次请求，即在设置了闪信后的下一个请求中，可以多次<code>flash-get</code>，但再下一次请求就获取不到值了。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/12/16/cia-noir-3/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -796,52 +866,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/09/reviewboard-howto/">Reviewboard 简要使用介绍</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-09T09:06:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
-
-<h2>Hold a sec! What is reviewboard ?</h2>
-
-<p><a href="http://www.reviewboard.org/">reviewboard</a>是一款基于web的强大的code
-review工具，他提供了便捷、强大的功能来帮助开发者更顺利地进行code review这一核心工作。支持众多版本控制系统。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/10/09/reviewboard-howto/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -857,6 +881,10 @@ review工具，他提供了便捷、强大的功能来帮助开发者更顺利�
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/04/09/beautiful-computer-programming/">Beautiful Computer Programming</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
@@ -892,10 +920,6 @@ review工具，他提供了便捷、强大的功能来帮助开发者更顺利�
     
       <li class="post">
         <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
       </li>
     
   </ul>

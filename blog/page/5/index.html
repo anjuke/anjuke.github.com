@@ -9,7 +9,7 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content="翻译: jizhang 在软件管理过程中，随着系统规模的扩大，会有越来越多的模块被加入进来，包与包之间的依赖关系往往会让我们陷入痛苦的境地。 当系统中有很多依赖关系存在时，发布新版本的包会成为一场恶梦。如果依赖过于紧密，就可能会产生“版本锁”，即发布包的新版本时需要发布其依赖包的新版本； &hellip;">
+  <meta name="description" content="本文涉及PHP V2代码级SDK设计的规范。 代码 目录结构和命名 SDK的模块代码将和客户代码在同一个运行时环境下执行，代码的命名需要注意，避免名称冲突。 假设发布功能模块的SDK名称为($SDK_NAME)，其代码的根目录应该命名为:app-($SDK_NAME)-shared。 app-($ &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -69,6 +69,7 @@
 <ul class="main-navigation">
   <li><a href="/">Blog</a></li>
   <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="https://github.com/anjuke">Code</a></li>
 </ul>
 
 </nav>
@@ -76,6 +77,127 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/01/16/php-v2-sdk/">PHP V2 SDK 设计规范</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-16T16:27:00+08:00" pubdate data-updated="true">Jan 16<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>本文涉及PHP V2代码级SDK设计的规范。</p>
+
+<h2>代码</h2>
+
+<h3>目录结构和命名</h3>
+
+<p>SDK的模块代码将和客户代码在同一个运行时环境下执行，代码的命名需要注意，避免名称冲突。</p>
+
+<p>假设发布功能模块的SDK名称为<code>($SDK_NAME)</code>，其代码的根目录应该命名为:<code>app-($SDK_NAME)-shared</code>。</p>
+
+<pre><code>app-($SDK_NAME)-shared
+|
++--- classes
+|    |    
+|    +--- $(SDK_NAME)
+|    |    |
+|    |    + API.php
+|    |
+|    + ...
+|
++--- config
+|    |
+|    +--- database.php
+|    |
+|    +--- common.php
+|    |
+|    + ...
+|
++--- lib
+</code></pre>
+
+<p>对使用SDK的客户代码，只需要关心一个类<code>($SDK_NAME)_API</code>，类文件位于<code>classes/($SDK_NAME)/API.php</code>。
+客户代码在需要调用模块的地方引用</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{</span><span class="nv">$SDK_NAME</span><span class="si">}</span><span class="s2">_API&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$api</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$SDK_NAME</span><span class="p">)</span><span class="nx">_API</span><span class="o">::</span><span class="na">get_instance</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$api</span><span class="o">-&gt;</span><span class="na">exported_func</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>API文件的基本格式为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s1">&#39;....&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="nx">apf_require_class</span><span class="p">(</span><span class="s1">&#39;....&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="err">($</span><span class="nc">SDK_NAME</span><span class="p">)</span><span class="nx">_API</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">const</span> <span class="no">VERSION</span> <span class="o">=</span> <span class="s1">&#39;....&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">get_instance</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="o">...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">exported_func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="o">...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/01/16/php-v2-sdk/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -329,8 +451,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#97;&#105;&#x6c;&#x74;&#x6f;&#58;&#x70;&#x68;&#x40;&#105;&#x6d;&#x61;&#x74;&#105;&#120;&#x2e;&#x63;&#111;&#x6d;">&#112;&#104;&#64;&#105;&#109;&#x61;&#116;&#105;&#x78;&#x2e;&#99;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#97;&#105;&#x6c;&#116;&#111;&#58;&#x6a;&#105;&#122;&#104;&#x61;&#110;&#103;&#64;&#x61;&#x6e;&#x6a;&#117;&#x6b;&#x65;&#46;&#x63;&#111;&#109;">&#106;&#x69;&#x7a;&#104;&#97;&#x6e;&#x67;&#64;&#x61;&#110;&#106;&#x75;&#x6b;&#x65;&#x2e;&#x63;&#x6f;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#x69;&#108;&#x74;&#x6f;&#58;&#x70;&#x68;&#64;&#105;&#109;&#97;&#x74;&#105;&#120;&#x2e;&#99;&#111;&#109;">&#x70;&#x68;&#x40;&#x69;&#109;&#97;&#x74;&#x69;&#x78;&#46;&#x63;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#x6c;&#116;&#111;&#58;&#106;&#105;&#122;&#104;&#x61;&#110;&#x67;&#x40;&#97;&#x6e;&#x6a;&#x75;&#107;&#101;&#46;&#99;&#x6f;&#109;">&#x6a;&#105;&#122;&#104;&#x61;&#110;&#103;&#x40;&#x61;&#x6e;&#x6a;&#117;&#x6b;&#x65;&#46;&#x63;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第三章和第四章讲述了ZMQ中请求-应答模式的一些高级用法。如果你已经能够彻底理解了，那我要说声恭喜。这一章我们会关注发布-订阅模式，使用上层模式封装，提升ZMQ发布-订阅模式的性能、可靠性、状态同步及安全机制。</p>
 
@@ -382,8 +504,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#97;&#105;&#108;&#x74;&#111;&#x3a;&#112;&#x68;&#64;&#105;&#x6d;&#x61;&#116;&#105;&#120;&#46;&#99;&#111;&#x6d;">&#112;&#104;&#x40;&#105;&#109;&#97;&#x74;&#x69;&#120;&#46;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#x6c;&#116;&#x6f;&#58;&#x6a;&#x69;&#x7a;&#104;&#97;&#x6e;&#103;&#64;&#97;&#110;&#x6a;&#117;&#107;&#101;&#x2e;&#99;&#111;&#109;">&#x6a;&#105;&#122;&#x68;&#x61;&#110;&#103;&#x40;&#x61;&#x6e;&#x6a;&#117;&#x6b;&#101;&#46;&#99;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#97;&#105;&#108;&#x74;&#x6f;&#x3a;&#x70;&#104;&#x40;&#x69;&#109;&#97;&#116;&#105;&#120;&#46;&#x63;&#x6f;&#x6d;">&#x70;&#x68;&#64;&#x69;&#109;&#x61;&#x74;&#105;&#x78;&#x2e;&#x63;&#x6f;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#106;&#105;&#x7a;&#104;&#x61;&#110;&#103;&#x40;&#x61;&#x6e;&#106;&#117;&#107;&#101;&#46;&#99;&#x6f;&#x6d;">&#x6a;&#105;&#122;&#104;&#x61;&#x6e;&#103;&#x40;&#x61;&#x6e;&#106;&#117;&#x6b;&#101;&#x2e;&#99;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第三章中我们使用实例介绍了高级请求-应答模式，本章我们会讲述请求-应答模式的可靠性问题，并使用ZMQ提供的套接字类型组建起可靠的请求-应答消息系统。</p>
 
@@ -439,8 +561,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#105;&#x6c;&#x74;&#x6f;&#58;&#x70;&#104;&#x40;&#105;&#109;&#97;&#x74;&#x69;&#120;&#x2e;&#99;&#x6f;&#109;">&#x70;&#104;&#64;&#x69;&#x6d;&#x61;&#x74;&#x69;&#x78;&#46;&#x63;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#x6d;&#97;&#x69;&#x6c;&#116;&#111;&#x3a;&#x6a;&#x69;&#122;&#x68;&#97;&#x6e;&#x67;&#x40;&#x61;&#x6e;&#106;&#117;&#x6b;&#101;&#x2e;&#99;&#111;&#109;">&#106;&#x69;&#x7a;&#x68;&#97;&#110;&#x67;&#64;&#x61;&#110;&#106;&#117;&#x6b;&#x65;&#x2e;&#x63;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#111;&#58;&#112;&#104;&#64;&#105;&#x6d;&#97;&#x74;&#x69;&#x78;&#x2e;&#99;&#111;&#x6d;">&#112;&#x68;&#x40;&#x69;&#109;&#97;&#116;&#105;&#x78;&#x2e;&#99;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#x6f;&#58;&#x6a;&#x69;&#x7a;&#x68;&#97;&#x6e;&#103;&#x40;&#x61;&#x6e;&#106;&#x75;&#107;&#x65;&#46;&#99;&#x6f;&#109;">&#x6a;&#105;&#122;&#x68;&#x61;&#x6e;&#x67;&#x40;&#97;&#x6e;&#106;&#x75;&#x6b;&#101;&#46;&#99;&#x6f;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>在第二章中我们通过开发一系列的小应用来熟悉ØMQ的基本使用方法，每个应用会引入一些新的特性。本章会沿用这种方式，来探索更多建立在ØMQ请求-应答模式之上的高级工作模式。</p>
 
@@ -500,8 +622,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#105;&#x6c;&#x74;&#111;&#58;&#112;&#104;&#x40;&#x69;&#109;&#x61;&#x74;&#105;&#120;&#46;&#x63;&#x6f;&#x6d;">&#112;&#x68;&#x40;&#105;&#x6d;&#x61;&#116;&#x69;&#x78;&#46;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#97;&#x69;&#x6c;&#x74;&#x6f;&#x3a;&#106;&#105;&#x7a;&#x68;&#97;&#x6e;&#x67;&#64;&#97;&#110;&#x6a;&#117;&#107;&#x65;&#x2e;&#x63;&#111;&#x6d;">&#106;&#x69;&#x7a;&#104;&#97;&#x6e;&#x67;&#x40;&#97;&#110;&#106;&#x75;&#x6b;&#101;&#46;&#99;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#105;&#x6c;&#116;&#111;&#x3a;&#112;&#x68;&#x40;&#x69;&#x6d;&#x61;&#x74;&#105;&#x78;&#x2e;&#99;&#111;&#109;">&#112;&#x68;&#64;&#x69;&#109;&#97;&#x74;&#105;&#120;&#x2e;&#x63;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#108;&#x74;&#x6f;&#x3a;&#106;&#105;&#122;&#x68;&#97;&#110;&#103;&#x40;&#97;&#110;&#x6a;&#117;&#107;&#x65;&#46;&#99;&#x6f;&#x6d;">&#106;&#105;&#x7a;&#104;&#97;&#x6e;&#103;&#64;&#97;&#110;&#x6a;&#x75;&#x6b;&#x65;&#46;&#x63;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第一章我们简单试用了ZMQ的若干通信模式：请求-应答模式、发布-订阅模式、管道模式。这一章我们将学习更多在实际开发中会使用到的东西：</p>
 
@@ -568,8 +690,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#97;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#x70;&#x68;&#x40;&#105;&#x6d;&#97;&#x74;&#105;&#x78;&#46;&#99;&#111;&#109;">&#x70;&#104;&#x40;&#x69;&#109;&#97;&#116;&#105;&#120;&#46;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#x6f;&#x3a;&#x6a;&#x69;&#122;&#x68;&#97;&#110;&#103;&#64;&#97;&#x6e;&#106;&#x75;&#x6b;&#x65;&#46;&#x63;&#111;&#109;">&#106;&#105;&#122;&#104;&#x61;&#x6e;&#x67;&#64;&#97;&#110;&#106;&#x75;&#x6b;&#101;&#46;&#99;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#105;&#108;&#x74;&#111;&#x3a;&#x70;&#104;&#x40;&#x69;&#109;&#x61;&#x74;&#x69;&#x78;&#x2e;&#x63;&#111;&#109;">&#x70;&#104;&#x40;&#x69;&#109;&#x61;&#x74;&#105;&#x78;&#46;&#x63;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#97;&#105;&#108;&#x74;&#x6f;&#58;&#106;&#105;&#122;&#104;&#97;&#x6e;&#x67;&#x40;&#x61;&#x6e;&#x6a;&#117;&#x6b;&#x65;&#46;&#x63;&#111;&#x6d;">&#106;&#x69;&#122;&#x68;&#x61;&#x6e;&#x67;&#64;&#x61;&#x6e;&#x6a;&#x75;&#107;&#101;&#x2e;&#99;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>With thanks to Bill Desmarais, Brian Dorsey, CAF, Daniel Lin, Eric Desgranges, Gonzalo Diethelm, Guido Goldstein, Hunter Ford, Kamil Shakirov, Martin Sustrik, Mike Castleman, Naveen Chawla, Nicola Peduzzi, Oliver Smith, Olivier Chamoux, Peter Alexander, Pierre Rouleau, Randy Dryburgh, John Unwin, Alex Thomas, Mihail Minkov, Jeremy Avnet, Michael Compton, Kamil Kisiel, Mark Kharitonov, Guillaume Aubert, Ian Barber, Mike Sheridan, Faruk Akgul, Oleg Sidorov, Lev Givon, Allister MacLeod, Alexander D&#8217;Archangel, Andreas Hoelzlwimmer, Han Holl, Robert G. Jakabosky, Felipe Cruz, Marcus McCurdy, Mikhail Kulemin, Dr. Gergő Érdi, Pavel Zhukov, Alexander Else, Giovanni Ruggiero, Rick &#8220;Technoweenie&#8221;, Daniel Lundin, Dave Hoover, Simon Jefford, Benjamin Peterson, Justin Case, Devon Weller, Richard Smith, Alexander Morland, Wadim Grasza, Michael Jakl, and Zed Shaw for their contributions, and to Stathis Sideris for <a href="http://www.ditaa.org">Ditaa</a>.</p>
 
@@ -616,77 +738,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/07/16/aps/">Anjuke PHP Service 规范</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-07-16T22:22:00+08:00" pubdate data-updated="true">Jul 16<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Zhang Erning <a href="&#109;&#x61;&#x69;&#x6c;&#x74;&#x6f;&#x3a;&#101;&#x72;&#110;&#105;&#110;&#103;&#64;&#97;&#x6e;&#x6a;&#117;&#x6b;&#101;&#46;&#99;&#111;&#x6d;">&#x65;&#x72;&#x6e;&#105;&#x6e;&#103;&#x40;&#x61;&#x6e;&#106;&#117;&#x6b;&#x65;&#46;&#x63;&#111;&#109;</a><br/>
-v1.0, July 2011</p>
-
-<h2>Goal</h2>
-
-<p>我们的目标是为PHP应用程序搭建一个轻量、灵活、高性能的异步远过程调用(RPC)的解决方案。同时也希望能够方便隔离前端的应用程序和后端的服务进程，使得产品的开发和部署更加便捷。</p>
-
-<p><strong>轻量</strong></p>
-
-<ul>
-<li>可以将服务进程与PHP应用服务部署在同一台物理服务器上</li>
-<li>一台应用服务器上能够部署多种服务进程</li>
-</ul>
-
-
-<p><strong>灵活</strong></p>
-
-<ul>
-<li>PHP应用程序可以采用进程间通讯(IPC)的方式与部署在同一服务器上的服务进程交互</li>
-<li>PHP应用程序也能够通过网络通讯(TCP)的方式与部署在其他服务器上的服务进程交互</li>
-<li>与服务进程通讯的方式可以通过配置文件调整，PHP的应用程序本身并不关心</li>
-<li>服务进程可以采用各种语言编写</li>
-</ul>
-
-
-<p><strong>高性能</strong></p>
-
-<ul>
-<li>为PHP提供异步方法调用的基本目的就是为了解决了PHP程序在处理请求的时候单线程的问题，因此不能以牺牲性能为代价</li>
-</ul>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/07/16/aps/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/6/">&larr; Older</a>
@@ -702,6 +753,10 @@ v1.0, July 2011</p>
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/04/09/beautiful-computer-programming/">Beautiful Computer Programming</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/03/28/perl-prime-in-action-jvm-monitoring-2/">Perl入门实战：JVM监控脚本（下）</a>
@@ -737,10 +792,6 @@ v1.0, July 2011</p>
     
       <li class="post">
         <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/16/cia-noir-3/">Clojure实战(3)：使用Noir框架开发博客(下)</a>
       </li>
     
   </ul>

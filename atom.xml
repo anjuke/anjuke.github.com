@@ -4,7 +4,7 @@
   <title><![CDATA[Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2013-04-09T10:19:54+08:00</updated>
+  <updated>2013-04-17T09:58:54+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -12,6 +12,72 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Beautiful Computer Programming]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2013/04/09/beautiful-computer-programming/"/>
+    <updated>2013-04-09T20:49:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2013/04/09/beautiful-computer-programming</id>
+    <content type="html"><![CDATA[<blockquote><p>We have seen that computer programming is an art, because it applies accumulated knowledge to the world, because it requires skill and ingenuity, and especially because it produces objects of beauty. A programmer who subconsciously views himself as an artist will enjoy what he does and will do it better. Therefore we can be glad that people who lecture at computer conferences speak about the state of the Art.</p></blockquote>
+
+<p><a href="http://www.paulgraham.com/knuth.html">Computer Programming as an Art</a>。</p>
+
+<h2>美</h2>
+
+<p>毫无疑问，如果计算机程序作为艺术品首先要美。美包括多个方面，程序运行时呈现的界面要漂亮；文档要美观；很重要的，代码本身也要看着舒服。</p>
+
+<p>对于工程师来说，我们接触最多的是代码本身。当我们看书法作品时，首先看到的是整篇文字，这里面的排版，字体的大小，间隔的分布都将影响到整个作品的美观程度。然后才是一个个具体的字。</p>
+
+<p>那么代码也是首先需要有合理的排版，与文本的文字一样，</p>
+
+<ul>
+<li><strong>需要有的合理顺序</strong><br/>
+能够顺序阅读的代码是最舒服的</li>
+<li><strong>段落之间要留有适当空白</strong></li>
+<li><strong>指令之间以适当的空格分割</strong></li>
+<li><strong>正确的缩进</strong></li>
+<li><strong>一行代码不应该太宽</strong><br/>
+如果超出屏幕的显示宽度，肯定影响了阅读体验。折行的显示也损害了代码的美观度，尤其是在需要打印输出的情况下。</li>
+</ul>
+
+
+<p>在计算机程序中，我们会对各种标示符进行命名，例如变量名、函数名、类名等等。对这些标示符的命名，应当采用<strong>简单明确</strong>的原则。能否看到名称就能够知道其意图是一个很好的衡量方式。同时也应当避免过度冗长的名称，因为这样既显得无意义，也降低了代码的美观度。</p>
+
+<p>另外，拼写错误的名称将极大影响代码的美观。</p>
+
+<p>优秀的代码应该能够清晰地表达自己的意图，这样的代码能够自我解释，不需要有冗余的注释。对一些特别的实现，代码本身难以表达的，才加上注释。</p>
+
+<p>计算机程序最终呈现出来的界面也要美观。这里包括了与用户交互的界面(UI)；与其他程序交互的编程接口(API)。</p>
+
+<hr />
+
+<p>美观的代码对工程师是一个基础要求。</p>
+
+<p>要写出美的程序，工程师必须是一个爱美的人。可以看他的开发工具是不是很美，编辑器里的字体是否漂亮，色彩搭配很美。很难想象一个用着糟糕字体编辑器的工程师能够写出美的代码。</p>
+
+<h2>酷</h2>
+
+<p>酷是创造性的东西，是很特别的，与众不同的。酷的程序往往来自于创新，采用了一个与传统方式不同，却非常有效的方法解决了问题。</p>
+
+<p>你的程序如果真的很酷，很快就会有各种模仿者。</p>
+
+<hr />
+
+<p>具有激情，乐于尝试新东西的工程师才能够做出酷的东西来。这样的工程师，总觉得目前的实现不够好，还能够更好，并努力尝试新的方法。</p>
+
+<h2>优雅</h2>
+
+<p>对于一个功能，计算机程序可以采用多种方式实现，虽然他们的结果可能一致，但是实现方式确可能有好有坏。这可以表现在程序执行的性能、需要占用的资源等方面，甚至代码的行数。一个排序方法，使用不同的算法，性能的差异可以是天差地别。优雅的代码应该采用简单合理的数据结构、算法和设计模式。</p>
+
+<p>优雅很大程度上体现在对计算机程序的设计上，尤其是在需要多个程序相互协同工作的系统设计时，优雅的设计和糟糕的设计将有很大的区别。</p>
+
+<p>其实优雅的代码和设计对人也是友好的。能够让阅读代码的人感到愉悦，充分理解代码的意图。</p>
+
+<hr />
+
+<p>做出优雅设计的工程师必须拥有丰富的编程经验。在经历了非常多的代码和设计之后，善于总结和学习的工程师逐渐掌握了方法，能够在优雅的设计和糟糕的设计之间做出正确的选择。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Perl入门实战：JVM监控脚本（下）]]></title>
@@ -7657,197 +7723,6 @@
 
 
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[reviewboard 简要使用介绍]]></title>
-    <link href="http://arch.corp.anjuke.com/blog/2012/10/09/reviewboard-howto/"/>
-    <updated>2012-10-09T09:06:00+08:00</updated>
-    <id>http://arch.corp.anjuke.com/blog/2012/10/09/reviewboard-howto</id>
-    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
-
-<h2>Hold a sec! What is reviewboard ?</h2>
-
-<p><a href="http://www.reviewboard.org/">reviewboard</a>是一款基于web的强大的code
-review工具，他提供了便捷、强大的功能来帮助开发者更顺利地进行code review这一核心工作。支持众多版本控制系统。</p>
-
-<!-- more -->
-
-
-<h2>reviewboard in Anjuke Inc.</h2>
-
-<p>在安居客，我们使用reviewboard来进行code review，他的地址是</p>
-
-<p><a href="http://git.corp.anjuke.com/reviews">http://git.corp.anjuke.com/reviews</a></p>
-
-<p>使用域帐号登录</p>
-
-<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard001.jpg"></p>
-
-<p>登录后，找到右上角的<code>my
-account</code>，进入可以设置自己所在的组，这里需要设置到您所在的组，这样发送到这个组的review请求才会发送通知邮件</p>
-
-<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard002.jpg"></p>
-
-<h2>How could I get access ?</h2>
-
-<h3>安装环境与配置</h3>
-
-<p><strong>以下这些操作都是针对unix-like的操作系统，如果您使用的是windows，可以在本地生成diff文件后上传</strong></p>
-
-<p>RBTools包含了一些reviewboard的自动脚本，由<a href="http://python.org">Python</a>写成，可以通过Python的包管理器<code>setuptools</code>或者<code>pip</code>安装</p>
-
-<p>安装RBTools可以利用以下命令 (必要的时候需要sudo)</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>easy_install RBTools</span></code></pre></td></tr></table></div></figure>
-
-
-<p>或者</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>pip install RBTools</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如果没有安装easy_install或者pip，以ubuntu为例，可以使用以下命令安装</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>aptitude install python-setuptools
-</span><span class='line'>aptitude install python-pip</span></code></pre></td></tr></table></div></figure>
-
-
-<p>关于Python环境，推荐使用<a href="https://github.com/utahta/pythonbrew">pythonbrew</a>，以和系统自带的Python环境隔离</p>
-
-<p>安装完成后，会发现有多出一个<code>post-review</code>的命令，它就是我们用来和reviewboard发送review请求的工具</p>
-
-<h2>Looks great, let&#8217;s get this thing done</h2>
-
-<h3>设置代码仓库</h3>
-
-<p>如果您的仓库还未在reviewboard里可用，那么需要先设置一下</p>
-
-<p>如果您不知道怎么做，可以联系管理员(例如尔宁、Sysdev)</p>
-
-<p>使用admin帐号登录，并选择到后台</p>
-
-<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard003.jpg"></p>
-
-<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard004.jpg"></p>
-
-<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard005.jpg"></p>
-
-<p>新建仓库，设置参考下图，这里的名字将会在后面<code>.reviewboardrc</code>里使用</p>
-
-<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard006.jpg"></p>
-
-<h3>配置.reviewboardrc</h3>
-
-<p><code>post-review</code>命令会检查当前目录和用户的<code>$HOME</code>下是否有这个配置，里面可以写一些有用的信息来帮助<code>post-review</code>认识仓库和请求的一些信息</p>
-
-<p><em><strong>推荐: 在每个代码版本仓库下都保留一个通用的<code>.reviewboardrc</code>配置</strong></em></p>
-
-<p>一个典型的<code>.reviewboardrc</code>配置内容如下</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>REVIEWBOARD_URL="http://git.corp.anjuke.com/reviews"
-</span><span class='line'>REPOSITORY='image-service'</span></code></pre></td></tr></table></div></figure>
-
-
-<p><code>REVIEWBOARD_URL</code>设置了reviewboard的地址，<code>REPOSITORY</code>则是之前设置好的仓库名字</p>
-
-<h3>发起review请求</h3>
-
-<p>对于发送review请求，主要可以有2种形式:</p>
-
-<ol>
-<li>先发送请求，再手动上传diff文件</li>
-<li>发送请求的同时上传diff文件</li>
-</ol>
-
-
-<h4>创建请求并手工上传diff</h4>
-
-<p>简单的在有.reviewboardrc配置的目录下执行命令，或者在界面上新建，效果是一样的:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>post-review</span></code></pre></td></tr></table></div></figure>
-
-
-<p><em><strong>注意: 第一次执行会要求输入用户名和密码；当然也可以在<code>.reviewboardrc</code>里设置</strong></em></p>
-
-<p><img src="http://arch.corp.anjuke.com/medias/20121009/rb.howto.001.png" alt="" /></p>
-
-<p>如上图会得到一个review请求的地址，访问它，再手工上传diff文件</p>
-
-<p><img class="center" src="http://arch.corp.anjuke.com/medias/20121009/reviewboard007.jpg"></p>
-
-<p>此外，还需要填入一些必要的信息</p>
-
-<ul>
-<li>summary</li>
-<li>branch</li>
-<li>选择group或者people</li>
-<li>group的话，就和第一步准备里加入的组有关系了，组里人的才能收到邮件</li>
-</ul>
-
-
-<p>在这个阶段和发布后，自己以及别人就可以通过这个URL来看到您的review请求，点右上角的<code>view diff</code>可以看到具体的代码diff情况，并作出评价等</p>
-
-<h4>生成diff的方法</h4>
-
-<p>参考如下</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>git diff $sha1sum_1 $sha1sum_2 &gt; foobar.diff # 注意是从1到2的变化，所以别搞反了</span></code></pre></td></tr></table></div></figure>
-
-
-<p>完成后点击publish即可发布这个review请求。</p>
-
-<h3>发起请求的同时上传diff文件</h3>
-
-<p>在git仓库里执行<code>post-review</code>时，可以通过参数直接生成diff文件并上传，命令实例:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>post-review --revision-range=970521dfb4c42f89b1a4749cec77cd919c184632:401097033760d6b188039b11aab0c853b68541b4</span></code></pre></td></tr></table></div></figure>
-
-
-<p><em><strong>注意: 这里第一个版本必须在远程的代码仓库里存在，否则将无法发布review请求</strong></em></p>
-
-<p>到生成的URL里发现已经有diff文件上传好了，只需要填入必要的字段就可以发布了。</p>
-
-<h3>便捷的方法</h3>
-
-<p>这里给出一个较为便捷的发起请求的方法，参数会告诉post-review来根据git的提交信息自动获取描述信息</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>post-review \
-</span><span class='line'>--guess-summary \ # 自动根据git commit comment提取
-</span><span class='line'>--guess-description \ # 自动根据git commit comment提取
-</span><span class='line'>--revision-range=":" \ # 这里填上需要的版本号
-</span><span class='line'>--branch="master" # 替换成需要的分支</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>Oops</h2>
-
-<p>如果出现错误，这种时候请检查一下<code>.reviewboardrc</code>配置是否有问题；还可以通过<code>--debug</code>参数查看详细信息。</p>
-
-<p>如果还是搞不定的话，果断求助吧!</p>
-
-<h2>More?</h2>
-
-<p>抱歉，目前我也只能写这么多，更多关于<code>reviewboard</code>和<code>RBTools</code>的应用请翻阅其他资料网站或者其他手册。</p>
-
-<hr />
-
-<p>Last updated 2012/11/27 By Lei Chen <a href="mailto:chenlei@anjuke.com">chenlei@anjuke.com</a> from
-sysdev team</p>
 ]]></content>
   </entry>
   
