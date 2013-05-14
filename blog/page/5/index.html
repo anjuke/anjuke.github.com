@@ -9,7 +9,9 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content="本文涉及PHP V2代码级SDK设计的规范。 代码 目录结构和命名 SDK的模块代码将和客户代码在同一个运行时环境下执行，代码的命名需要注意，避免名称冲突。 假设发布功能模块的SDK名称为($SDK_NAME)，其代码的根目录应该命名为:app-($SDK_NAME)-shared。 app-($ &hellip;">
+  <meta name="description" content="&gt;&gt;&gt; import this The Zen of Python, by Tim Peters Beautiful is better than ugly.
+Explicit is better than implicit.
+Simple is better than &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +79,118 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/02/27/the-zen-of-python/">The Zen of Python</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-27T12:23:00+08:00" pubdate data-updated="true">Feb 27<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><pre><code>&gt;&gt;&gt; import this
+</code></pre>
+
+<blockquote><p>The Zen of Python, by Tim Peters</p>
+
+<p><strong>Beautiful</strong> is better than ugly.<br/>
+Explicit is better than implicit.<br/>
+Simple is better than complex.<br/>
+Complex is better than complicated.<br/>
+Flat is better than nested.<br/>
+Sparse is better than dense.<br/>
+Readability counts.<br/>
+Special cases aren&#8217;t special enough to break the rules.<br/>
+Although practicality beats purity.<br/>
+Errors should never pass silently.<br/>
+Unless explicitly silenced.<br/>
+In the face of ambiguity, refuse the temptation to guess.<br/>
+There should be one&#8211; and preferably only one &#8211;obvious way to do it.<br/>
+Although that way may not be obvious at first unless you&#8217;re Dutch.<br/>
+Now is better than never.<br/>
+Although never is often better than <em>right</em> now.<br/>
+If the implementation is hard to explain, it&#8217;s a bad idea.<br/>
+If the implementation is easy to explain, it may be a good idea.<br/>
+Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p></blockquote>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/02/24/how-to-blogging/">怎样维护ArchCorp的内容 (未完…)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-24T01:55:00+08:00" pubdate data-updated="true">Feb 24<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><a href="http://arch.corp.anjuke.com/">ArchCorp</a>是采用<a href="http://octopress.org/">Octopress</a>引擎生成的纯静态网站。因此要想在此发布网志、文章或者帮助改进页面的排版和样式，首先需要了解Octopress的使用。</p>
+
+<p>其次，ArchCorp的站点与我们的其他程序一样，使用Git管理并<a href="http://git.corp.anjuke.com/cgit/enzhang/arch.corp.anjuke.com.git/">托管</a>在<a href="http://git.corp.anjuke.com/">GitCorp</a>上。这样至少需要掌握Git的基本命令和GitCorp的使用。</p>
+
+<p>还有文章的内容使用纯文本的标记语言<a href="http://github.github.com/github-flavored-markdown/">Markdown</a>，所以大家还需要了解Markdown的标记规则。</p>
+
+<p>正如Octopress自己声称的“<em>Octopress is a blogging framework for hackers</em>”。面对频繁的使用命令行而不发憷是基本的要求。</p>
+
+<h2>开始之前</h2>
+
+<p>首先需要安装Git和Ruby(Octopress要求Ruby-1.9.2)。使用<a href="http://rvm.beginrescueend.com/">RVM</a>或<a href="https://github.com/sstephenson/rbenv">rbenv</a>可以很方便地在机器上安装多个ruby环境。我使用的是RVM，所以本文中都以RVM为例。</p>
+
+<p>如果还没有RVM和Ruby-1.9.2，请先安装。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/02/24/how-to-blogging/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -451,8 +565,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#x69;&#108;&#x74;&#x6f;&#58;&#x70;&#x68;&#64;&#105;&#109;&#97;&#x74;&#105;&#120;&#x2e;&#99;&#111;&#109;">&#x70;&#x68;&#x40;&#x69;&#109;&#97;&#x74;&#x69;&#x78;&#46;&#x63;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#x6c;&#116;&#111;&#58;&#106;&#105;&#122;&#104;&#x61;&#110;&#x67;&#x40;&#97;&#x6e;&#x6a;&#x75;&#107;&#101;&#46;&#99;&#x6f;&#109;">&#x6a;&#105;&#122;&#104;&#x61;&#110;&#103;&#x40;&#x61;&#x6e;&#x6a;&#117;&#x6b;&#x65;&#46;&#x63;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#111;&#58;&#112;&#104;&#x40;&#x69;&#x6d;&#x61;&#116;&#105;&#120;&#46;&#99;&#111;&#109;">&#112;&#x68;&#x40;&#x69;&#109;&#97;&#116;&#105;&#120;&#46;&#x63;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#97;&#105;&#108;&#116;&#111;&#58;&#x6a;&#105;&#x7a;&#x68;&#97;&#110;&#x67;&#64;&#97;&#x6e;&#x6a;&#x75;&#107;&#101;&#46;&#99;&#x6f;&#109;">&#106;&#x69;&#122;&#x68;&#x61;&#110;&#x67;&#x40;&#97;&#x6e;&#106;&#x75;&#x6b;&#x65;&#x2e;&#99;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第三章和第四章讲述了ZMQ中请求-应答模式的一些高级用法。如果你已经能够彻底理解了，那我要说声恭喜。这一章我们会关注发布-订阅模式，使用上层模式封装，提升ZMQ发布-订阅模式的性能、可靠性、状态同步及安全机制。</p>
 
@@ -504,8 +618,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#97;&#105;&#108;&#x74;&#x6f;&#x3a;&#x70;&#104;&#x40;&#x69;&#109;&#97;&#116;&#105;&#120;&#46;&#x63;&#x6f;&#x6d;">&#x70;&#x68;&#64;&#x69;&#109;&#x61;&#x74;&#105;&#x78;&#x2e;&#x63;&#x6f;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#106;&#105;&#x7a;&#104;&#x61;&#110;&#103;&#x40;&#x61;&#x6e;&#106;&#117;&#107;&#101;&#46;&#99;&#x6f;&#x6d;">&#x6a;&#105;&#122;&#104;&#x61;&#x6e;&#103;&#x40;&#x61;&#x6e;&#106;&#117;&#x6b;&#101;&#x2e;&#99;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#105;&#x6c;&#116;&#x6f;&#58;&#x70;&#x68;&#64;&#105;&#109;&#x61;&#x74;&#105;&#120;&#46;&#99;&#x6f;&#109;">&#112;&#x68;&#x40;&#x69;&#109;&#97;&#116;&#x69;&#x78;&#46;&#99;&#x6f;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#97;&#x69;&#108;&#116;&#x6f;&#58;&#x6a;&#x69;&#122;&#104;&#x61;&#x6e;&#103;&#x40;&#x61;&#x6e;&#106;&#x75;&#x6b;&#x65;&#46;&#x63;&#x6f;&#109;">&#x6a;&#x69;&#122;&#x68;&#97;&#110;&#103;&#64;&#x61;&#x6e;&#106;&#117;&#x6b;&#x65;&#46;&#x63;&#x6f;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第三章中我们使用实例介绍了高级请求-应答模式，本章我们会讲述请求-应答模式的可靠性问题，并使用ZMQ提供的套接字类型组建起可靠的请求-应答消息系统。</p>
 
@@ -561,8 +675,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#111;&#58;&#112;&#104;&#64;&#105;&#x6d;&#97;&#x74;&#x69;&#x78;&#x2e;&#99;&#111;&#x6d;">&#112;&#x68;&#x40;&#x69;&#109;&#97;&#116;&#105;&#x78;&#x2e;&#99;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#x6f;&#58;&#x6a;&#x69;&#x7a;&#x68;&#97;&#x6e;&#103;&#x40;&#x61;&#x6e;&#106;&#x75;&#107;&#x65;&#46;&#99;&#x6f;&#109;">&#x6a;&#105;&#122;&#x68;&#x61;&#x6e;&#x67;&#x40;&#97;&#x6e;&#106;&#x75;&#x6b;&#101;&#46;&#99;&#x6f;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#x69;&#x6c;&#116;&#111;&#x3a;&#112;&#104;&#x40;&#x69;&#x6d;&#97;&#116;&#x69;&#120;&#x2e;&#x63;&#x6f;&#x6d;">&#112;&#x68;&#x40;&#105;&#x6d;&#x61;&#116;&#105;&#x78;&#46;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#97;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#x6a;&#105;&#x7a;&#x68;&#97;&#110;&#x67;&#x40;&#x61;&#110;&#x6a;&#x75;&#x6b;&#101;&#46;&#x63;&#x6f;&#109;">&#x6a;&#105;&#x7a;&#x68;&#x61;&#x6e;&#103;&#64;&#97;&#x6e;&#x6a;&#x75;&#107;&#101;&#x2e;&#x63;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>在第二章中我们通过开发一系列的小应用来熟悉ØMQ的基本使用方法，每个应用会引入一些新的特性。本章会沿用这种方式，来探索更多建立在ØMQ请求-应答模式之上的高级工作模式。</p>
 
@@ -594,150 +708,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter2/">ZMQ 指南 - 第二章 ZeroMQ进阶</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#105;&#x6c;&#116;&#111;&#x3a;&#112;&#x68;&#x40;&#x69;&#x6d;&#x61;&#x74;&#105;&#x78;&#x2e;&#99;&#111;&#109;">&#112;&#x68;&#64;&#x69;&#109;&#97;&#x74;&#105;&#120;&#x2e;&#x63;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#108;&#x74;&#x6f;&#x3a;&#106;&#105;&#122;&#x68;&#97;&#110;&#103;&#x40;&#97;&#110;&#x6a;&#117;&#107;&#x65;&#46;&#99;&#x6f;&#x6d;">&#106;&#105;&#x7a;&#104;&#97;&#x6e;&#103;&#64;&#97;&#110;&#x6a;&#x75;&#x6b;&#x65;&#46;&#x63;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
-
-<p>第一章我们简单试用了ZMQ的若干通信模式：请求-应答模式、发布-订阅模式、管道模式。这一章我们将学习更多在实际开发中会使用到的东西：</p>
-
-<p>本章涉及的内容有：</p>
-
-<ul>
-<li>创建和使用ZMQ套接字</li>
-<li>使用套接字发送和接收消息</li>
-<li>使用ZMQ提供的异步I/O套接字构建你的应用程序</li>
-<li>在单一线程中使用多个套接字</li>
-<li>恰当地处理致命和非致命错误</li>
-<li>处理诸如Ctrl-C的中断信号</li>
-<li>正确地关闭ZMQ应用程序</li>
-<li>检查ZMQ应用程序的内存泄露</li>
-<li>发送和接收多帧消息</li>
-<li>在网络中转发消息</li>
-<li>建立简单的消息队列代理</li>
-<li>使用ZMQ编写多线程应用程序</li>
-<li>使用ZMQ在线程间传递信号</li>
-<li>使用ZMQ协调网络中的节点</li>
-<li>使用标识创建持久化套接字</li>
-<li>在发布-订阅模式中创建和使用消息信封</li>
-<li>如何让持久化的订阅者能够从崩溃中恢复</li>
-<li>使用阈值（HWM）防止内存溢出</li>
-</ul>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter2/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter1/">ZMQ 指南 - 第一章 ZeroMQ基础</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#105;&#108;&#x74;&#111;&#x3a;&#x70;&#104;&#x40;&#x69;&#109;&#x61;&#x74;&#x69;&#x78;&#x2e;&#x63;&#111;&#109;">&#x70;&#104;&#x40;&#x69;&#109;&#x61;&#x74;&#105;&#x78;&#46;&#x63;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#97;&#105;&#108;&#x74;&#x6f;&#58;&#106;&#105;&#122;&#104;&#97;&#x6e;&#x67;&#x40;&#x61;&#x6e;&#x6a;&#117;&#x6b;&#x65;&#46;&#x63;&#111;&#x6d;">&#106;&#x69;&#122;&#x68;&#x61;&#x6e;&#x67;&#64;&#x61;&#x6e;&#x6a;&#x75;&#107;&#101;&#x2e;&#99;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
-
-<p>With thanks to Bill Desmarais, Brian Dorsey, CAF, Daniel Lin, Eric Desgranges, Gonzalo Diethelm, Guido Goldstein, Hunter Ford, Kamil Shakirov, Martin Sustrik, Mike Castleman, Naveen Chawla, Nicola Peduzzi, Oliver Smith, Olivier Chamoux, Peter Alexander, Pierre Rouleau, Randy Dryburgh, John Unwin, Alex Thomas, Mihail Minkov, Jeremy Avnet, Michael Compton, Kamil Kisiel, Mark Kharitonov, Guillaume Aubert, Ian Barber, Mike Sheridan, Faruk Akgul, Oleg Sidorov, Lev Givon, Allister MacLeod, Alexander D&#8217;Archangel, Andreas Hoelzlwimmer, Han Holl, Robert G. Jakabosky, Felipe Cruz, Marcus McCurdy, Mikhail Kulemin, Dr. Gergő Érdi, Pavel Zhukov, Alexander Else, Giovanni Ruggiero, Rick &#8220;Technoweenie&#8221;, Daniel Lundin, Dave Hoover, Simon Jefford, Benjamin Peterson, Justin Case, Devon Weller, Richard Smith, Alexander Morland, Wadim Grasza, Michael Jakl, and Zed Shaw for their contributions, and to Stathis Sideris for <a href="http://www.ditaa.org">Ditaa</a>.</p>
-
-<p>Please use the <a href="https://github.com/imatix/zguide/issues">issue tracker</a> for all comments and errata. This version covers the latest stable release of 0MQ and was published on Mon 10 October, 2011.</p>
-
-<p>The Guide is mainly <a href="http://zguide.zeromq.org/page:all">in C</a>, but also in <a href="http://zguide.zeromq.org/php:all">PHP</a> and <a href="http://zguide.zeromq.org/lua:all">Lua</a>.</p>
-
-<hr />
-
-<p>This work is licensed under a <a href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-ShareAlike 3.0 License</a>.</p>
-
-<h3>拯救世界</h3>
-
-<p>如何解释ZMQ？有些人会先说一堆ZMQ的好：它是一套用于快速构建的套接字组件；它的信箱系统有超强的路由能力；它太快了！而有些人则喜欢分享他们被ZMQ点悟的时刻，那些被灵感击中的瞬间：所有的事情突然变得简单明了，让人大开眼界。另一些人则会拿ZMQ同其他产品做个比较：它更小，更简单，但却让人觉得如此熟悉。对于我个人而言，我则更倾向于和别人分享ZMQ的诞生史，相信会和各位读者有所共鸣。</p>
-
-<p>编程是一门科学，但往往会乔装成一门艺术。我们从不去了解软件最底层的机理，或者说根本没有人在乎这些。软件并不只是算法、数据结构、编程语言、或者抽象云云，这些不过是一些工具而已，被我们创造、使用、最后抛弃。软件真正的本质，其实是人的本质。</p>
-
-<p>举例来说，当我们遇到一个高度复杂的问题时，我们会群策群力，分工合作，将问题拆分为若干个部分，一起解决。这里就体现了编程的科学：创建一组小型的构建模块，让人们易于理解和使用，那么大家就会一起用它来解决问题。</p>
-
-<p>我们生活在一个普遍联系的世界里，需要现代的编程软件为我们做指引。所以，未来我们所需要的用于处理大规模计算的构建模块，必须是普遍联系的，而且能够并行运作。那时，程序代码不能再只关注自己，它们需要互相交流，变得足够健谈。程序代码需要像人脑一样，数以兆计的神经元高速地传输信号，在一个没有中央控制的环境下，没有单点故障的环境下，解决问题。这一点其实并不意外，因为就当今的网络来讲，每个节点其实就像是连接了一个人脑一样。</p>
-
-<p>如果你曾和线程、协议、或网络打过交道，你会觉得我上面的话像是天方夜谭。因为在实际应用过程中，只是连接几个程序或网络就已经非常困难和麻烦了。数以兆计的节点？那真是无法想象的。现今只有资金雄厚的企业才能负担得起这种软件和服务。</p>
-
-<p>当今世界的网络结构已经远远超越了我们自身的驾驭能力。十九世纪八十年代的软件危机，弗莱德•布鲁克斯曾说过，这个世上<a href="http://en.wikipedia.org/wiki/No_Silver_Bullet">没有银弹</a>。后来，免费和开源解决了这次软件危机，让我们能够高效地分享知识。如今，我们又面临一次新的软件危机，只不过我们谈论得不多。只有那些大型的、富足的企业才有财力建立高度联系的应用程序。那里有云的存在，但它是私有的。我们的数据和知识正在从我们的个人电脑中消失，流入云端，无法获得或与其竞争。是谁坐拥我们的社交网络？这真像一次巨型主机的革命。</p>
-
-<p>我们暂且不谈其中的政治因素，光那些就可以另外出本书了。目前的现状是，虽然互联网能够让千万个程序相连，但我们之中的大多数却无法做到这些。这样一来，那些真正有趣的大型问题（如健康、教育、经济、交通等领域），仍然无法解决。我们没有能力将代码连接起来，也就不能像大脑中的神经元一样处理那些大规模的问题。</p>
-
-<p>已经有人尝试用各种方法来连接应用程序，如数以千计的IETF规范，每种规范解决一个特定问题。对于开发人员来说，HTTP协议是比较简单和易用的，但这也往往让问题变得更糟，因为它鼓励人们形成一种重服务端、轻客户端的思想。</p>
-
-<p>所以迄今为止人们还在使用原始的TCP/UDP协议、私有协议、HTTP协议、网络套接字等形式连接应用程序。这种做法依旧让人痛苦，速度慢又不易扩展，需要集中化管理。而分布式的P2P协议又仅仅适用于娱乐，而非真正的应用。有谁会使用Skype或者Bittorrent来交换数据呢？</p>
-
-<p>这就让我们回归到编程科学的问题上来。想要拯救这个世界，我们需要做两件事情：一，如何在任何地点连接任何两个应用程序；二、将这个解决方案用最为简单的方式包装起来，供程序员使用。</p>
-
-<p>也许这听起来太简单了，但事实确实如此。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter1/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/6/">&larr; Older</a>
@@ -753,6 +723,14 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/05/13/rvm-tutorial/">RVM Tutorial</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/13/a-brief-introduction-to-ssh/">A Brief Introduction to SSH</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/04/09/beautiful-computer-programming/">Beautiful Computer Programming</a>
@@ -784,14 +762,6 @@
     
       <li class="post">
         <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
       </li>
     
   </ul>

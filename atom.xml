@@ -4,7 +4,7 @@
   <title><![CDATA[Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2013-04-17T09:58:54+08:00</updated>
+  <updated>2013-05-14T14:58:08+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -12,6 +12,536 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[RVM Tutorial]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2013/05/13/rvm-tutorial/"/>
+    <updated>2013-05-13T11:30:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2013/05/13/rvm-tutorial</id>
+    <content type="html"><![CDATA[<p>RVM是Ruby Version Manager的缩写，是管理Ruby版本的工具，方便在开发、部署的时候于多个Ruby环境中切换与使用</p>
+
+<p>关于RVM的信息，请参考<a href="https://rvm.io">官方网站</a>的最新资料为准</p>
+
+<!-- more -->
+
+
+<h2>安装rvm</h2>
+
+<p>以bash为例</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>curl -kL https://get.rvm.io | bash -s stable</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>注意：rvm安装后会自动在~/.bash_profile里添加如下的代码，目的在于让非login shell也能加载rvm的环境以使用，根据不同的Linux发行版和shell请自行调整</strong></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>升级rvm</h2>
+
+<p>升级到最新的stable版本</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm get stable</span></code></pre></td></tr></table></div></figure>
+
+
+<p>升级到最新版本</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm get latest
+</span><span class='line'>rvm get head
+</span><span class='line'>rvm get master</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>帮助</h2>
+
+<p>除了文档外，还可以使用以下命令获取帮助信息</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm help [command]</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>Ruby</h1>
+
+<p>使用rvm管理ruby的版本，可以在多个ruby的实现、版本间切换，易于开发和部署</p>
+
+<p><strong>关于Ruby的实现，Ruby本身只是一份编程语言的规范；我们常说的Ruby其实指的是MRI（Matz&#8217;s Ruby Implementation），即Matz亲自实现的Ruby，也称作CRuby（因为是C实现的）；它也是对最新Ruby Spec实现功能最全的一种版本</strong></p>
+
+<p>Ruby和Python一样，可以用不同的平台实现，例如</p>
+
+<ul>
+<li>jruby （JVM实现）</li>
+<li>ree （Ruby Enterprice Edition，带上一些性能、稳定性和patch的MRI）</li>
+<li>ironruby （.NET实现）</li>
+<li>goruby (Go实现)</li>
+</ul>
+
+
+<p><strong>rvm里安装ruby后，会把rubygems和bundler一起安装</strong></p>
+
+<h2>列出ruby版本</h2>
+
+<p>列出已经安装的ruby版本</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm list</span></code></pre></td></tr></table></div></figure>
+
+
+<p>列出已知的ruby版本</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm list known</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>安装ruby</h2>
+
+<p><strong>如果没有特殊版本需求，推荐使用最新稳定的ruby版本以获取最新的功能支持</strong></p>
+
+<p>首先查看安装依赖，rvm会根据不同的系统环境给出依赖的提示，依次安装它们</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm requirements</span></code></pre></td></tr></table></div></figure>
+
+
+<p>安装ruby</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm install 2.0.0
+</span><span class='line'>rvm install 1.9.3
+</span><span class='line'>rvm install 1.9.3-p327
+</span><span class='line'>rvm install 1.8.7
+</span><span class='line'>rvm install ruby-head
+</span><span class='line'>
+</span><span class='line'>rvm install jruby
+</span><span class='line'>rvm install goruby
+</span><span class='line'>rvm install ree
+</span><span class='line'>rvm install ironruby
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>使用rvm中的Ruby</h2>
+
+<p>默认RVM使用的是系统自带的ruby（如果没有则没有&#8230;）</p>
+
+<p><strong>关于gemset：系统默认的gem都是统一的目录，在rvm中有一个global的gemset和各个不同名字的gemset（默认的叫default），用于隔离不同gem环境，详细请参考后面gemset小节</strong></p>
+
+<p>在当前shell中使用rvm中特定版本的ruby</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm use 2.0.0
+</span><span class='line'>rvm use 1.9.3
+</span><span class='line'>
+</span><span class='line'>rvm use jruby
+</span><span class='line'>
+</span><span class='line'>rvm use system # 切换到系统默认ruby</span></code></pre></td></tr></table></div></figure>
+
+
+<p>使用不同的ruby与gemset （关于创建gemset请参考后面小节）</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm use 2.0.0@default
+</span><span class='line'>rvm use 1.9.3@foo
+</span><span class='line'>rvm use jruby@jfoo</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>gemset</h1>
+
+<p>RVM默认采用gemset隔离gem环境，类似于Python的virtualenv。</p>
+
+<p>除了可以使用github的bootstrap脚本（内部采用bundler的实现）来隔离项目的gemset外，也可以使用rvm自带的gemset功能</p>
+
+<p><strong>存在特殊的gemset，把一切全局使用的gem安装在其中，例如rake、bundler等</strong></p>
+
+<p>创建gemset</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm gemset create foo</span></code></pre></td></tr></table></div></figure>
+
+
+<p>列出gemset</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm gemset list # 注意这个是列出当前ruby版本的gemset 不是全部
+</span><span class='line'>rvm gemset list_all # 列出全部gemset</span></code></pre></td></tr></table></div></figure>
+
+
+<p>使用特定gemset</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>rvm use 2.0.0@foo
+</span><span class='line'>rvm use 2.0.0@global</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>ruby版本控制文件</h1>
+
+<p>在特定目录可以使用配置文件控制使用rvm中ruby的版本</p>
+
+<p><strong>rvm原先的.rvmrc已经在1.19版本开始deprecated，推荐用.ruby-version和.ruby-gemset以和其他Ruby版本管理工具保持兼容性</strong></p>
+
+<h2>.ruby-version</h2>
+
+<p>控制ruby的版本，在目录中写入文件.ruby-version，内容如</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ruby-1.9.3-p392</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>.ruby-gemset</h2>
+
+<p>控制gemset，在目录中写入文件.ruby-gemset，内容如</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>foo</span></code></pre></td></tr></table></div></figure>
+
+
+<p>__END__</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[A Brief Introduction to SSH]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2013/05/13/a-brief-introduction-to-ssh/"/>
+    <updated>2013-05-13T10:53:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2013/05/13/a-brief-introduction-to-ssh</id>
+    <content type="html"><![CDATA[<h2>为什么会有这篇介绍？</h2>
+
+<p>不少人对ssh有疑问或者不明白，典型的例子是在gitcorp/github上添加了公钥后发现无法clone或者push仓库里的代码。</p>
+
+<h2>前言</h2>
+
+<p>ssh是个很大的话题，会发现牵涉到unix-like下很多东西，这里只谈谈我们日常工作中接触最多的那部分</p>
+
+<p>哦，对了，这里的ssh不是Java里的SSH（Spring/Structs/Hibernate）。我也是前几天刚明白XDD</p>
+
+<h2>参考资料</h2>
+
+<ul>
+<li><a href="http://www.eng.cam.ac.uk/help/jpmg/ssh/ssh-detail.html">ssh - how it works</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Secure_Shell">Secure Shell</a></li>
+<li><a href="http://www.unixwiz.net/techtips/ssh-agent-forwarding.html">An Illustrated Guide to SSH Agent Forwarding</a></li>
+</ul>
+
+
+<!-- more -->
+
+
+<h2>介绍</h2>
+
+<p>ssh是secure shell的缩写，它是一种网络协议。主要目的是为了提供和远程主机的交互式操作（典型的就是unix-like下的shell了），由服务器和客户端组成。同时它能提供安全加密的链路保障通信不被监听。</p>
+
+<p>历史上它有版本1和版本2，我们最常见的一般都是版本2。以及最常见的实现是开源的openssh</p>
+
+<h2>ssh操作的基本原则</h2>
+
+<p>ssh工具的主要目的是为了保障客户端和服务器间安全的通信操作，所以会有大致3步</p>
+
+<ol>
+<li>客户端建立到目标主机，而不是其他主机</li>
+<li>服务器接受客户端的连接，而不是其他客户端</li>
+<li>客户端需要让服务器信任为授权的用户</li>
+</ol>
+
+
+<p>为了完成这几个工作，ssh在建立会话前需要完成几项工作</p>
+
+<ul>
+<li>主机识别 确保连接的是目标主机</li>
+<li>加密 建立一条端到端的加密通信链路</li>
+<li>授权 验证连接上来的用户是经过授权的</li>
+</ul>
+
+
+<h3>主机识别</h3>
+
+<p>比较常用的是RSA验证，主机上运行的ssh服务端会生成一段RSA私钥/公钥对，在客户端连接时提供身份验证。服务器把自己的公钥发送给客户端，客户端用它加密一段随机的session key并发回服务器端，服务器端利用自己的私钥解密这段session key用于之后的通信</p>
+
+<p>比较常见的服务器检查，会看到客户端连接时会出现这样一段信息</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Host key not found from the list of known hosts.
+</span><span class='line'>Are you sure you want to continue connecting (yes/no)?</span></code></pre></td></tr></table></div></figure>
+
+
+<p>客户端同意后会把该主机的key添加到自己的known hosts（<code>~/.ssh/known_hosts</code>）列表里，以后一旦连接该主机都会验证key是否一致，如果不一致会警告存在中间人攻击。</p>
+
+<h3>加密</h3>
+
+<p>客户端和服务器间会利用RSA交换不同的cipher确保会话通信都是加密的。窃听通信需要知道这些key来解密会话内容</p>
+
+<h3>授权</h3>
+
+<p>会话建立后客户端需要让服务端明白他是否有权限访问，典型的就是unix-like系统本身的用户，常见的授权方式有密码、RSA私钥/公钥对验证</p>
+
+<p>这里就要稍微介绍一下私钥/公钥对验证了，原理上和前面主机验证的流程是一致的。</p>
+
+<p>客户端生成一对私钥/公钥，然后把公钥上传到服务器上（比如给服务器的管理员），通常是在远端主机用户下的<code>~/.ssh/authorized_keys</code>里。</p>
+
+<p>在授权的时候，服务端利用该私钥/公钥对发送一段加密的信息给客户端解密后返回服务端，如果验证通过即可表示授权通过。</p>
+
+<p><strong>私钥即代表了一个用户身份，所以私钥要妥善保管不要被别人获取到。另外推荐定时更换自己的私钥。</strong></p>
+
+<h2>openssh里提供的其他工具</h2>
+
+<p>上面介绍一下了ssh通信的一些基本原则，这里在介绍一下openssh带的其他工具</p>
+
+<p>ssh-keygen</p>
+
+<p>用于生成ssh私钥/公钥对的工具。为了保证加密的破解难度，推荐使用4096bit以上的RSA key。</p>
+
+<p>另外，私钥本身是可以带passphrase的，这样保证了即使私钥泄露，不知道passphrase的人还是无法使用这个私钥。</p>
+
+<p>ssh-agent</p>
+
+<p>它是一个用于管理记忆ssh私钥的工具，在ssh客户端连接服务端进入授权阶段，openssh客户端会利用它访问已经添加过的私钥，而不需要每次都重新寻找。当它进程本身被kill后，私钥需要重新添加</p>
+
+<p>ssh-add</p>
+
+<p>用于往ssh-agent里添加私钥，被passphrase加密过的私钥此时需要提供passphrase。也可以通过<code>ssh-add -l</code>和<code>ssh-add -L</code>来查看已经添加了哪些私钥</p>
+
+<h2>Git ssh hosting 里和ssh的关系</h2>
+
+<p>最简单的Git ssh hosting，就是原始的ssh访问目录，使用者把自己的公钥上传到服务端的<code>authorized_keys</code>里</p>
+
+<p>而比较常见做用户权限管理的git管理是gitolite，比如Gitlab 5.0前和gitcorp目前都是在使用它。它利用在<code>authorized_keys</code>里可以为每个公钥指定运行的脚本，把授权处理的逻辑放到脚本里去判断（用户是否对某个路径有权限）</p>
+
+<p>使用</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ssh git@git.corp.anjuke.com</span></code></pre></td></tr></table></div></figure>
+
+
+<p>访问如果出现询问登录密码，则说明公钥没有添加成功</p>
+
+<h2>一些使用技巧和问题答疑</h2>
+
+<h3>已经添加了公钥，但访问仍旧询问需要密码？</h3>
+
+<p>这个问题本身原因比较多，常见的是公钥没添加对。把自己的公钥写到服务端对应用户的<code>~/.ssh/authorized_keys</code>里</p>
+
+<p>服务端sshd配置是否StrictMode了，是的话，<code>~/.ssh</code>目录以及<code>authroized_keys</code>文件需要是600权限</p>
+
+<p>如果确保权限和公钥都添加正确还是不行。请检查一下sshd配置里MaxAuthRetries的值。Debian默认是6。也就是说如果agent里私钥比较多，正确的私钥在第7个，那么到第6次服务器就拒绝授权了。这种时候解决办法有几种，1. 把agent kill掉，换一下添加私钥的顺序。2. 给sshd配置里把retry次数加上去。 3. 改<code>~/.ssh/config</code> 给目标host指定<code>IdentityFile</code>。推荐第3种</p>
+
+<p>客户端连接的时候用户是否正确？ ssh默认使用当前shell用户名，如果远端用户名不一样要显式指定，如<code>ssh username@remotehost</code></p>
+
+<h3>非标准的ssh端口如何连接？</h3>
+
+<p><code>ssh -p 2222 foo@bar</code></p>
+
+<p>rsync通信使用ssh呢？ssh不是标准端口呢？</p>
+
+<p><code>rsync -e ssh foo bar</code>以及<code>rsync -e 'ssh -p 2222' foo bar</code></p>
+
+<h3>加密过的密钥，每次连接的时候提示需要密码？（sudo ssh连接就需要询问密码了？）</h3>
+
+<p>ssh-agent没利用好。其实ssh客户端连接授权的时候是看<code>$SSH_AGENT_PID</code>这个环境变量的。先检查这个环境变量的值和ssh-agent进程的PID是否一致？ 这个自己手动写脚本管理比较麻烦，推荐使用<code>keychain</code>工具</p>
+
+<p>在<code>~/.bash_profile</code>里添加下面的内容</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>if [[ -n "$(command -v keychain)" ]]; then
+</span><span class='line'>  /path/to/keychain -q
+</span><span class='line'>  /path/to/keychain -q /path/to/your/private/key
+</span><span class='line'>  . ~/.keychain/$HOSTNAME-sh
+</span><span class='line'>fi</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样每次打开shell，keychain都会检查一下ssh-agent是否启动，没有的话会加载私钥，export那个环境变量</p>
+
+<p>至于sudo ssh就没法使用公钥授权了，是因为sudo不会把这些环境变量带到sudo执行的命令里；使用<code>sudo -E</code>即可。</p>
+
+<h3>每次添加加密的密钥好麻烦，有工具可以自动输入密码吗？</h3>
+
+<p>请放狗搜索<code>expect ssh passphrase</code>。至于expect脚本，请妥善保管，因为里面写了passphrase&#8230;Good Luck!</p>
+
+<h3>forward_agent是干啥的？</h3>
+
+<p>和ssh-agent同理，但可以把客户端的所有agent里的私钥信息带到服务器上。举例：</p>
+
+<p>客户端A可以通过公钥授权访问主机B和主机C，但和主机C链路不通。主机B和主机C链路是通的。</p>
+
+<p>那么<code>ssh -A hostB</code>登录后再<code>ssh hostC</code>就可以通过公钥授权了。线上堡垒机就是这么玩的</p>
+
+<p>相对的，使用<code>ssh -a</code>来关闭forward功能</p>
+
+<h3>堡垒机需要连2次ssh才能登上线上服务器</h3>
+
+<p><strike>可以上去开个2222端口什么的嘛，反正只禁止了22 XDDDDD</strike></p>
+
+<p>写个脚本加到自己$PATH里去，比如叫stargate</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>#!/bin/bash
+</span><span class='line'>
+</span><span class='line'>ssh -A username@10.10.6.226 -t "ssh $1"</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以后上线上机器，直接<code>stargate app10-045</code></p>
+
+<p>不过，有些环境变量可能会有小问题，比如xterm了（tmux下的配色哟&#8230;）</p>
+
+<h3>ssh建立连接很慢</h3>
+
+<p>多数情况是因为服务端反向查询DNS造成的，sshd的配置里<code>UseDNS no</code>，重启</p>
+
+<p>如果没用&#8230;恩&#8230; <code>ssh -v</code> 分析一下过程吧</p>
+
+<h3><code>sshd_config</code>, <code>ssh_config</code>和<code>~/.ssh/config</code></h3>
+
+<p>一般sshd的配置文件在<code>/etc/ssh/sshd_config</code>里，定义了ssh服务端的配置</p>
+
+<p><code>/etc/ssh/ssh_config</code>，对于该系统全局的ssh客户端配置</p>
+
+<p>比较常用的就是<code>~/.ssh/config</code>了，这里可以定义该用户自己ssh客户端的配置，想知道有多少配置？<code>man ssh_config</code>。这里举例一些比较有用的吧</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Host * # 写*表示对全部主机使用
+</span><span class='line'>    ServerAliveInterval 60 # 和Server连接保持60s的心跳，防止broken pipe之类的会话断开
+</span><span class='line'>    GSSAPIAuthentication no # 不使用GSSAPI授权，用的比较少，但不少sshd上默认就开了，会多一次授权验证
+</span><span class='line'>    ControlMaster auto # 这和下面一句表示连接相同用户/主机/端口组合的时候利用同一条链路，减少网络开销
+</span><span class='line'>    ControlPath /tmp/ssh-%r@%h:%p
+</span><span class='line'>    Compression yes # ssh通信压缩，值越大压缩比越高
+</span><span class='line'>    CompressionLevel 7
+</span><span class='line'>    Cipher blowfish # 指定cipher的方式</span></code></pre></td></tr></table></div></figure>
+
+
+<p>看到很多人访问一些主机参数比较多的时候会<code>ssh -i ~/.ssh/gitcorp/id_rsa.pub -p 2222 git@git.corp.anjuke.com</code>，敲好多字&#8230; <code>~/.ssh/config</code>里可以自己定义ssh的主机名字，比如</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>host gitcorp
+</span><span class='line'>    hostname git.corp.anjuke.com
+</span><span class='line'>    user git
+</span><span class='line'>    port 2222
+</span><span class='line'>    IdentityFile ~/.ssh/gitcorp/id_rsa.pub</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以后就可以直接使用<code>ssh gitcorp</code>或者<code>git clone gitcorp:foo/bar</code>了</p>
+
+<h3>capistrano里使用ssh的注意点</h3>
+
+<p>ssh选项使用<code>ssh_options[:option_name] = value</code> 来添加。不是所有option都支持，具体要看<code>Net::SSH</code>的实现。</p>
+
+<p>需要注意的地方</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ssh_options[:forward_agent] = true # 开启forward
+</span><span class='line'>ssh_options[:compression] = false # capistrano 似乎不支持压缩通信，如果看到zlib报错之类的，基本都是这个原因
+</span><span class='line'>ssh_options[:port] = 2222 # 使用非标准端口</span></code></pre></td></tr></table></div></figure>
+
+
+<p>capistrano太重啦，用mina吧</p>
+
+<h3>利用ssh隧道建立socket代理（常用于梯子，<strong>你懂得</strong>）</h3>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ssh -D 7070 -qTfnN foo@bar</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>ssh -L</code>还可以用于直接访问IDC DB的3306哦☆（ゝω・）</p>
+
+<h3>X11 over ssh</h3>
+
+<p>远程桌面？VNC？弱暴了好不好！！！！（因为很重要，所以加了4个感叹号）</p>
+
+<p>更重要的是，ssh本身是加密的&#8230;</p>
+
+<p>服务端确保sshd的配置</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>AllowTcpForwarding yes
+</span><span class='line'>X11Forwarding yes
+</span><span class='line'>X11DisplayOffset 10
+</span><span class='line'>X11UseLocalhost yes</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ssh -Y foo@bar
+</span><span class='line'>
+</span><span class='line'># 或者
+</span><span class='line'>ssh -X foo@bar</span></code></pre></td></tr></table></div></figure>
+
+
+<p>好了，打开你心爱的图形软件吧</p>
+
+<p>X支持只开需要的软件的图形，比那啥好多了</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>gedit
+</span><span class='line'>
+</span><span class='line'># 上上网？
+</span><span class='line'>firefox</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果你对带宽有信心。。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>startx</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后Xorg本身就是支持多个X实例的。。。所以完全可以在一台机子上跑多个X。别忘记unix-like的系统是多用户的。。</p>
+
+<p><strike>话说。。。有个shell再上个emacs/vim不就好干活了吗。。XDDDD </strike></p>
+
+<h2>总结</h2>
+
+<p>更多技巧和知识，请认真<code>man ssh</code> <code>man sshd</code> <code>man ssh_config</code> <code>man sshd_config</code>。</p>
+
+<p>__END__</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Beautiful Computer Programming]]></title>
@@ -7244,485 +7774,6 @@
 <p>其实也是这个我才知道前阵子上线的一台服务器上<code>/dev/mapper</code>，原来其实就是lvm啊XDDD</p>
 
 <p>__END__</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[深入Solr实战]]></title>
-    <link href="http://arch.corp.anjuke.com/blog/2012/10/15/solr-guildeline/"/>
-    <updated>2012-10-15T15:03:00+08:00</updated>
-    <id>http://arch.corp.anjuke.com/blog/2012/10/15/solr-guildeline</id>
-    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/084c149bb5a1769082ef794c6dcd1a91"></p>
-
-<p>solr为我们提供便捷的全文检索服务,查询标准,更新容易,部署方便.我们来介绍一下如何更好的使用solr来为我们服务</p>
-
-<!-- more -->
-
-
-<h1>新建solr服务</h1>
-
-<h3>新建solr服务时,需要大家提供以下信息:</h3>
-
-<ol>
-<li><p>servicename</p></li>
-<li><p>预计查询、更新频率</p></li>
-<li><p>多少文档数，每个文档有多少field,field的类型，有多少field是store的</p></li>
-<li><p>常用查询语句</p></li>
-</ol>
-
-
-<p>servicename是提供solr服务的url的一部分</p>
-
-<p>预计查询频率是指访问高峰期solr每分钟的请求次数</p>
-
-<p>更新频率是指全天solr更新最频繁的时段,每分钟会提交多少个文档更新</p>
-
-<p>每个文档有多少个field,每个field的类型,是否是store的,可以预估solr服务的磁盘及内存消耗</p>
-
-<p>提供常用的查询语句,可以纠正一些不正确的写法,预估cpu的消耗</p>
-
-<h3>一些建议:</h3>
-
-<p>所有业务字段除去id以外都不要store</p>
-
-<p>为了调试和排查错误方便,可以有一个updatetime的store字段,用于记录当前solr数据被update的时间</p>
-
-<h4>旁白:</h4>
-
-<p>关于字段store的测试,我们使用prop00服务,当时有245w的文档.我们将所有字段,除ID外进行了store和非store的调整,得到了下面的测试结果.</p>
-
-<table>
-<thead>
-<tr>
-<th></th>
-<th>非store</th>
-<th>store</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>索引文件大小</td>
-<td>767m</td>
-<td>1552m</td>
-</tr>
-<tr>
-<td>VSZ</td>
-<td>2527m</td>
-<td>2608m</td>
-</tr>
-<tr>
-<td>RSS</td>
-<td>2185m</td>
-<td>2194m</td>
-</tr>
-<tr>
-<td>10-11点90%时间</td>
-<td>119ms</td>
-<td>179ms</td>
-</tr>
-</tbody>
-</table>
-
-
-<p><strong>想速度快一点吗?非store吧</strong></p>
-
-<h1>使用solr服务</h1>
-
-<p>solr服务对于应用来说,就是更新和查询.而更新大家都知道通过包含unique的id的xml文件进行单个或者批量更新,这里说得更多的是如何写一个快一点的查询</p>
-
-<h2>理论知识(可以跳过)</h2>
-
-<h3>1. start</h3>
-
-<p>和数据库一样，使用大的start会对solr造成很大的压力，因此，start一定要限制在很小的范围内。</p>
-
-<p>如 ajk-qa 有以下查询：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='text'><span class='line'>fl=id&amp;sort=quetime+asc&amp;start=557550&amp;q=*:*&amp;wt=json&amp;rows=50
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这句话查询时间要1.5s左右。</p>
-
-<p><u><strong>结论:类似db的游标翻页,通过quetime>某个值来过滤，减少start的值。</strong></u></p>
-
-<h3>2. 关键词查询时间复杂度</h3>
-
-<h4>2.1 单个term查询:</h4>
-
-<p>假设 n为命中的doc数量，k为寻找前面k条记录，对应solr的start+rows</p>
-
-<p>最糟糕的情形下，时间复杂度为 n * log(k) 其中log(k)主要为调整最小堆所花费的时间。</p>
-
-<p>最好的情形下：为n，命中的doc的score都一样，无需调整堆。</p>
-
-<p><u><strong>结论：单个term性能主要决定于k，若k很大，会对性能有较多影响。</strong></u></p>
-
-<h4>2.2 多个term or查询：</h4>
-
-<p>假设 n为单个term平均命中doc数量，m为term个数，k为寻找前面k条记录</p>
-
-<p>最糟糕的情形下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='text'><span class='line'>n*m + n*m*log(m) + n*m + n * m * log(k) = n * m (log(m) + log(k))
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>较前面的单个term查询，多出来log(m)，其为调整各个term对应的scorer最小堆所需的时间。</p>
-
-<p>最好的情形下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='text'><span class='line'>n*m， 一样的道理，两个堆都无需调整。
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><u><strong>结论：多个term or时多了log(m)，因此term的数量不宜过大。</strong></u></p>
-
-<h4>2.3 多个term and查询：</h4>
-
-<p>假设 n为单个term平均命中doc数量，ni为第i个term命中的文档数，m为term个数，N 为最终命中的doc数量，k为寻找前面k条记录</p>
-
-<p>最糟糕的情形下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='text'><span class='line'>N*log(k) + max(ni)
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>最好的情形下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='text'><span class='line'>N + min(ni)
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>找到N条记录后，选择k条最前面的记录时，堆也不用调整， 各个term的对应的doc都差不多分布集中在一起，即</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='text'><span class='line'>min(docend-docbegin) = n
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><u><strong>结论：多个term and时和单个term基本一样。</strong></u></p>
-
-<h3>3.facet query</h3>
-
-<h4>3.1 facet.field: n 为命中的doc数量</h4>
-
-<p>基本流程是：solr里面遍历q命中的n个文档，然后统计出各个field value对的数量,</p>
-
-<h4>3.2 facet.query: 同搜索，取决于facet的查询，将facet.query查出来的文档集合和q查出来的文档集合做交集，然后统计个数。</h4>
-
-<p>注：由于这个facet.field需要从索引中获得field对应的term信息，因此使用facet.field并不一定比facet.query快。</p>
-
-<p><u><strong>结论：facet query和q一样需要注意性能问题。</strong></u></p>
-
-<h3>4.function boost</h3>
-
-<p>和一般查询一样，只是修改了scorer，没有特别增加的时间复杂度</p>
-
-<p><u><strong>结论：不是复杂的function boost对性能影响不大。</strong></u></p>
-
-<h3>5.fq的查询过程</h3>
-
-<h4>5.1 查询过程</h4>
-
-<p>solr这边fq会先从索引中查出对应的文档集合,每个fq都有对应的filtercache，然后做交集,然后从这些文档中去检索满足q条件的doc.</p>
-
-<h4>5.2 fq 特点：</h4>
-
-<p>fq有filtercache。q没有cache</p>
-
-<p>对最终的结果来说，fq不计算分数。q会计算</p>
-
-<p>fq在单个term查询时效率优于q，因为不需要计算分数, solr直接调用lucene的接口，获得倒排表命中的文档.fq在除去单个term查询的情况以外, 则调用lucene的search接口，效率都和q一样</p>
-
-<p>多个非term查询会导致solr调用lucene的多次search，会非常慢，应该合并。</p>
-
-<h4>5.3 多个fq查询和fq里面多个查询AND的区别如下：</h4>
-
-<p>多个fq 进行 and时，使用的lucene的OpenBitSet(java中的BitSet)对fq结果集做并集.</p>
-
-<p>多个fq是每个fq查出来的结果后进行交集</p>
-
-<p>fq里面多个查询是一边查询一边做交集，如果fq有一个查询对应的文档数很少，建议使用fq多个查询AND</p>
-
-<h4>5.4 使用fq时的建议：</h4>
-
-<p>如果fq里面有非term查询，建议将非term查询合并在一起</p>
-
-<p>如果是仅仅根据单个term过滤结果，又不需要排序，建议使用<code>fq，q=*:*</code></p>
-
-<p>合理精简条件，solr不会对fq优化，去除一个fq可以少一次查询. fq如果并不能起到过滤文档的作用,请不要放在url中.例如:查询ajk-prop11的url中fq=city_id:11就可以拿掉</p>
-
-<p>如果查询中有出现非term查询,可以将非term查询合并到当前查询中命中文档数最少的fq中</p>
-
-<h3>6. q里面的and查询过程</h3>
-
-<h4>6.1查询时间复杂度的计算</h4>
-
-<p>lucene在score nextdoc的时候，就对根据term找到的doc做并集处理，该项动作的时间复杂度最好为O(N) N为满足所有条件的文档数，其实就是 docend-docbegin</p>
-
-<p>选择k个文档的时间复杂度是一样的： <code>N * log(k)</code>， <code>N</code>为满足所有条件的文档数</p>
-
-<h4>6.2 使用q时的建议:</h4>
-
-<p>功能上，fq没有score的功能，而q里面可以score。</p>
-
-<p>效率上，fq 和 q查询的差异在于找到满足条件文档的时间复杂度，一个是<code>O(min(n)) * m + O(Nf)</code>，一个是<code>O(N)</code>，如果fq的结果是经常变的，建议使用q里面的and条件。</p>
-
-<h3>7. 关于dismax的mm</h3>
-
-<p><code>mm=2</code>表示q里面的字句任意两个匹配就返回,造成大量的term查询</p>
-
-<h3>8. 范围查询</h3>
-
-<p>范围查询<code>fq=hpstarttime:[* TO 1351354156] OR hpendtime:[1351354156 TO *]</code>,范围越大越耗时,这种查询对速度影响非常大,且从查询语句上没有任何办法优化.</p>
-
-<p>lucene存的都是针对term的倒排表,即不是数值类型而是多个字符串，不像数据库那样会有某个字段的index.</p>
-
-<p>schema中可以调整<code>precisionStep=4</code>的值,默认是4或者没有设置,这个值越大则索引小性能差，越小则索引大性能理论上的好,精度高(目前还未测试)</p>
-
-<p>建议:</p>
-
-<blockquote><p>缩小范围，这是最直接最管用的方法</p>
-
-<p>不要使用<code>*</code>而是根据业务使用一个具体的数值,比如当前时间</p></blockquote>
-
-<h4>9. 其他建议</h4>
-
-<p>solr的机器的内存使用率不能超过80%</p>
-
-<p>optimize虽然官方声明是deprecated的,但是实际用下来还是需要继续</p>
-
-<p>通过<code>solr/admin/luke?fl=normalanswerstr&amp;numTerms=100</code>分析term,过滤掉没有意义的term</p>
-
-<p>附：什么是单个term查询：就是指定field 以及 value，且没有二元逻辑运算符，如 <code>city_id:14</code>， 注意：<code>field:(val1 OR val2)</code> 不是单个term查询。</p>
-
-<h2>结论(精华)</h2>
-
-<p><u><strong>结论:</strong></u> start+rows过大会严重影响solr的查询速度.</p>
-
-<p>解决方案:类似db的游标翻页,通过加入其他过滤条件(如<code>id&gt;某个值</code>)<code>quetime&gt;</code>，减少start的值.</p>
-
-<p>建议:start值<code>+rows</code>的值不要超过2000</p>
-
-<hr />
-
-<p><u><strong>结论:</strong></u> term数量在or查询中严重影响solr的查询数度</p>
-
-<p>解决方案:减少term的个数</p>
-
-<p>建议:term数量控制不超过10个</p>
-
-<hr />
-
-<p><u><strong>结论</strong></u>:每个fq都会有filtercache,对于更新太频繁的solr没有效果</p>
-
-<p>解决方案:减少update频率,减少fq的查询条件数目</p>
-
-<p>建议:daily build,减少自定义条件查询,或者将fq放到q的and条件中</p>
-
-<hr />
-
-<p><u><strong>结论:</strong></u> q可以计算分数,而fq不会,对于不需要score排序的查询,可以不使用q</p>
-
-<p>解决方案:非score排序,可以使用q=<em>:</em>&amp;fq=field1:value1而不是q=field1:value1</p>
-
-<hr />
-
-<p><u><strong>结论:</strong></u>多个fq查询,先对每个fq进行查询再做交集.而在fq里做多个and查询,会先优化查询顺序然后再边查询边交集查询</p>
-
-<p>建议:如果fq中有一个可以快速过滤文档的查询,可以将其他fq查询合并入此fq中</p>
-
-<hr />
-
-<p><u><strong>结论:</strong></u> 每次非term查询,会使solr调用lucene的search</p>
-
-<p>建议:如果有多个fq进行非term查询,建议合并(但是合并会导致fq的filtercache命中率低,需要平衡,另外可以结合上面fq and查询结论,合并到一个可以快速过滤文档的fq查询中)</p>
-
-<hr />
-
-<p><u><strong>结论:</strong></u> solr不会对多个fq进行优化,只会对单个fq内部优化</p>
-
-<p>建议:对不过滤文档的fq可以去除</p>
-
-<hr />
-
-<p><u><strong>结论:</strong></u> dismax的mm参数,是从q中取出制定数据的关键字进行组合然后进行or查询,会造成大量的term查询</p>
-
-<p>解决方案:<code>mm=1%</code>和<code>mm=99%</code>是一样的情况,只有拿掉mm使成为and查询</p>
-
-<hr />
-
-<p><u><strong>结论:</strong></u> solr的数值在存储是依然使用的是若干字符串进行存储,所以范围查询中范围越大越耗时</p>
-
-<p>解决方案:缩小查询范围</p>
-
-<p>建议:不要使用<code>*</code>,而是用一个根据业务使用一个具体的值</p>
-
-<hr />
-
-<p>参考资料</p>
-
-<ul>
-<li><p><a href="http://stackoverflow.com/questions/6462350/is-filtering-faster-than-querying-in-lucene">http://stackoverflow.com/questions/6462350/is-filtering-faster-than-querying-in-lucene</a></p></li>
-<li><p><a href="http://xangqun.iteye.com/blog/686840">http://xangqun.iteye.com/blog/686840</a></p></li>
-<li><p><a href="http://www.wanghd.com/blog/2012/09/21/solrde-shu-zhi-cun-chu-he-fan-wei-cha-xun/">http://www.wanghd.com/blog/2012/09/21/solrde-shu-zhi-cun-chu-he-fan-wei-cha-xun/</a></p></li>
-<li><p><a href="http://hadoopcn.iteye.com/blog/1550402">http://hadoopcn.iteye.com/blog/1550402</a></p></li>
-</ul>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Mogilefs设备权重算法]]></title>
-    <link href="http://arch.corp.anjuke.com/blog/2012/10/09/how-does-mogilefs-select-device-for-upload/"/>
-    <updated>2012-10-09T17:55:00+08:00</updated>
-    <id>http://arch.corp.anjuke.com/blog/2012/10/09/how-does-mogilefs-select-device-for-upload</id>
-    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/78811efe9c142e0898c049686e25594d"></p>
-
-<h3>遇到的问题</h3>
-
-<ul>
-<li>有几块设备已经剩余10%容量，有几块设备剩余75%容量，为什么75%的util相当高呢</li>
-<li>原本理解mogilefs平均分配新文件到设备上，猜想应该是不对的</li>
-</ul>
-
-
-<h3>看看mogilefs到底是怎么做的呢</h3>
-
-<ul>
-<li>处理文件是Query.pl干的，确认新建文件是cmd_create_open函数所为</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">cmd_create_open</span> <span class="p">{</span>
-</span><span class='line'>    <span class="c1">#略</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">#默认情况下设备的选择是从这开始的，参数是所有设备</span>
-</span><span class='line'>    <span class="nv">@devices</span> <span class="o">=</span> <span class="n">sort_devs_by_freespace</span><span class="p">(</span><span class="nn">Mgd::</span><span class="n">device_factory</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">get_all</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">#略</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>sort_devs_by_freespace用剩余百分比做为权重，生成一个二维数组做参数[前20个]</li>
-<li>真正的返回值是通过MogileFS::Util::weighted_list进行权重计算</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">sort_devs_by_freespace</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">my</span> <span class="nv">@devices_with_weights</span> <span class="o">=</span> <span class="nb">map</span> <span class="p">{</span> <span class="c1">#生成二维数组，剩余大小用来做权重</span>
-</span><span class='line'>        <span class="p">[</span><span class="nv">$_</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="n">percent_free</span><span class="p">]</span>
-</span><span class='line'>    <span class="p">}</span> <span class="nb">sort</span> <span class="p">{</span>  <span class="c1">#排序，从大到小排序</span>
-</span><span class='line'>        <span class="nv">$b</span><span class="o">-&gt;</span><span class="n">percent_free</span> <span class="sr">&lt;=&gt;</span> <span class="nv">$a</span><span class="o">-&gt;</span><span class="n">percent_free</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span> <span class="nb">grep</span> <span class="p">{</span>  <span class="c1">#过滤设备，只要可以新建文件的，就是状态为alive的</span>
-</span><span class='line'>        <span class="nv">$_</span><span class="o">-&gt;</span><span class="n">should_get_new_files</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span> <span class="nv">@_</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">my</span> <span class="nv">@list</span> <span class="o">=</span>
-</span><span class='line'>        <span class="nn">MogileFS::Util::</span><span class="n">weighted_list</span><span class="p">(</span><span class="nb">splice</span><span class="p">(</span><span class="nv">@devices_with_weights</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">));</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="nv">@list</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>这里才是算法的核心，让容量多的多放点文件，但当容量很大时基本随即，做个例子会比较直观</li>
-<li>假设有两个设备，剩余的容量分别是10和75</li>
-<li>那么sum就是85，如果乘以随机数的话可能是8.5(0.1)或者是76.5(0.9)</li>
-<li>如果是8.5，那么75就大于8.5了，先返回了【并且这种概率大】</li>
-<li>如果是76.5，那么75就不大于76.5了, 则返回另一个【这种概率小】</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">weighted_list</span> <span class="p">(@)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">my</span> <span class="nv">@list</span> <span class="o">=</span> <span class="nb">grep</span> <span class="p">{</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span> <span class="nv">@_</span><span class="p">;</span> <span class="c1">#排除掉等于0的</span>
-</span><span class='line'>    <span class="k">my</span> <span class="nv">@ret</span><span class="p">;</span> <span class="c1">#初始化返回数组</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">my</span> <span class="nv">$sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>    <span class="nv">$sum</span> <span class="o">+=</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">foreach</span> <span class="nv">@list</span><span class="p">;</span> <span class="c1">#累加剩余容量</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">my</span> <span class="nv">$getone</span> <span class="o">=</span> <span class="k">sub </span><span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">shift</span><span class="p">(</span><span class="nv">@list</span><span class="p">)</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span class='line'>            <span class="k">if</span> <span class="nb">scalar</span><span class="p">(</span><span class="nv">@list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">#只有一个了，直接返回</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">my</span> <span class="nv">$val</span> <span class="o">=</span> <span class="nb">rand</span><span class="p">()</span> <span class="o">*</span> <span class="nv">$sum</span><span class="p">;</span> <span class="c1">#总容量乘以0到1的随机数</span>
-</span><span class='line'>        <span class="k">my</span> <span class="nv">$curval</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$idx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nv">$idx</span> <span class="o">&lt;</span> <span class="nb">scalar</span><span class="p">(</span><span class="nv">@list</span><span class="p">);</span> <span class="nv">$idx</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">my</span> <span class="nv">$item</span> <span class="o">=</span> <span class="nv">$list</span><span class="p">[</span><span class="nv">$idx</span><span class="p">];</span>
-</span><span class='line'>            <span class="nv">$curval</span> <span class="o">+=</span> <span class="nv">$item</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="c1">#累加进去,保证肯定有返回</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$curval</span> <span class="o">&gt;=</span> <span class="nv">$val</span><span class="p">)</span> <span class="p">{</span> <span class="c1">#如果curval比随机乘积大</span>
-</span><span class='line'>                <span class="k">my</span> <span class="p">(</span><span class="nv">$ret</span><span class="p">)</span> <span class="o">=</span> <span class="nb">splice</span><span class="p">(</span><span class="nv">@list</span><span class="p">,</span> <span class="nv">$idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span> <span class="c1">#切割出来</span>
-</span><span class='line'>                <span class="nv">$sum</span> <span class="o">-=</span> <span class="nv">$item</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="c1">#从总容量里减去</span>
-</span><span class='line'>                <span class="k">return</span> <span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>   <span class="c1">#返回这个设备</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">};</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nb">push</span> <span class="nv">@ret</span><span class="p">,</span> <span class="nv">$getone</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">while</span> <span class="nv">@list</span><span class="p">;</span> <span class="c1">#循环执行getone，加到返回数组</span>
-</span><span class='line'>    <span class="k">return</span> <span class="nv">@ret</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
 ]]></content>
   </entry>
   

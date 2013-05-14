@@ -9,7 +9,7 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content="We have seen that computer programming is an art, because it applies accumulated knowledge to the world, because it requires skill and ingenuity, and &hellip;">
+  <meta name="description" content="RVM是Ruby Version Manager的缩写，是管理Ruby版本的工具，方便在开发、部署的时候于多个Ruby环境中切换与使用 关于RVM的信息，请参考官方网站的最新资料为准 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +77,107 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/13/rvm-tutorial/">RVM Tutorial</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-13T11:30:00+08:00" pubdate data-updated="true">May 13<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>RVM是Ruby Version Manager的缩写，是管理Ruby版本的工具，方便在开发、部署的时候于多个Ruby环境中切换与使用</p>
+
+<p>关于RVM的信息，请参考<a href="https://rvm.io">官方网站</a>的最新资料为准</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/05/13/rvm-tutorial/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/13/a-brief-introduction-to-ssh/">A Brief Introduction to SSH</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-13T10:53:00+08:00" pubdate data-updated="true">May 13<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>为什么会有这篇介绍？</h2>
+
+<p>不少人对ssh有疑问或者不明白，典型的例子是在gitcorp/github上添加了公钥后发现无法clone或者push仓库里的代码。</p>
+
+<h2>前言</h2>
+
+<p>ssh是个很大的话题，会发现牵涉到unix-like下很多东西，这里只谈谈我们日常工作中接触最多的那部分</p>
+
+<p>哦，对了，这里的ssh不是Java里的SSH（Spring/Structs/Hibernate）。我也是前几天刚明白XDD</p>
+
+<h2>参考资料</h2>
+
+<ul>
+<li><a href="http://www.eng.cam.ac.uk/help/jpmg/ssh/ssh-detail.html">ssh - how it works</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Secure_Shell">Secure Shell</a></li>
+<li><a href="http://www.unixwiz.net/techtips/ssh-agent-forwarding.html">An Illustrated Guide to SSH Agent Forwarding</a></li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/05/13/a-brief-introduction-to-ssh/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -711,127 +812,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-04T20:49:00+08:00" pubdate data-updated="true">Jan 4<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>原文地址：https://github.com/bbatsov/clojure-style-guide</p>
-
-<p>这份Clojure代码规范旨在提供一系列的最佳实践，让现实工作中的Clojure程序员能够写出易于维护的代码，并能与他人协作和共享。一份反应真实需求的代码规范才能被人接收，而那些理想化的、甚至部分观点遭到程序员拒绝的代码规范注定不会长久——无论它有多出色。</p>
-
-<p>这份规范由多个章节组成，每个章节包含一组相关的规则。我会尝试去描述每条规则背后的理念（过于明显的理念我就省略了）。</p>
-
-<p>这些规则并不是我凭空想象的，它们出自于我作为一个专业软件开发工程师长久以来的工作积累，以及Clojure社区成员们的反馈和建议，还有各种广为流传的Clojure编程学习资源，如<a href="http://www.clojurebook.com/">《Clojure Programming》</a>、<a href="http://joyofclojure.com/">《The Joy of Clojure》</a>等。</p>
-
-<p>这份规范还处于编写阶段，部分章节有所缺失，内容并不完整；部分规则没有示例，或者示例还不能完全将其描述清楚。未来这些问题都会得到改进，只是请你了解这一情况。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/01/04/clojure-style-guide/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-12-23T22:11:00+08:00" pubdate data-updated="true">Dec 23<span>rd</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>系统管理员可以使用Nginx提供的信号机制来对其进行维护，比较常用的是<code>kill -HUP &lt;master pid&gt;</code>命令，它能通知Nginx使用新的配置文件启动工作进程，并逐个关闭旧进程，完成平滑切换。当需要对Nginx进行版本升级或增减模块时，为了不丢失请求，可以结合使用<code>USR2</code>、<code>WINCH</code>等信号进行平滑过度，达到热升级的目的。如果中途遇到问题，也能立刻回退至原版本。</p>
-
-<h2>操作步骤</h2>
-
-<p>1、备份原Nginx二进制文件；</p>
-
-<p>2、编译新Nginx源码，安装路径需与旧版一致；</p>
-
-<p>3、向主进程发送<code>USR2</code>信号，Nginx会启动一个新版本的master进程和工作进程，和旧版一起处理请求：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>prey:~ root# ps -ef|grep nginx
-</span><span class='line'> 127     1   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
-</span><span class='line'> 129   127   nginx: worker process
-</span><span class='line'>prey:~ root# <span class="nb">kill</span> -USR2 127
-</span><span class='line'>prey:~ root# ps -ef|grep nginx
-</span><span class='line'> 127     1   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
-</span><span class='line'> 129   127   nginx: worker process
-</span><span class='line'>5180   127   nginx: master process /usr/local/nginx-1.2.4/sbin/nginx
-</span><span class='line'>5182  5180   nginx: worker process
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/12/23/nginx-live-upgrade/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -845,6 +825,14 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/05/13/rvm-tutorial/">RVM Tutorial</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/13/a-brief-introduction-to-ssh/">A Brief Introduction to SSH</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/04/09/beautiful-computer-programming/">Beautiful Computer Programming</a>
@@ -876,14 +864,6 @@
     
       <li class="post">
         <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
       </li>
     
   </ul>

@@ -9,8 +9,7 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content=" Hold a sec! What is reviewboard ? reviewboard是一款基于web的强大的code
-review工具，他提供了便捷、强大的功能来帮助开发者更顺利地进行code review这一核心工作。支持众多版本控制系统。 ">
+  <meta name="description" content=" solr为我们提供便捷的全文检索服务,查询标准,更新容易,部署方便.我们来介绍一下如何更好的使用solr来为我们服务 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -78,6 +77,224 @@ review工具，他提供了便捷、强大的功能来帮助开发者更顺利�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/15/solr-guildeline/">深入Solr实战</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-15T15:03:00+08:00" pubdate data-updated="true">Oct 15<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/084c149bb5a1769082ef794c6dcd1a91"></p>
+
+<p>solr为我们提供便捷的全文检索服务,查询标准,更新容易,部署方便.我们来介绍一下如何更好的使用solr来为我们服务</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/10/15/solr-guildeline/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/09/how-does-mogilefs-select-device-for-upload/">Mogilefs设备权重算法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-09T17:55:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/78811efe9c142e0898c049686e25594d"></p>
+
+<h3>遇到的问题</h3>
+
+<ul>
+<li>有几块设备已经剩余10%容量，有几块设备剩余75%容量，为什么75%的util相当高呢</li>
+<li>原本理解mogilefs平均分配新文件到设备上，猜想应该是不对的</li>
+</ul>
+
+
+<h3>看看mogilefs到底是怎么做的呢</h3>
+
+<ul>
+<li>处理文件是Query.pl干的，确认新建文件是cmd_create_open函数所为</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">cmd_create_open</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">#略</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">#默认情况下设备的选择是从这开始的，参数是所有设备</span>
+</span><span class='line'>    <span class="nv">@devices</span> <span class="o">=</span> <span class="n">sort_devs_by_freespace</span><span class="p">(</span><span class="nn">Mgd::</span><span class="n">device_factory</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">get_all</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">#略</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>sort_devs_by_freespace用剩余百分比做为权重，生成一个二维数组做参数[前20个]</li>
+<li>真正的返回值是通过MogileFS::Util::weighted_list进行权重计算</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">sort_devs_by_freespace</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@devices_with_weights</span> <span class="o">=</span> <span class="nb">map</span> <span class="p">{</span> <span class="c1">#生成二维数组，剩余大小用来做权重</span>
+</span><span class='line'>        <span class="p">[</span><span class="nv">$_</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="n">percent_free</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nb">sort</span> <span class="p">{</span>  <span class="c1">#排序，从大到小排序</span>
+</span><span class='line'>        <span class="nv">$b</span><span class="o">-&gt;</span><span class="n">percent_free</span> <span class="sr">&lt;=&gt;</span> <span class="nv">$a</span><span class="o">-&gt;</span><span class="n">percent_free</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nb">grep</span> <span class="p">{</span>  <span class="c1">#过滤设备，只要可以新建文件的，就是状态为alive的</span>
+</span><span class='line'>        <span class="nv">$_</span><span class="o">-&gt;</span><span class="n">should_get_new_files</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nv">@_</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@list</span> <span class="o">=</span>
+</span><span class='line'>        <span class="nn">MogileFS::Util::</span><span class="n">weighted_list</span><span class="p">(</span><span class="nb">splice</span><span class="p">(</span><span class="nv">@devices_with_weights</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">@list</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>这里才是算法的核心，让容量多的多放点文件，但当容量很大时基本随即，做个例子会比较直观</li>
+<li>假设有两个设备，剩余的容量分别是10和75</li>
+<li>那么sum就是85，如果乘以随机数的话可能是8.5(0.1)或者是76.5(0.9)</li>
+<li>如果是8.5，那么75就大于8.5了，先返回了【并且这种概率大】</li>
+<li>如果是76.5，那么75就不大于76.5了, 则返回另一个【这种概率小】</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='perl'><span class='line'><span class="k">sub </span><span class="nf">weighted_list</span> <span class="p">(@)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@list</span> <span class="o">=</span> <span class="nb">grep</span> <span class="p">{</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span> <span class="nv">@_</span><span class="p">;</span> <span class="c1">#排除掉等于0的</span>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">@ret</span><span class="p">;</span> <span class="c1">#初始化返回数组</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$sum</span> <span class="o">+=</span> <span class="nv">$_</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">foreach</span> <span class="nv">@list</span><span class="p">;</span> <span class="c1">#累加剩余容量</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">my</span> <span class="nv">$getone</span> <span class="o">=</span> <span class="k">sub </span><span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">shift</span><span class="p">(</span><span class="nv">@list</span><span class="p">)</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span class='line'>            <span class="k">if</span> <span class="nb">scalar</span><span class="p">(</span><span class="nv">@list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">#只有一个了，直接返回</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$val</span> <span class="o">=</span> <span class="nb">rand</span><span class="p">()</span> <span class="o">*</span> <span class="nv">$sum</span><span class="p">;</span> <span class="c1">#总容量乘以0到1的随机数</span>
+</span><span class='line'>        <span class="k">my</span> <span class="nv">$curval</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$idx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nv">$idx</span> <span class="o">&lt;</span> <span class="nb">scalar</span><span class="p">(</span><span class="nv">@list</span><span class="p">);</span> <span class="nv">$idx</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">my</span> <span class="nv">$item</span> <span class="o">=</span> <span class="nv">$list</span><span class="p">[</span><span class="nv">$idx</span><span class="p">];</span>
+</span><span class='line'>            <span class="nv">$curval</span> <span class="o">+=</span> <span class="nv">$item</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="c1">#累加进去,保证肯定有返回</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$curval</span> <span class="o">&gt;=</span> <span class="nv">$val</span><span class="p">)</span> <span class="p">{</span> <span class="c1">#如果curval比随机乘积大</span>
+</span><span class='line'>                <span class="k">my</span> <span class="p">(</span><span class="nv">$ret</span><span class="p">)</span> <span class="o">=</span> <span class="nb">splice</span><span class="p">(</span><span class="nv">@list</span><span class="p">,</span> <span class="nv">$idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span> <span class="c1">#切割出来</span>
+</span><span class='line'>                <span class="nv">$sum</span> <span class="o">-=</span> <span class="nv">$item</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="c1">#从总容量里减去</span>
+</span><span class='line'>                <span class="k">return</span> <span class="nv">$ret</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>   <span class="c1">#返回这个设备</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">push</span> <span class="nv">@ret</span><span class="p">,</span> <span class="nv">$getone</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">while</span> <span class="nv">@list</span><span class="p">;</span> <span class="c1">#循环执行getone，加到返回数组</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">@ret</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1147,84 +1364,6 @@ entry-points = script_name=project_name.module_name:function_name
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/05/16/mogilefs-code-reading-4/">Perl使用Epoll优化</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-05-16T10:14:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"></div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/05/16/mogilefs-code-reading-4/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/05/16/mogilefs-code-reading-3/">Perl使用Poll多路复用</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-05-16T10:13:00+08:00" pubdate data-updated="true">May 16<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"></div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/05/16/mogilefs-code-reading-3/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; Older</a>
@@ -1240,6 +1379,14 @@ entry-points = script_name=project_name.module_name:function_name
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/05/13/rvm-tutorial/">RVM Tutorial</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/13/a-brief-introduction-to-ssh/">A Brief Introduction to SSH</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/04/09/beautiful-computer-programming/">Beautiful Computer Programming</a>
@@ -1271,14 +1418,6 @@ entry-points = script_name=project_name.module_name:function_name
     
       <li class="post">
         <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/01/04/clojure-style-guide/">Clojure 代码规范</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2012/12/23/nginx-live-upgrade/">Nginx热升级</a>
       </li>
     
   </ul>
