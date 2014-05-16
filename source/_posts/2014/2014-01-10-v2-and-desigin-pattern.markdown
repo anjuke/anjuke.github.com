@@ -1,12 +1,14 @@
 ---
 layout: post
 title: "V2 中的软件设计"
-date: 2014-05-13 11:30
+date: 2014-01-10 11:30
 comments: true
 categories:
 ---
 
-[{%img right https://avatars1.githubusercontent.com/u/863872?s=460 80 %}](https://github.com/kdlan)
+{%img right https://avatars1.githubusercontent.com/u/863872?s=460 80 %}
+
+文：[蕫菲](https://github.com/kdlan) kdlan
 
 这里介绍一下 [system](http://git.corp.anjuke.com/corp/v2-system) 和 [system-ext](http://git.corp.anjuke.com/site/system-ext) 里的一些设计原则。
 
@@ -72,7 +74,7 @@ final String outputDir = ctxt.getScratchAbsolutePath()
 
 ## 2. V2 的设计分析
 
-### 2.1 [system](http://git.corp.anjuke.com/corp/v2-system)
+### 2.1 system
 
 我们从 [APF.php](http://git.corp.anjuke.com/corp/v2-system/browse/master/classes/APF.php) 开始，入口是 `APF::run()`
 
@@ -194,11 +196,11 @@ Router，在这里主要是负责做 `URL => controller` 的映射。直觉上�
 
 APF 其他的处理基本上也是按照 run() 里的方式来组织的（Page 和 Component 就这么被跳过了么...）。
 
-### 2.2 [system-ext](http://git.corp.anjuke.com/site/system-ext)
+### 2.2 system-ext
 
-抛开 DAO，关于 system-ext 相比 system 最大的不同在哪？我个人觉得是 [*Apf_Proxy_Proxy.php*](http://git.corp.anjuke.com/site/system-ext/browse/master/classes/apf/proxy/Proxy.php) 这个东西。这个类就是代理模式最直接的实现，当然我们也可以拿它来做装饰器模式的事情，只不过配置写起来麻烦点。
+抛开 DAO，关于 system-ext 相比 system 最大的不同在哪？我个人觉得是 [Apf_Proxy_Proxy](http://git.corp.anjuke.com/site/system-ext/browse/master/classes/apf/proxy/Proxy.php) 这个东西。这个类就是代理模式最直接的实现，当然我们也可以拿它来做装饰器模式的事情，只不过配置写起来麻烦点。
 
-代理模式有什么用？如果你知道 AOP(Aspect Oriented Programming) 是个什么东西，如果里用过 Java，用过 SpringFramework，知道声明式事务是怎么回事，就知道 **代理** 这玩意有多么好用了
+代理模式有什么用？如果你知道 AOP(Aspect Oriented Programming) 是个什么东西，如果里用过 Java，用过 Spring，知道声明式事务是怎么回事，就知道 **代理** 这玩意有多么好用了。
 
 想想原来，我们要在一段代码上增加缓存是怎么做的？
 
@@ -256,6 +258,6 @@ $config['allow_methodes'] = array(
 
 不过绝大多数情况下，我们其实不需要一开始就分离的这么细，以免前期设计的时间过长，但是最后实际写代码的时候还是发现不能满足需求。也不需要把每一块代码都这么来分离，那样写得要累死了。
 
-所以重构就在这里派上用场了。这里再推荐一本书，[重构:改善既有代码的设计](http://www.amazon.cn/%E9%87%8D%E6%9E%84-%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1-%E7%A6%8F%E5%8B%92/dp/B003BY6PLK/)
+所以重构就在这里派上用场了。这里再推荐一本书，[重构:改善既有代码的设计](http://www.amazon.cn/%E9%87%8D%E6%9E%84-%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1-%E7%A6%8F%E5%8B%92/dp/B003BY6PLK/)。
 
 后面我会再写一篇文档，结合我们实际的业务开发的例子，讲一下怎么来写比较容易维护，可扩展性高的代码。
