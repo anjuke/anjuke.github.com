@@ -245,3 +245,12 @@ th, td {
     padding: .2em .5em;
     border: 1px solid #ccc;
 }
+
+.highlight table {
+  margin-bottom: 0;
+}
+
+.highlight th, td {
+  border: 0;
+  padding: 0;
+}
