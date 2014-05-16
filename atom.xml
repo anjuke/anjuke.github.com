@@ -4,7 +4,7 @@
   <title><![CDATA[Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2014-05-16T12:00:48+08:00</updated>
+  <updated>2014-05-16T12:04:18+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -18,7 +18,7 @@
     <link href="http://arch.corp.anjuke.com/blog/2014/05/13/v2-and-desigin-pattern/"/>
     <updated>2014-05-13T11:30:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2014/05/13/v2-and-desigin-pattern</id>
-    <content type="html"><![CDATA[<p><a href="https://github.com/kdlan"><img class="right" src="https://avatars1.githubusercontent.com/u/863872?s=460"></a></p>
+    <content type="html"><![CDATA[<p><a href="https://github.com/kdlan"><img class="right" src="https://avatars1.githubusercontent.com/u/863872?s=460" width="80"></a></p>
 
 <p>这里介绍一下 <a href="http://git.corp.anjuke.com/corp/v2-system">system</a> 和 <a href="http://git.corp.anjuke.com/site/system-ext">system-ext</a> 里的一些设计原则。</p>
 
