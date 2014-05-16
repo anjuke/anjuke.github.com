@@ -4,7 +4,7 @@
   <title><![CDATA[Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2014-02-21T16:04:15+08:00</updated>
+  <updated>2014-05-16T12:00:48+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -12,6 +12,392 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[V2 中的软件设计]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2014/05/13/v2-and-desigin-pattern/"/>
+    <updated>2014-05-13T11:30:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2014/05/13/v2-and-desigin-pattern</id>
+    <content type="html"><![CDATA[<p><a href="https://github.com/kdlan"><img class="right" src="https://avatars1.githubusercontent.com/u/863872?s=460"></a></p>
+
+<p>这里介绍一下 <a href="http://git.corp.anjuke.com/corp/v2-system">system</a> 和 <a href="http://git.corp.anjuke.com/site/system-ext">system-ext</a> 里的一些设计原则。</p>
+
+<p>本文需要对常见的设计模式有一个基本的了解，如果你对设计模式还一无所知，推荐阅读 <a href="http://www.amazon.cn/Head-First%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E5%BC%97%E9%87%8C%E6%9B%BC/dp/B0011FBU34"><em>Head First Design Pattern</em></a></p>
+
+<p><strong>免责声明！！下面的内容都是我个人的总结，难免有错误的地方。主要是希望能抛砖引玉，大家能有自己的思考就好了</strong></p>
+
+<h2>1. 软件设计的一些原则</h2>
+
+<p>参考</p>
+
+<ul>
+<li><a href="http://coolshell.cn/articles/4535.html">一些软件设计的原则</a></li>
+<li><a href="http://www.cnblogs.com/ldcsaa/archive/2012/02/26/2368959.html">软件实体的设计原则</a></li>
+<li><a href="http://www.amazon.cn/Head-First%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E5%BC%97%E9%87%8C%E6%9B%BC/dp/B0011FBU34">Head First Design Pattern</a></li>
+</ul>
+
+
+<p>这里偷个懒，给了一堆链接先参考一下，只提一些比较常见而且容易做到的原则。</p>
+
+<h3>1.1 职责单一原则</h3>
+
+<p><strong>Single Responsibility Principle (SRP)</strong></p>
+
+<p>单一职责是说的一个类，一个方法只做一件事情。比如有用户注册，用户注册以后需要发邮件这样两个动作。那么遵守单一职责，需要将注册的逻辑放到一个类里，发送邮件的逻辑应该在另外一个类似，而不是合在同一段代码之中。</p>
+
+<p>通过单一职责原则，可以比较容易的做到代码的高内聚低耦合。</p>
+
+<h3>1.2 开闭原则</h3>
+
+<p><strong>Open/Closed Principle (OCP)</strong></p>
+
+<p>即对扩展开放，对修改关闭。V2 的核心代码对于这个原则有非常好的体现。比如我们要增加 URL 的处理逻辑，只需要写对应的 Controller 和 router 配置就行了，无需对 V2 进行修改。另外如果我们需要在 Router/Request/Response 对象上添加额外的行为，也只需要修改 V2 的配置，对于 V2 本身的代码是不需要修改的。</p>
+
+<p>这样做的好处在于，对于核心的代码（对 V2 来说就是 APF），无论业务/需求如何变化，基本上不需要去修改这段代码（修 bug 除外），这样也可以比较容易的做到代码的高内聚。</p>
+
+<h3>1.3 最少知识原则</h3>
+
+<p><strong>Principle of Least Knowledge</strong></p>
+
+<p>简单来说就是调用方对于被调用放无需知道太多的内容，只用了解最基本的 API 就行了。比如这段代码，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">final</span> <span class="n">String</span> <span class="n">outputDir</span> <span class="o">=</span> <span class="n">ctxt</span><span class="o">.</span><span class="na">getOptions</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">getScratchDir</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">getAbsolutePath</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这段代码本身作为调用方，需要了解 ctxt.getOptions() 返回了什么内容，还要知道 options.getScratchDir() 返回什么内容，更进一步才能拿到想要的 absolutePath。</p>
+
+<p>如果这样写</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">final</span> <span class="n">String</span> <span class="n">outputDir</span> <span class="o">=</span> <span class="n">ctxt</span><span class="o">.</span><span class="na">getScratchAbsolutePath</span><span class="o">()</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>相对来说就不太需要关心 ctxt 的里面到底是些什么东西。</p>
+
+<p>同样的，最少知识原则也是在提高代码的内聚上有帮助的。</p>
+
+<h3>1.4 针对接口编程，而不是实现</h3>
+
+<p><strong>Program to an interface, not an implementation</strong></p>
+
+<p>注意这里的接口是 interface 而不是 API。简单来说就是使用类或者对象的时候，使用其接口，而不是具体的实现类。</p>
+
+<p>比如 V2 的 APF 里，对于各个 Controller 都是使用的 <code>APF_Controller</code> 这个接口，调用它的 <code>handler_request</code> 方法，而不是直接使用我们自己定义的那些 Controller。</p>
+
+<p>比如 CGI，也是一种接口，Apache、Nginx 调用 CGI 的模块，按照 CGI 的协议向后端发送请求。至于后面是 C++、PHP、Python、Java 都是一样的使用。违反这个原则的做法就是直接用 apache/nginx 去调用我们业务的 C++、PHP、Python、Java 代码。</p>
+
+<h2>2. V2 的设计分析</h2>
+
+<h3>2.1 <a href="http://git.corp.anjuke.com/corp/v2-system">system</a></h3>
+
+<p>我们从 <a href="http://git.corp.anjuke.com/corp/v2-system/browse/master/classes/APF.php">APF.php</a> 开始，入口是 <code>APF::run()</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">public</span> <span class="k">function</span> <span class="nf">run</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">prepare</span><span class="p">();</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">dispatch</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">echo</span> <span class="s2">&quot;Error&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">public</span> <span class="k">function</span> <span class="nf">prepare</span><span class="p">(){</span>
+</span><span class='line'>    <span class="nx">apf_require_class</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">request_class</span><span class="p">);</span>
+</span><span class='line'>    <span class="nx">apf_require_class</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">response_class</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">request_class</span><span class="p">();</span>
+</span><span class='line'>    <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">response</span> <span class="o">=</span> <span class="k">new</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">response_class</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">apf_require_class</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">router_class</span><span class="p">);</span>
+</span><span class='line'>    <span class="nv">$router</span> <span class="o">=</span> <span class="k">new</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">router_class</span><span class="p">();</span>
+</span><span class='line'>    <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">router</span> <span class="o">=</span> <span class="nv">$router</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="k">true</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>prepare()</code> 这段代码里实际体现到了如何做到 OCP 和面向接口的原则，通过参数定义的 request_class、response_class、router_class 来使用具体的实现类。这样只要我们自己定义的 Request、Response、Router 实现了具体的抽象接口，就可以来扩展我们自己的行为，而不用去修改 V2 本身的代码了。</p>
+
+<p>接下来是核心的 <code>dispatch</code> 方法</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">public</span> <span class="k">function</span> <span class="nf">dispatch</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nv">$class</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">router</span><span class="o">-&gt;</span><span class="na">mapping</span><span class="p">();</span>
+</span><span class='line'>    <span class="nv">$controller</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">get_controller</span><span class="p">(</span><span class="nv">$class</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$controller</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">current_controller</span> <span class="o">=</span> <span class="nv">$controller</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nv">$interceptores</span> <span class="o">=</span> <span class="o">@</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">get_config</span><span class="p">(</span><span class="nv">$class</span><span class="p">,</span> <span class="s2">&quot;interceptor&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$interceptores</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$interceptor_classes</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">get_interceptor_classes</span><span class="p">(</span><span class="nv">$class</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$basic_class</span> <span class="o">=</span> <span class="nv">$controller</span><span class="o">-&gt;</span><span class="na">get_interceptor_index_name</span><span class="p">();</span>
+</span><span class='line'>        <span class="nv">$interceptor_classes</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">get_interceptor_classes</span><span class="p">(</span><span class="nv">$basic_class</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nv">$step</span> <span class="o">=</span> <span class="nx">APF_Interceptor</span><span class="o">::</span><span class="na">STEP_CONTINUE</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$interceptor_classes</span> <span class="k">as</span> <span class="nv">$interceptor_class</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$interceptor</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">load_interceptor</span><span class="p">(</span><span class="nv">$interceptor_class</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$interceptor</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">continue</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="nv">$interceptors</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$interceptor</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">debug</span><span class="p">(</span><span class="s2">&quot;interceptor::before(): &quot;</span> <span class="o">.</span> <span class="nb">get_class</span><span class="p">(</span><span class="nv">$interceptor</span><span class="p">));</span>
+</span><span class='line'>        <span class="nv">$step</span> <span class="o">=</span> <span class="nv">$interceptor</span><span class="o">-&gt;</span><span class="na">before</span><span class="p">();</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$step</span> <span class="o">!=</span> <span class="nx">APF_Interceptor</span><span class="o">::</span><span class="na">STEP_CONTINUE</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">is_debug_enabled</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">unset</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">debug_config</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">trace_config</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nv">$step</span> <span class="o">!=</span> <span class="nx">APF_Interceptor</span><span class="o">::</span><span class="na">STEP_EXIT</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">while</span> <span class="p">(</span><span class="k">true</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$controller</span><span class="o">-&gt;</span><span class="na">handle_request</span><span class="p">();</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$result</span> <span class="nx">instanceof</span> <span class="nx">APF_Controller</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nv">$controller</span> <span class="o">=</span> <span class="nv">$result</span><span class="p">;</span>
+</span><span class='line'>                <span class="k">continue</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nb">is_string</span><span class="p">(</span><span class="nv">$result</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nb">class_exists</span><span class="p">(</span><span class="s1">&#39;APF_DB_Factory&#39;</span><span class="p">,</span> <span class="k">false</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">APF_DB_Factory</span><span class="o">::</span><span class="na">get_instance</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">close_pdo_all</span><span class="p">();</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">page</span><span class="p">(</span><span class="nv">$result</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nv">$step</span> <span class="o">=</span> <span class="nx">APF_Interceptor</span><span class="o">::</span><span class="na">STEP_CONTINUE</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$interceptors</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$interceptors</span> <span class="o">=</span> <span class="nb">array_reverse</span><span class="p">(</span><span class="nv">$interceptors</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$interceptors</span> <span class="k">as</span> <span class="nv">$interceptor</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$step</span> <span class="o">=</span> <span class="nv">$interceptor</span><span class="o">-&gt;</span><span class="na">after</span><span class="p">();</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">debug</span><span class="p">(</span><span class="s2">&quot;interceptor::after(): &quot;</span> <span class="o">.</span> <span class="nb">get_class</span><span class="p">(</span><span class="nv">$interceptor</span><span class="p">));</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$step</span> <span class="o">!=</span> <span class="nx">APF_Interceptor</span><span class="o">::</span><span class="na">STEP_CONTINUE</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="k">true</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这段代码比较长但是其实逻辑相对来说还是很清晰的</p>
+
+<ul>
+<li>调用 router->mapping() 获得 controller 对象</li>
+<li>获取该 controller 上的 interceptor 对象</li>
+<li>调用 interceptor->before()</li>
+<li>调用 controller->handle_request()</li>
+<li>调用 this->page() 处理 Page 逻辑</li>
+<li>调用 interceptor->after()</li>
+</ul>
+
+
+<p>很明显，这里每一个对象都是通过接口的方式来使用的，这里的有 OCP 和面向接口两个原则体现。而为了实现这些原则，则是通过 router.php 和 interceptor.php 的配置文件来实现的</p>
+
+<p>基本上 <code>APF-&gt;run()</code> 就是APF最核心的功能了，其余的都是 APF 提供的一些辅助方法（其实这些辅助方法应该放到别的地方去，因为违背了 <strong>单一职责</strong> 原则）。这里 APF 定义了最核心的处理逻辑，而一些具体的逻辑比如 URL mapping，比如具体每个 URL 的 handler_request 都交给了其他类来实现。同样 Router 只负责 URL mapping 一件事情，Controller 只负责 handle_request，Interceptor 只负责拦截 Controller 的处理，这里单一职责原则就体现出来了。<del>如果你和我一样对代码有洁癖就请无视APF的那些辅助方法吧</del></p>
+
+<p>再来看看 Interceptor ，这里其实有一点点 <a href="https://zh.wikipedia.org/wiki/%E4%BA%8B%E4%BB%B6%E9%A9%85%E5%8B%95">事件驱动</a> 的味道。APF 定义了两个 Controller 的事件，<em>before handle_request</em> 和 <em>after handle_request</em> 两个事件，Interceptor 只不过是响应者两个事件的事件监听器而已。好处？最简单的，降低耦合度，提高代码重用。比如记录 Controller 的处理时间，如果没有 Interceptor，只能在每个 Controller 里加上时间记录的代码，如果要在每个 Controller 上都记录处理时间，则只能每个都增加代码，显然又违背了 <strong>单一职责</strong> 原则，而且有太多的重复代码，如果在 run 的代码里来做这件事情，又违背了 <strong>OCP</strong> 原则。</p>
+
+<p>Router，在这里主要是负责做 <code>URL =&gt; controller</code> 的映射。直觉上，如果我们自己写一段这样的映射代码，可能就是大段的 if&#8230;else 来把各个 URL 分配到对应的 Controller 上（我真的见过几千行的 if&#8230;else 就是为了分发请求到对应的 Controller 上的）。大段的 if&#8230;else 首先来说很难看，而且很难维护，每次增加一段处理都需要修改 Router 的代码，显然是违背了 <em>OCP</em> 原则。所以 Router 这里的实现是通过一个 router.php 的配置定义 <code>正则 =&gt; Controller</code> 的映射。在 Router 里来处理这一堆的配置规则。这样，至少我们在增加 Controller 的时候，不用再去修改 Router 的代码了。</p>
+
+<p>APF 其他的处理基本上也是按照 run() 里的方式来组织的（Page 和 Component 就这么被跳过了么&#8230;）。</p>
+
+<h3>2.2 <a href="http://git.corp.anjuke.com/site/system-ext">system-ext</a></h3>
+
+<p>抛开 DAO，关于 system-ext 相比 system 最大的不同在哪？我个人觉得是 <a href="http://git.corp.anjuke.com/site/system-ext/browse/master/classes/apf/proxy/Proxy.php"><em>Apf_Proxy_Proxy.php</em></a> 这个东西。这个类就是代理模式最直接的实现，当然我们也可以拿它来做装饰器模式的事情，只不过配置写起来麻烦点。</p>
+
+<p>代理模式有什么用？如果你知道 AOP(Aspect Oriented Programming) 是个什么东西，如果里用过 Java，用过 SpringFramework，知道声明式事务是怎么回事，就知道 <strong>代理</strong> 这玩意有多么好用了</p>
+
+<p>想想原来，我们要在一段代码上增加缓存是怎么做的？</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="nv">$data</span> <span class="o">=</span> <span class="nv">$cache</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">(</span><span class="nv">$key</span><span class="p">);</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$data</span><span class="p">){</span>
+</span><span class='line'>    <span class="nv">$data</span> <span class="o">=</span> <span class="nx">getFromDB</span><span class="p">();</span>
+</span><span class='line'>    <span class="nv">$cache</span><span class="o">-&gt;</span><span class="na">put</span><span class="p">(</span><span class="nv">$key</span><span class="p">,</span><span class="nv">$data</span><span class="p">,</span><span class="nv">$time</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">return</span> <span class="nv">$data</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>每次增加一段缓存，我们都要写类似上面这样的代码。还有我们性能监控加的断点。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="nx">Anjuke_Performance</span><span class="o">::</span><span class="na">get_instance</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">benchmark_begin</span><span class="p">(</span><span class="s2">&quot;formatPropData&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nv">$prop</span> <span class="o">=</span> <span class="nx">Props_Data</span><span class="o">::</span><span class="na">formatPropData</span><span class="p">(</span><span class="nv">$propInfo</span><span class="p">);</span>
+</span><span class='line'><span class="nx">Anjuke_Performance</span><span class="o">::</span><span class="na">get_instance</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">benchmark_end</span><span class="p">(</span><span class="s2">&quot;formatPropData&quot;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>每个次加断点我们都要在代码里到处加上这种代码（真没人觉得难看么&#8230;）。好了，现在我们有了 proxy，要加个缓存怎么弄？完全不用修改原来的代码，只需要加一行配置。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="c1">// servicecache.php</span>
+</span><span class='line'><span class="nv">$config</span><span class="p">[</span><span class="s1">&#39;allow_methodes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>    <span class="s1">&#39;Anjuke_Core_Service_DemoService::getCurrentTime&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>        <span class="s1">&#39;cachetime&#39;</span> <span class="o">=&gt;</span> <span class="mi">10</span>
+</span><span class='line'>    <span class="p">)</span>
+</span><span class='line'><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>配置里定义的类上的方法就会自动的添加 cache 了，不用再写任何额外的代码。这样做的好处是，业务代码只需要专心处理业务就好了，缓存相关的逻辑是在其他的地方，所以可以比较容易的满足 SRP 原则。我们加缓存或者去掉缓存就只需要修改配置，而不用再去改我们的代码，所以 OCP 也满足了。</p>
+
+<p>类似的，我们需要记录方法处理的时间，也只需要写一个对应的 Proxy, 然后在套在上面就可以处理。不用再满地的去些 benchmark_begin 和 benchmark_end 的代码了。需要去掉也很方便。</p>
+
+<h2>3. 一点点私货</h2>
+
+<p>主要是对代码的一点分类，完全是我个人总结，也有可能通篇都是错的，所以大家看看就好</p>
+
+<p>个人觉得一个项目里的代码可以分为三种</p>
+
+<ul>
+<li>控制代码</li>
+<li>业务代码</li>
+<li>组装代码</li>
+</ul>
+
+
+<p>业务代码就是处理具体业务的代码；控制代码就是定义一段处理流程，将多个业务代码的逻辑组合起来；组装代码就是根据配置把业务代码和控制代码组合在一起的代码，比如各种 Factory/IoC 容器（Spring）。</p>
+
+<p>我认为，好的代码设计，这三者的界限是非常清晰的。比如 APF，前面说的 <code>prepare()</code> 就是一段组装代码。run() 里面就是控制代码，定义了一套流程，业务代码就是 Router、Controller、Interceptor（Page 又被忽略了&#8230;） 。APF 里通过 <code>load_controller()</code>、<code>load_interceptor()</code> 的组装代码来组合业务和控制代码。通过这三者的结合一起来完成了一次请求的处理。</p>
+
+<p>再进一步，实际上一段业务代码内部，也可以分为控制代码、业务代码、组装代码三个部分，这样反复的嵌套，就构成了我们整个项目。</p>
+
+<p>做到这三部分代码的分离，可以比较清晰的写出比较容易维护，可扩展性高的代码。</p>
+
+<p>不过绝大多数情况下，我们其实不需要一开始就分离的这么细，以免前期设计的时间过长，但是最后实际写代码的时候还是发现不能满足需求。也不需要把每一块代码都这么来分离，那样写得要累死了。</p>
+
+<p>所以重构就在这里派上用场了。这里再推荐一本书，<a href="http://www.amazon.cn/%E9%87%8D%E6%9E%84-%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1-%E7%A6%8F%E5%8B%92/dp/B003BY6PLK/">重构:改善既有代码的设计</a></p>
+
+<p>后面我会再写一篇文档，结合我们实际的业务开发的例子，讲一下怎么来写比较容易维护，可扩展性高的代码。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[RVM Tutorial]]></title>
@@ -7421,359 +7807,6 @@
 <li>hp的fq过滤后有大量文档,所以合并commid可以明显提升速度</li>
 </ol>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[LVM 简单实践]]></title>
-    <link href="http://arch.corp.anjuke.com/blog/2012/10/29/try-out-linux-lvm/"/>
-    <updated>2012-10-29T21:20:00+08:00</updated>
-    <id>http://arch.corp.anjuke.com/blog/2012/10/29/try-out-linux-lvm</id>
-    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/ce1e13bbf946c92e2abf740f8909bafa"></p>
-
-<p>为什么会想到要使用lvm呢，因为家里的主力下载机是一台PC，她又是我的主要平时使用的机子（除开mac外），经常要对下载那个分区进行整理，装个游戏，压制点视频音乐有时候分区会很紧张，然而跨分区是很复杂的操作。这就让我想到了linux下面的lvm功能。</p>
-
-<p><img class="center" src="http://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/LVM1.svg/500px-LVM1.svg.png"></p>
-
-<!-- more -->
-
-
-<h2>什么是lvm</h2>
-
-<p><a href="http://en.wikipedia.org/wiki/Logical_Volume_Manager_(Linux)">lvm</a>是Linux核心提供的逻辑卷轴管理功能，主要应用在磁盘分区上；传统的计算机使用磁盘主要通过管理分区，在常见的MBR磁盘上最多只可以使用4个主分区，或者任意个逻辑分区；虽然在GPT分区上可以实现使用任意分区数量，但是分区大小总是有限制的，即使很多文件系统工具提供了对分区大小进行热操作，仍旧不是很方便。lvm则可以通过让系统核心支持真正的逻辑卷管理，达到物理分区的虚拟化。可以随时对逻辑卷进行大小的修改。</p>
-
-<h2>使用</h2>
-
-<p>更加系统的讲解请参考<a href="http://tldp.org/HOWTO/LVM-HOWTO/">LVM-HOWTO</a>。</p>
-
-<p>注意我们使用的lvm2版本，主要区别，可以查看<a href="http://tldp.org/HOWTO/LVM-HOWTO/lvm2faq.html">这里</a>。</p>
-
-<p>我下面的演示，主要基于gentoo，安装的时候livecd里已经带了lvm工具。</p>
-
-<p>解释一些lvm里使用的名词，先给一张图</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>+-- Volume Group --------------------------------+
-</span><span class='line'>|                                                |
-</span><span class='line'>|    +----------------------------------------+    |
-</span><span class='line'>| PV | PE |  PE | PE | PE | PE | PE | PE | PE |    |
-</span><span class='line'>|    +----------------------------------------+    |
-</span><span class='line'>|      .            .          .        .          |
-</span><span class='line'>|      .          .            .        .          |
-</span><span class='line'>|    +----------------------------------------+    |
-</span><span class='line'>| LV | LE |  LE | LE | LE | LE | LE | LE | LE |    |
-</span><span class='line'>|    +----------------------------------------+    |
-</span><span class='line'>|            .          .        .           .     |
-</span><span class='line'>|            .            .        .         .     |
-</span><span class='line'>|    +----------------------------------------+    |
-</span><span class='line'>| PV | PE |  PE | PE | PE | PE | PE | PE | PE |    |
-</span><span class='line'>|    +----------------------------------------+    |
-</span><span class='line'>|                                                |
-</span><span class='line'>+------------------------------------------------+</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>volume group (VG): lvm中使用的最高层次的抽象对象，它把(物理上的)逻辑和主分区划为管理单元</li>
-<li>physical volume (PV): 一个pv可以是一块磁盘，或者是看起来磁盘设备 (例如/dev/sda1)</li>
-<li>logical volume (LV): 和非lvm系统中的逻辑分区一样，一个lv看起来就像是普通的块设备，而它可以包含文件系统(例如/home)</li>
-<li>physical extend (PE): 每个pv都被分为几部分数据，它们就是pe，对于lvm来说，它们和le大小一样。</li>
-<li>logical extend (LE): 类似PE</li>
-</ul>
-
-
-<p>最后，更加直观地理解，可以看下图，</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>
-</span><span class='line'>    hda1   hdc1      (PV:s on partitions or whole disks)
-</span><span class='line'>       \   /
-</span><span class='line'>        \ /
-</span><span class='line'>       diskvg        (VG)
-</span><span class='line'>       /  |  \
-</span><span class='line'>      /   |   \
-</span><span class='line'>  usrlv rootlv varlv (LV:s)
-</span><span class='line'>    |      |     |
-</span><span class='line'> ext2  reiserfs  xfs (filesystems)
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>要求</h2>
-
-<ol>
-<li>使用lvm，至少需要2.4.x的kernel</li>
-<li>安装了lvm</li>
-</ol>
-
-
-<h2>配置</h2>
-
-<h3>背景</h3>
-
-<p>这里解释的是在gentoo安装过程中将两块磁盘中的分区配置成使用lvm的过程。</p>
-
-<p>主要参考了<a href="http://www.gentoo.org/doc/en/lvm2.xml">gentoo的lvm手册</a>。</p>
-
-<p>假设，我现在有两块SATA硬盘，将其物理分区安排如下</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>/dev/sda1  -&gt; /boot
-</span><span class='line'>/dev/sda2  -&gt; (swap)
-</span><span class='line'>/dev/sda3  -&gt; /
-</span><span class='line'>/dev/sda4  -&gt; 将使用lvm
-</span><span class='line'>/dev/sdb1  -&gt; 将使用lvm</span></code></pre></td></tr></table></div></figure>
-
-
-<p><strong>请注意操作的安全性，一个错误的操作可能会导致整个分区的数据丢失!!</strong></p>
-
-<h3>安装</h3>
-
-<ul>
-<li>使用fdisk或者你喜欢的分区工具分区</li>
-<li>启动lvm服务，在gentoo下使用<code>/etc/init.d/lvm start</code>，livecd里默认已经启动</li>
-<li>配置lvm，打开<code>/etc/lvm/lvm.conf</code>，修改如下信息</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'># a表示add添加，r表示reject忽略
-</span><span class='line'># 语法类似正则，表示把/dev/sda与/dev/sdb里的分区都加入到lvm的识别里
-</span><span class='line'>filter = [ "a|/dev/sd[ab]|", "r/.*/" ]
-</span><span class='line'>
-</span><span class='line'># 使之前配置的vg都生效
-</span><span class='line'>vgscan
-</span><span class='line'>vgchange -a y</span></code></pre></td></tr></table></div></figure>
-
-
-<h1>把分区准备好</h1>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>pvcreate /dev/sda4 /dev/sdb1</span></code></pre></td></tr></table></div></figure>
-
-
-<p>我们这个例子里，<code>/dev/sda1</code>，<code>/dev/sda2</code>，<code>/dev/sda3</code>分别是<code>/boot</code>,<code>swap</code>和<code>/</code></p>
-
-<p><strong>极其不推荐在/etc, /lib, /mnt, /proc, /sbin, /dev, and /root上使用lvm，可能会导致我些目录无法访问!!</strong></p>
-
-<ul>
-<li>创建并扩展一个vg</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>vgcreate vg /dev/sad4
-</span><span class='line'>vgextend vg /dev/sdb1</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>创建最终要使用的lv</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>lvcreate -L10G -nusr vg # 在vg里创建一个大小为10G的lv，名字是usr
-</span><span class='line'>lvcreate -L5G -nhome vg # 在vg里创建一个大小为5G的lv，名字是home
-</span><span class='line'>lvcreate -L10G -nvar vg # 在vg里创建一个大小为10G的lv，名字是var
-</span><span class='line'>
-</span><span class='line'>lvextend -L+5G /dev/vg/home # 举例，给home这个lv增加5G容量</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>在lv上创建文件系统，并挂载</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>mkfs.reiserfs /dev/vg/usr
-</span><span class='line'>mkfs.reiserfs /dev/vg/home
-</span><span class='line'>mkfs.reiserfs /dev/vg/var
-</span><span class='line'>
-</span><span class='line'># 在这之前先挂载必要分区，请参考gentoo安装手册
-</span><span class='line'>mkdir /mnt/gentoo/usr
-</span><span class='line'>mount /dev/vg/usr /mnt/gentoo/usr
-</span><span class='line'>mkdir /mnt/gentoo/home
-</span><span class='line'>mount /dev/vg/usr /mnt/gentoo/home
-</span><span class='line'>mkdir /mnt/gentoo/var
-</span><span class='line'>mount /dev/vg/usr /mnt/gentoo/var</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>下面继续gentoo的安装过程，chroot一直到配置kernel</li>
-<li>配置kernel，打开lvm的支持选项</li>
-<li>2.4.x的kernel</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>Multi-device support (RAID and LVM)  ---&gt;
-</span><span class='line'>  [*] Multiple devices driver support (RAID and LVM)
-</span><span class='line'>  &lt; &gt;  RAID support
-</span><span class='line'>(注意这里不选择LVM是有意的，它的意思是支持LVM1)
-</span><span class='line'>  &lt; &gt;  Logical volume manager (LVM) support
-</span><span class='line'>  &lt;M&gt;  Device-mapper support
-</span><span class='line'>  &lt; &gt;   Mirror (RAID-1) support</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>2.6.x以及之后版本的kernel</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>Device Drivers  ---&gt;
-</span><span class='line'> Multiple devices driver support (RAID and LVM) ---&gt;
-</span><span class='line'>   [*] Multiple devices driver support (RAID and LVM)
-</span><span class='line'>   &lt; &gt;   RAID support
-</span><span class='line'>   &lt;M&gt;   Device mapper support</span></code></pre></td></tr></table></div></figure>
-
-
-<p>编译完成后的模块名字叫<code>dm-mod.ko</code></p>
-
-<p><strong>请注意，务必让<code>/usr/src/linux</code>指向您正在使用的kernel核心源代码，因为lvm的ebuild会根据路径查找device-mapper的依赖性</strong></p>
-
-<ul>
-<li><p>配置chroot里的lvm.conf，和外层一致</p></li>
-<li><p>配置<code>/etc/fstab</code>，根据需要配置lvm的分区</p></li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>/dev/sda1     /boot        ext2       defaults      1 2
-</span><span class='line'>/dev/sda2     none         swap       sw            0 0
-</span><span class='line'>/dev/sda3     /            reiserfs   noatime       0 1
-</span><span class='line'>/dev/cdrom    /mnt/cdrom   auto       noauto,ro     0 0
-</span><span class='line'># Logical Volumes
-</span><span class='line'>/dev/vg/usr   /usr         reiserfs   noatime       0 2
-</span><span class='line'>/dev/vg/home  /home        reiserfs   noatime       0 2
-</span><span class='line'>/dev/vg/var   /var         reiserfs   noatime       0 2</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>继续其他安装配置，一直到退出chroot前</li>
-<li>安装lvm，并将其设置为启动</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>emerge -v lvm2
-</span><span class='line'>rc-update add lvm boot</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>退出chroot，重启前，关闭所有lvm分区</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>vgchange -a n</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>如果中途有重启</h3>
-
-<p>如果在安装过程中因为我些原因需要重启，需要按以下操作重新激活lvm分区</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>vgscan --mknodes</span></code></pre></td></tr></table></div></figure>
-
-
-<p>而一些比较旧的安装CD里需要按照以下顺序激活</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'># 先关闭所有vg
-</span><span class='line'>vgchange -a n
-</span><span class='line'># 导出所有vg
-</span><span class='line'>vgexport -a
-</span><span class='line'># 导入所有vg
-</span><span class='line'>vgimport -a
-</span><span class='line'># 重新激活所有vg
-</span><span class='line'>vgchange -a y</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>使用</h3>
-
-<p>如果没有意外，那么重启后系统可以成功boot进入新安装的gentoo系统</p>
-
-<p>我的gentoo box的磁盘情况如下</p>
-
-<p><img src="http://arch.corp.anjuke.com/medias/20121029/lvm.jpeg" alt="lvm" /></p>
-
-<p>其实也是这个我才知道前阵子上线的一台服务器上<code>/dev/mapper</code>，原来其实就是lvm啊XDDD</p>
-
-<p>__END__</p>
 ]]></content>
   </entry>
   

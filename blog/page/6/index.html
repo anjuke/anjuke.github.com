@@ -9,8 +9,8 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content="作者: Pieter Hintjens &#112;&#x68;&#x40;&#105;&#x6d;&#x61;&#x74;&#105;&#120;&#46;&#99;&#111;&#109;, CEO iMatix Corporation.
-翻译: 张吉 &#106;&#x69;&#x7a;&# &hellip;">
+  <meta name="description" content="作者: Pieter Hintjens &#x70;&#104;&#x40;&#x69;&#x6d;&#97;&#116;&#x69;&#120;&#x2e;&#x63;&#111;&#x6d;, CEO iMatix Corporation.
+翻译: 张吉 &#x6a;&#105;&#122 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -84,6 +84,67 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter3/">ZMQ 指南 - 第三章 高级请求-应答模式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#97;&#x69;&#x6c;&#x74;&#x6f;&#x3a;&#x70;&#x68;&#x40;&#x69;&#x6d;&#x61;&#x74;&#x69;&#x78;&#x2e;&#x63;&#x6f;&#109;">&#x70;&#104;&#x40;&#x69;&#x6d;&#97;&#116;&#x69;&#120;&#x2e;&#x63;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#108;&#116;&#111;&#x3a;&#x6a;&#x69;&#122;&#104;&#97;&#x6e;&#x67;&#x40;&#97;&#110;&#106;&#x75;&#x6b;&#x65;&#46;&#99;&#x6f;&#x6d;">&#x6a;&#105;&#122;&#x68;&#97;&#x6e;&#x67;&#x40;&#97;&#x6e;&#x6a;&#x75;&#107;&#101;&#46;&#99;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
+
+<p>在第二章中我们通过开发一系列的小应用来熟悉ØMQ的基本使用方法，每个应用会引入一些新的特性。本章会沿用这种方式，来探索更多建立在ØMQ请求-应答模式之上的高级工作模式。</p>
+
+<p>本章涉及的内容有：</p>
+
+<ul>
+<li>在请求-应答模式中创建和使用消息信封</li>
+<li>使用REQ、REP、DEALER和ROUTER套接字</li>
+<li>使用标识来手工指定应答目标</li>
+<li>使用自定义离散路由模式</li>
+<li>使用自定义最近最少使用路由模式</li>
+<li>构建高层消息封装类</li>
+<li>构建基本的请求应答代理</li>
+<li>合理命名套接字</li>
+<li>模拟client-worker集群</li>
+<li>构建可扩展的请求-应答集群云</li>
+<li>使用管道套接字监控线程</li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter3/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter2/">ZMQ 指南 - 第二章 ZeroMQ进阶</a></h1>
     
     
@@ -107,8 +168,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#x69;&#x6c;&#x74;&#111;&#x3a;&#x70;&#x68;&#x40;&#105;&#109;&#x61;&#x74;&#105;&#120;&#x2e;&#x63;&#111;&#109;">&#112;&#x68;&#x40;&#105;&#x6d;&#x61;&#x74;&#105;&#120;&#46;&#99;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#x6d;&#x61;&#x69;&#108;&#x74;&#111;&#x3a;&#106;&#105;&#x7a;&#x68;&#x61;&#x6e;&#x67;&#64;&#x61;&#x6e;&#106;&#x75;&#107;&#x65;&#46;&#99;&#111;&#x6d;">&#106;&#x69;&#x7a;&#104;&#x61;&#x6e;&#x67;&#x40;&#97;&#x6e;&#106;&#117;&#107;&#101;&#46;&#99;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#x69;&#108;&#x74;&#111;&#x3a;&#x70;&#104;&#x40;&#x69;&#109;&#x61;&#x74;&#x69;&#x78;&#x2e;&#99;&#x6f;&#x6d;">&#112;&#x68;&#x40;&#105;&#x6d;&#97;&#116;&#105;&#120;&#x2e;&#99;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#x61;&#x69;&#x6c;&#116;&#x6f;&#x3a;&#x6a;&#105;&#122;&#x68;&#x61;&#x6e;&#103;&#x40;&#x61;&#x6e;&#106;&#117;&#107;&#x65;&#46;&#x63;&#111;&#109;">&#106;&#105;&#x7a;&#104;&#97;&#110;&#x67;&#x40;&#x61;&#x6e;&#106;&#117;&#107;&#x65;&#46;&#99;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第一章我们简单试用了ZMQ的若干通信模式：请求-应答模式、发布-订阅模式、管道模式。这一章我们将学习更多在实际开发中会使用到的东西：</p>
 
@@ -175,8 +236,8 @@
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#x69;&#x6c;&#116;&#111;&#x3a;&#112;&#x68;&#64;&#105;&#109;&#97;&#x74;&#x69;&#120;&#46;&#99;&#x6f;&#x6d;">&#x70;&#x68;&#x40;&#x69;&#x6d;&#x61;&#116;&#105;&#120;&#x2e;&#99;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#x6d;&#x61;&#105;&#108;&#x74;&#111;&#x3a;&#x6a;&#105;&#x7a;&#x68;&#x61;&#110;&#x67;&#x40;&#x61;&#x6e;&#x6a;&#117;&#107;&#101;&#x2e;&#x63;&#x6f;&#109;">&#x6a;&#x69;&#x7a;&#x68;&#x61;&#110;&#x67;&#x40;&#97;&#x6e;&#106;&#117;&#107;&#x65;&#46;&#x63;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#112;&#104;&#x40;&#105;&#109;&#x61;&#116;&#x69;&#x78;&#x2e;&#x63;&#111;&#109;">&#x70;&#x68;&#x40;&#105;&#x6d;&#97;&#x74;&#x69;&#120;&#x2e;&#x63;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#97;&#105;&#x6c;&#x74;&#111;&#58;&#x6a;&#105;&#122;&#104;&#97;&#x6e;&#x67;&#64;&#97;&#x6e;&#106;&#x75;&#107;&#101;&#x2e;&#x63;&#111;&#109;">&#106;&#105;&#x7a;&#104;&#x61;&#110;&#103;&#64;&#97;&#x6e;&#x6a;&#117;&#x6b;&#101;&#x2e;&#x63;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>With thanks to Bill Desmarais, Brian Dorsey, CAF, Daniel Lin, Eric Desgranges, Gonzalo Diethelm, Guido Goldstein, Hunter Ford, Kamil Shakirov, Martin Sustrik, Mike Castleman, Naveen Chawla, Nicola Peduzzi, Oliver Smith, Olivier Chamoux, Peter Alexander, Pierre Rouleau, Randy Dryburgh, John Unwin, Alex Thomas, Mihail Minkov, Jeremy Avnet, Michael Compton, Kamil Kisiel, Mark Kharitonov, Guillaume Aubert, Ian Barber, Mike Sheridan, Faruk Akgul, Oleg Sidorov, Lev Givon, Allister MacLeod, Alexander D&#8217;Archangel, Andreas Hoelzlwimmer, Han Holl, Robert G. Jakabosky, Felipe Cruz, Marcus McCurdy, Mikhail Kulemin, Dr. Gergő Érdi, Pavel Zhukov, Alexander Else, Giovanni Ruggiero, Rick &#8220;Technoweenie&#8221;, Daniel Lundin, Dave Hoover, Simon Jefford, Benjamin Peterson, Justin Case, Devon Weller, Richard Smith, Alexander Morland, Wadim Grasza, Michael Jakl, and Zed Shaw for their contributions, and to Stathis Sideris for <a href="http://www.ditaa.org">Ditaa</a>.</p>
 
@@ -251,7 +312,7 @@
   </header>
 
 
-  <div class="entry-content"><p>Zhang Erning <a href="&#109;&#97;&#105;&#108;&#x74;&#111;&#x3a;&#x65;&#x72;&#110;&#x69;&#110;&#103;&#x40;&#97;&#x6e;&#106;&#x75;&#107;&#101;&#46;&#x63;&#111;&#x6d;">&#101;&#x72;&#110;&#x69;&#x6e;&#x67;&#x40;&#x61;&#110;&#x6a;&#117;&#x6b;&#x65;&#x2e;&#x63;&#111;&#x6d;</a><br/>
+  <div class="entry-content"><p>Zhang Erning <a href="&#x6d;&#97;&#x69;&#x6c;&#116;&#x6f;&#58;&#101;&#x72;&#110;&#x69;&#x6e;&#103;&#64;&#97;&#x6e;&#x6a;&#x75;&#x6b;&#101;&#x2e;&#x63;&#x6f;&#109;">&#x65;&#114;&#x6e;&#105;&#x6e;&#x67;&#64;&#97;&#x6e;&#x6a;&#117;&#x6b;&#101;&#46;&#x63;&#111;&#109;</a><br/>
 v1.0, July 2011</p>
 
 <h2>Goal</h2>
@@ -356,6 +417,10 @@ v1.0, July 2011</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/05/13/v2-and-desigin-pattern/">V2 中的软件设计</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/05/13/rvm-tutorial/">RVM Tutorial</a>
       </li>
     
@@ -389,10 +454,6 @@ v1.0, July 2011</p>
     
       <li class="post">
         <a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/01/20/homebrew-is-just-like-gentoo-portage/">Homebrew is just like gentoo portage</a>
       </li>
     
   </ul>
