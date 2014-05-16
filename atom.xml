@@ -4,7 +4,7 @@
   <title><![CDATA[Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2014-05-16T13:42:40+08:00</updated>
+  <updated>2014-05-16T13:50:33+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -1107,7 +1107,7 @@
 
 <p>之前 <code>User_RegisterService</code> 里的逻辑代码也不用修改，只需要修改 <code>allTypeAfterRegisterHandler</code> 这一处，就能做到发送消息到 MQ，启动 job 处理消息了。</p>
 
-<p>下一次，当我们要把所有的用户注册后的行为全部搬迁到 job 的时候，只需要这么修改</p>
+<p>下一次，当我们要把所有的用户注册后的行为全部搬迁到 job 的时候，只需要这么修改，</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
