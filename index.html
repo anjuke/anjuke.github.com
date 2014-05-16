@@ -187,8 +187,6 @@
 
 <h3>2.1 system</h3>
 
-<p><a href="http://git.corp.anjuke.com/corp/v2-system">system</a></p>
-
 <p>我们从 <a href="http://git.corp.anjuke.com/corp/v2-system/browse/master/classes/APF.php">APF.php</a> 开始，入口是 <code>APF::run()</code></p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -403,9 +401,7 @@
 
 <h3>2.2 system-ext</h3>
 
-<p><a href="http://git.corp.anjuke.com/site/system-ext">system-ext</a></p>
-
-<p>抛开 DAO，关于 system-ext 相比 system 最大的不同在哪？我个人觉得是 <a href="http://git.corp.anjuke.com/site/system-ext/browse/master/classes/apf/proxy/Proxy.php"><em>Apf_Proxy_Proxy.php</em></a> 这个东西。这个类就是代理模式最直接的实现，当然我们也可以拿它来做装饰器模式的事情，只不过配置写起来麻烦点。</p>
+<p>抛开 DAO，关于 system-ext 相比 system 最大的不同在哪？我个人觉得是 <a href="http://git.corp.anjuke.com/site/system-ext/browse/master/classes/apf/proxy/Proxy.php">Apf_Proxy_Proxy</a> 这个东西。这个类就是代理模式最直接的实现，当然我们也可以拿它来做装饰器模式的事情，只不过配置写起来麻烦点。</p>
 
 <p>代理模式有什么用？如果你知道 AOP(Aspect Oriented Programming) 是个什么东西，如果里用过 Java，用过 Spring，知道声明式事务是怎么回事，就知道 <strong>代理</strong> 这玩意有多么好用了。</p>
 
