@@ -4,7 +4,7 @@
   <title><![CDATA[Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2014-05-16T12:09:15+08:00</updated>
+  <updated>2014-05-16T12:10:45+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -97,7 +97,9 @@
 
 <h2>2. V2 的设计分析</h2>
 
-<h3>2.1 <a href="http://git.corp.anjuke.com/corp/v2-system">system</a></h3>
+<h3>2.1 system</h3>
+
+<p><a href="http://git.corp.anjuke.com/corp/v2-system">system</a></p>
 
 <p>我们从 <a href="http://git.corp.anjuke.com/corp/v2-system/browse/master/classes/APF.php">APF.php</a> 开始，入口是 <code>APF::run()</code></p>
 
@@ -311,7 +313,9 @@
 
 <p>APF 其他的处理基本上也是按照 run() 里的方式来组织的（Page 和 Component 就这么被跳过了么&#8230;）。</p>
 
-<h3>2.2 <a href="http://git.corp.anjuke.com/site/system-ext">system-ext</a></h3>
+<h3>2.2 system-ext</h3>
+
+<p><a href="http://git.corp.anjuke.com/site/system-ext">system-ext</a></p>
 
 <p>抛开 DAO，关于 system-ext 相比 system 最大的不同在哪？我个人觉得是 <a href="http://git.corp.anjuke.com/site/system-ext/browse/master/classes/apf/proxy/Proxy.php"><em>Apf_Proxy_Proxy.php</em></a> 这个东西。这个类就是代理模式最直接的实现，当然我们也可以拿它来做装饰器模式的事情，只不过配置写起来麻烦点。</p>
 
