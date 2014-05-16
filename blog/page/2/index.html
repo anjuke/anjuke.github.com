@@ -9,7 +9,7 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content=" 一句话提示： 利用brew versions和brew switch命令也可以实现gentoo portage里eselect类似的版本切换功能! 老规矩，喜欢听故事的继续看下去XDDD ">
+  <meta name="description" content="Hadoop简介 众所周知，我们已经进入了大数据时代，每天都有PB级的数据需要处理、分析，从中提取出有用的信息。Hadoop就是这一时代背景下的产物。它是Apache基金会下的开源项目，受Google两篇论文的启发，采用分布式的文件系统HDFS，以及通用的MapReduce解决方案， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +77,53 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-09T16:43:00+08:00" pubdate data-updated="true">Feb 9<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>Hadoop简介</h2>
+
+<p>众所周知，我们已经进入了大数据时代，每天都有PB级的数据需要处理、分析，从中提取出有用的信息。Hadoop就是这一时代背景下的产物。它是Apache基金会下的开源项目，受<a href="http://en.wikipedia.org/wiki/Apache_Hadoop#Papers">Google两篇论文</a>的启发，采用分布式的文件系统HDFS，以及通用的MapReduce解决方案，能够在数千台物理节点上进行分布式并行计算。</p>
+
+<p>对于Hadoop的介绍这里不再赘述，读者可以<a href="http://hadoop.apache.org/">访问其官网</a>，或阅读<a href="http://product.dangdang.com/main/product.aspx?product_id=21127813">Hadoop权威指南</a>。</p>
+
+<p>Hadoop项目是由Java语言编写的，运行在JVM之上，因此我们可以直接使用Clojure来编写MapReduce脚本，这也是本文的主题。Hadoop集群的搭建不在本文讨论范围内，而且运行MapReduce脚本也无需搭建测试环境。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/02/09/cia-hadoop/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -726,51 +773,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/30/solr-guideline-in-action/">深入Solr实战 - 实例篇</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-30T10:29:00+08:00" pubdate data-updated="true">Oct 30<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img class="right" src="http://0.gravatar.com/avatar/084c149bb5a1769082ef794c6dcd1a91"></p>
-
-<p>之前我们有提到<a href="/blog/2012/10/15/solr-guildeline/">Solr的使用的一些规范</a>，这次我们深入实例。</p>
-
-<p>我们从access log中找出一些查询耗时比较高的查询,跟去&#8221;深入solr实战&#8221;中提到的修改方式,做了一些更改,查询结果没有变化但是速度出现下降</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2012/10/30/solr-guideline-in-action/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -786,6 +788,10 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/05/15/maintainable-code-practice/">编写可维护的代码</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/01/10/v2-and-desigin-pattern/">V2 中的软件设计</a>
@@ -821,10 +827,6 @@
     
       <li class="post">
         <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a>
       </li>
     
   </ul>

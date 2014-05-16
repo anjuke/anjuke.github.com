@@ -9,7 +9,9 @@
   <meta name="author" content="Anjuke Inc.">
 
   
-  <meta name="description" content="文档来源 Getting the Gist of Markdown&#8217;s Formatting Syntax 這頁提供了 Markdown 簡單的概觀給想使用的人， 語法說明 頁提供了完整詳細的文件，說明每項功能，但是 Markdown 其實很簡單就可以上手，這頁文件提供了一些範例， &hellip;">
+  <meta name="description" content="文档来源 NOTE: This is Traditional Chinese Edition Document of
+Markdown Syntax. If you are seeking for English Edition
+Document. Please refer to Markdown &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +79,109 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/02/27/markdown-syntax/">Markdown: Syntax</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-27T18:29:00+08:00" pubdate data-updated="true">Feb 27<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><a href="https://github.com/othree/markdown-syntax-zhtw/blob/master/syntax.md">文档来源</a></p>
+
+<p><strong>NOTE:</strong> This is Traditional Chinese Edition Document of
+Markdown Syntax. If you are seeking for English Edition
+Document. Please refer to <a href="http://daringfireball.net/projects/markdown/syntax">Markdown: Syntax</a>.</p>
+
+<ul>
+<li><a href="#overview">概述</a>
+
+<ul>
+<li><a href="#philosophy">哲學</a></li>
+<li><a href="#html">行內 HTML</a></li>
+<li><a href="#autoescape">特殊字元自動轉換</a></li>
+</ul>
+</li>
+<li><a href="#block">區塊元素</a>
+
+<ul>
+<li><a href="#p">段落和換行</a></li>
+<li><a href="#header">標題</a></li>
+<li><a href="#blockquote">區塊引言</a></li>
+<li><a href="#list">清單</a></li>
+<li><a href="#precode">程式碼區塊</a></li>
+<li><a href="#hr">分隔線</a></li>
+</ul>
+</li>
+<li><a href="#span">區段元素</a>
+
+<ul>
+<li><a href="#link">連結</a></li>
+<li><a href="#em">強調</a></li>
+<li><a href="#code">程式碼</a></li>
+<li><a href="#img">圖片</a></li>
+</ul>
+</li>
+<li><a href="#misc">其它</a>
+
+<ul>
+<li><a href="#backslash">跳脫字元</a></li>
+<li><a href="#autolink">自動連結</a></li>
+</ul>
+</li>
+<li><a href="#acknowledgement">感謝</a></li>
+</ul>
+
+
+<p><strong>注意：</strong>這份文件是用 Markdown 寫的，你可以<a href="https://github.com/othree/markdown-syntax-zhtw/blob/master/syntax.md">看看它的原始檔</a> 。</p>
+
+<hr />
+
+<h2 id="overview">概述</h2>
+
+
+
+
+<h3 id="philosophy">哲學</h3>
+
+
+<p>Markdown 的目標是實現「易讀易寫」。</p>
+
+<p>不過最需要強調的便是它的可讀性。一份使用 Markdown 格式撰寫的文件應該可以直接以純文字發佈，並且看起來不會像是由許多標籤或是格式指令所構成。Markdown 語法受到一些既有 text-to-HTML 格式的影響，包括 <a href="http://docutils.sourceforge.net/mirror/setext.html">Setext</a>、<a href="http://www.aaronsw.com/2002/atx/">atx</a>、<a href="http://textism.com/tools/textile/">Textile</a>、<a href="http://docutils.sourceforge.net/rst.html">reStructuredText</a>、<a href="http://www.triptico.com/software/grutatxt.html">Grutatext</a> 和 <a href="http://ettext.taint.org/doc/">EtText</a>，然而最大靈感來源其實是純文字的電子郵件格式。</p>
+
+<p>因此 Markdown 的語法全由標點符號所組成，並經過嚴謹慎選，是為了讓它們看起來就像所要表達的意思。像是在文字兩旁加上星號，看起來就像*強調*。Markdown 的清單看起來，嗯，就是清單。假如你有使用過電子郵件，區塊引言看起來就真的像是引用一段文字。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/02/27/markdown-syntax/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -612,8 +717,8 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
   </header>
 
 
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#97;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#x70;&#x68;&#x40;&#105;&#109;&#x61;&#x74;&#x69;&#120;&#x2e;&#99;&#x6f;&#109;">&#112;&#x68;&#x40;&#x69;&#109;&#x61;&#116;&#x69;&#120;&#46;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#x6c;&#116;&#111;&#58;&#x6a;&#105;&#122;&#104;&#97;&#x6e;&#103;&#x40;&#x61;&#x6e;&#x6a;&#x75;&#x6b;&#x65;&#46;&#x63;&#111;&#109;">&#106;&#105;&#122;&#104;&#x61;&#x6e;&#103;&#64;&#97;&#x6e;&#106;&#x75;&#x6b;&#x65;&#x2e;&#x63;&#x6f;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
+  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#105;&#x6c;&#116;&#111;&#x3a;&#112;&#x68;&#64;&#x69;&#x6d;&#x61;&#x74;&#105;&#120;&#x2e;&#x63;&#x6f;&#x6d;">&#x70;&#104;&#x40;&#105;&#109;&#x61;&#x74;&#105;&#120;&#46;&#x63;&#x6f;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#x61;&#x69;&#x6c;&#116;&#x6f;&#58;&#106;&#105;&#x7a;&#104;&#97;&#x6e;&#103;&#x40;&#97;&#x6e;&#106;&#x75;&#107;&#x65;&#x2e;&#99;&#111;&#x6d;">&#106;&#x69;&#x7a;&#x68;&#97;&#110;&#103;&#x40;&#x61;&#x6e;&#x6a;&#x75;&#x6b;&#101;&#x2e;&#99;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第三章和第四章讲述了ZMQ中请求-应答模式的一些高级用法。如果你已经能够彻底理解了，那我要说声恭喜。这一章我们会关注发布-订阅模式，使用上层模式封装，提升ZMQ发布-订阅模式的性能、可靠性、状态同步及安全机制。</p>
 
@@ -637,63 +742,6 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/10/09/zguide-cn-chapter4/">ZMQ 指南 - 第四章 可靠的请求-应答模式</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-10-09T22:22:00+08:00" pubdate data-updated="true">Oct 9<span>th</span>, 2011</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#105;&#x6c;&#116;&#111;&#58;&#112;&#x68;&#x40;&#105;&#x6d;&#97;&#x74;&#x69;&#x78;&#46;&#x63;&#111;&#109;">&#x70;&#x68;&#x40;&#105;&#x6d;&#x61;&#116;&#105;&#120;&#x2e;&#99;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#x6f;&#58;&#x6a;&#x69;&#x7a;&#x68;&#97;&#110;&#103;&#x40;&#97;&#110;&#x6a;&#x75;&#107;&#101;&#46;&#x63;&#x6f;&#109;">&#x6a;&#x69;&#x7a;&#104;&#x61;&#x6e;&#103;&#64;&#97;&#x6e;&#x6a;&#x75;&#x6b;&#101;&#46;&#x63;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
-
-<p>第三章中我们使用实例介绍了高级请求-应答模式，本章我们会讲述请求-应答模式的可靠性问题，并使用ZMQ提供的套接字类型组建起可靠的请求-应答消息系统。</p>
-
-<p>本章将介绍的内容有：</p>
-
-<ul>
-<li>客户端请求-应答</li>
-<li>最近最少使用队列</li>
-<li>心跳机制</li>
-<li>面向服务的队列</li>
-<li>基于磁盘（脱机）队列</li>
-<li>主从备份服务</li>
-<li>无中间件的请求-应答</li>
-</ul>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2011/10/09/zguide-cn-chapter4/">Read on &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/6/">&larr; Older</a>
@@ -709,6 +757,10 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/05/15/maintainable-code-practice/">编写可维护的代码</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/01/10/v2-and-desigin-pattern/">V2 中的软件设计</a>
@@ -744,10 +796,6 @@ Namespaces are one honking great idea &#8211; let&#8217;s do more of those!</p><
     
       <li class="post">
         <a href="/blog/2013/03/01/using-pypi-provided-by-anjuke/">使用安居客提供的PyPI镜像</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/02/09/cia-hadoop/">Clojure实战(4)：编写Hadoop MapReduce脚本</a>
       </li>
     
   </ul>

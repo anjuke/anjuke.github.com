@@ -4,7 +4,7 @@
   <title><![CDATA[Category: zmq | Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/blog/categories/zmq/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2014-05-16T12:55:49+08:00</updated>
+  <updated>2014-05-16T13:42:40+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -18,8 +18,8 @@
     <link href="http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter5/"/>
     <updated>2011-10-09T22:22:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter5</id>
-    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#x6d;&#97;&#x69;&#108;&#116;&#x6f;&#58;&#x70;&#x68;&#64;&#105;&#x6d;&#97;&#116;&#x69;&#120;&#46;&#99;&#111;&#x6d;">&#112;&#x68;&#x40;&#105;&#x6d;&#x61;&#116;&#x69;&#x78;&#46;&#x63;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#111;&#58;&#x6a;&#105;&#122;&#104;&#97;&#x6e;&#103;&#x40;&#x61;&#110;&#106;&#117;&#x6b;&#x65;&#46;&#x63;&#x6f;&#x6d;">&#106;&#105;&#x7a;&#x68;&#x61;&#x6e;&#x67;&#64;&#97;&#110;&#x6a;&#117;&#x6b;&#101;&#46;&#x63;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
+    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#105;&#108;&#x74;&#x6f;&#x3a;&#x70;&#x68;&#x40;&#x69;&#x6d;&#97;&#116;&#x69;&#120;&#x2e;&#x63;&#x6f;&#x6d;">&#112;&#x68;&#64;&#105;&#109;&#97;&#x74;&#x69;&#120;&#x2e;&#99;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#x6c;&#116;&#x6f;&#58;&#x6a;&#105;&#x7a;&#104;&#x61;&#x6e;&#103;&#64;&#97;&#x6e;&#x6a;&#117;&#107;&#101;&#46;&#99;&#111;&#109;">&#x6a;&#105;&#x7a;&#x68;&#x61;&#110;&#x67;&#64;&#x61;&#x6e;&#106;&#117;&#x6b;&#101;&#x2e;&#x63;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第三章和第四章讲述了ZMQ中请求-应答模式的一些高级用法。如果你已经能够彻底理解了，那我要说声恭喜。这一章我们会关注发布-订阅模式，使用上层模式封装，提升ZMQ发布-订阅模式的性能、可靠性、状态同步及安全机制。</p>
 
@@ -3509,8 +3509,8 @@ return 0;
     <link href="http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter4/"/>
     <updated>2011-10-09T22:22:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter4</id>
-    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#105;&#108;&#x74;&#111;&#58;&#112;&#104;&#64;&#x69;&#x6d;&#x61;&#x74;&#x69;&#120;&#46;&#99;&#111;&#x6d;">&#112;&#104;&#64;&#x69;&#109;&#x61;&#116;&#105;&#120;&#46;&#x63;&#111;&#x6d;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#x6d;&#97;&#105;&#108;&#116;&#111;&#58;&#x6a;&#105;&#x7a;&#104;&#x61;&#110;&#x67;&#64;&#x61;&#x6e;&#x6a;&#x75;&#x6b;&#x65;&#x2e;&#x63;&#111;&#x6d;">&#x6a;&#105;&#x7a;&#x68;&#x61;&#110;&#103;&#x40;&#97;&#110;&#106;&#x75;&#107;&#x65;&#x2e;&#x63;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#105;&#108;&#x74;&#x6f;&#x3a;&#x70;&#x68;&#x40;&#x69;&#x6d;&#x61;&#x74;&#105;&#x78;&#46;&#x63;&#x6f;&#109;">&#x70;&#104;&#x40;&#x69;&#x6d;&#97;&#x74;&#105;&#x78;&#x2e;&#99;&#x6f;&#x6d;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#97;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#106;&#x69;&#122;&#104;&#97;&#110;&#x67;&#64;&#x61;&#110;&#106;&#117;&#107;&#x65;&#46;&#x63;&#111;&#x6d;">&#x6a;&#x69;&#x7a;&#x68;&#x61;&#110;&#x67;&#x40;&#x61;&#x6e;&#106;&#117;&#107;&#101;&#x2e;&#99;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第三章中我们使用实例介绍了高级请求-应答模式，本章我们会讲述请求-应答模式的可靠性问题，并使用ZMQ提供的套接字类型组建起可靠的请求-应答消息系统。</p>
 
@@ -8646,8 +8646,8 @@ agent_destroy (&amp;self);
     <link href="http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter3/"/>
     <updated>2011-10-09T22:22:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter3</id>
-    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#109;&#97;&#105;&#x6c;&#x74;&#111;&#58;&#112;&#x68;&#x40;&#x69;&#109;&#97;&#x74;&#105;&#120;&#46;&#x63;&#111;&#109;">&#x70;&#x68;&#x40;&#x69;&#109;&#x61;&#116;&#x69;&#x78;&#x2e;&#x63;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#97;&#x69;&#108;&#116;&#111;&#x3a;&#106;&#x69;&#x7a;&#104;&#97;&#110;&#103;&#64;&#x61;&#x6e;&#x6a;&#117;&#107;&#101;&#x2e;&#99;&#x6f;&#x6d;">&#x6a;&#105;&#x7a;&#104;&#x61;&#x6e;&#103;&#x40;&#97;&#110;&#106;&#117;&#107;&#101;&#46;&#x63;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#105;&#108;&#x74;&#111;&#x3a;&#112;&#104;&#x40;&#x69;&#109;&#97;&#x74;&#x69;&#x78;&#46;&#99;&#111;&#109;">&#x70;&#x68;&#x40;&#x69;&#x6d;&#x61;&#116;&#x69;&#x78;&#46;&#99;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#x6c;&#116;&#x6f;&#x3a;&#x6a;&#x69;&#x7a;&#x68;&#97;&#110;&#x67;&#64;&#x61;&#x6e;&#106;&#117;&#107;&#x65;&#46;&#x63;&#111;&#109;">&#106;&#105;&#122;&#x68;&#97;&#110;&#x67;&#x40;&#97;&#110;&#x6a;&#x75;&#x6b;&#101;&#46;&#99;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>在第二章中我们通过开发一系列的小应用来熟悉ØMQ的基本使用方法，每个应用会引入一些新的特性。本章会沿用这种方式，来探索更多建立在ØMQ请求-应答模式之上的高级工作模式。</p>
 
@@ -11069,8 +11069,8 @@ return EXIT_SUCCESS;
     <link href="http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter2/"/>
     <updated>2011-10-09T22:22:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter2</id>
-    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#x69;&#x6c;&#116;&#111;&#x3a;&#112;&#104;&#x40;&#105;&#x6d;&#97;&#x74;&#105;&#x78;&#x2e;&#x63;&#111;&#109;">&#x70;&#x68;&#64;&#x69;&#x6d;&#97;&#x74;&#x69;&#120;&#x2e;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#x6d;&#97;&#105;&#x6c;&#116;&#111;&#x3a;&#x6a;&#105;&#122;&#x68;&#x61;&#110;&#x67;&#x40;&#97;&#x6e;&#x6a;&#x75;&#107;&#x65;&#46;&#99;&#111;&#x6d;">&#x6a;&#105;&#122;&#x68;&#x61;&#x6e;&#103;&#64;&#x61;&#x6e;&#106;&#117;&#107;&#x65;&#46;&#x63;&#111;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#x6f;&#58;&#112;&#x68;&#64;&#x69;&#x6d;&#97;&#116;&#x69;&#x78;&#x2e;&#99;&#x6f;&#109;">&#x70;&#x68;&#x40;&#x69;&#x6d;&#97;&#x74;&#x69;&#x78;&#x2e;&#99;&#111;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#97;&#105;&#108;&#116;&#111;&#x3a;&#x6a;&#105;&#x7a;&#x68;&#97;&#110;&#103;&#x40;&#97;&#110;&#x6a;&#117;&#x6b;&#101;&#x2e;&#99;&#x6f;&#109;">&#106;&#105;&#122;&#104;&#97;&#110;&#x67;&#64;&#x61;&#x6e;&#106;&#x75;&#x6b;&#x65;&#x2e;&#99;&#x6f;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>第一章我们简单试用了ZMQ的若干通信模式：请求-应答模式、发布-订阅模式、管道模式。这一章我们将学习更多在实际开发中会使用到的东西：</p>
 
@@ -13097,8 +13097,8 @@ return 0;
     <link href="http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter1/"/>
     <updated>2011-10-09T22:22:00+08:00</updated>
     <id>http://arch.corp.anjuke.com/blog/2011/10/09/zguide-cn-chapter1</id>
-    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#x6d;&#x61;&#x69;&#x6c;&#x74;&#111;&#58;&#x70;&#x68;&#64;&#x69;&#x6d;&#x61;&#x74;&#x69;&#120;&#46;&#x63;&#x6f;&#x6d;">&#x70;&#104;&#64;&#x69;&#109;&#x61;&#116;&#x69;&#120;&#46;&#x63;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
-<strong>翻译: 张吉 <a href="&#109;&#x61;&#x69;&#108;&#x74;&#111;&#x3a;&#106;&#105;&#x7a;&#x68;&#x61;&#110;&#x67;&#x40;&#x61;&#110;&#106;&#117;&#x6b;&#x65;&#x2e;&#x63;&#111;&#x6d;">&#106;&#105;&#122;&#x68;&#x61;&#110;&#x67;&#64;&#x61;&#x6e;&#106;&#x75;&#x6b;&#101;&#x2e;&#99;&#x6f;&#109;</a>, 安居客集团 好租网工程师</strong></p>
+    <content type="html"><![CDATA[<p><strong>作者: Pieter Hintjens <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#111;&#x3a;&#x70;&#104;&#64;&#x69;&#x6d;&#97;&#x74;&#x69;&#120;&#x2e;&#x63;&#x6f;&#109;">&#x70;&#104;&#64;&#105;&#x6d;&#x61;&#x74;&#x69;&#x78;&#46;&#99;&#x6f;&#109;</a>, CEO iMatix Corporation.</strong>
+<strong>翻译: 张吉 <a href="&#x6d;&#97;&#x69;&#x6c;&#x74;&#111;&#x3a;&#x6a;&#105;&#x7a;&#104;&#x61;&#110;&#103;&#x40;&#97;&#x6e;&#x6a;&#x75;&#x6b;&#x65;&#x2e;&#x63;&#111;&#x6d;">&#106;&#x69;&#x7a;&#104;&#x61;&#x6e;&#x67;&#x40;&#x61;&#110;&#x6a;&#x75;&#107;&#101;&#x2e;&#x63;&#111;&#x6d;</a>, 安居客集团 好租网工程师</strong></p>
 
 <p>With thanks to Bill Desmarais, Brian Dorsey, CAF, Daniel Lin, Eric Desgranges, Gonzalo Diethelm, Guido Goldstein, Hunter Ford, Kamil Shakirov, Martin Sustrik, Mike Castleman, Naveen Chawla, Nicola Peduzzi, Oliver Smith, Olivier Chamoux, Peter Alexander, Pierre Rouleau, Randy Dryburgh, John Unwin, Alex Thomas, Mihail Minkov, Jeremy Avnet, Michael Compton, Kamil Kisiel, Mark Kharitonov, Guillaume Aubert, Ian Barber, Mike Sheridan, Faruk Akgul, Oleg Sidorov, Lev Givon, Allister MacLeod, Alexander D'Archangel, Andreas Hoelzlwimmer, Han Holl, Robert G. Jakabosky, Felipe Cruz, Marcus McCurdy, Mikhail Kulemin, Dr. Gergő Érdi, Pavel Zhukov, Alexander Else, Giovanni Ruggiero, Rick "Technoweenie", Daniel Lundin, Dave Hoover, Simon Jefford, Benjamin Peterson, Justin Case, Devon Weller, Richard Smith, Alexander Morland, Wadim Grasza, Michael Jakl, and Zed Shaw for their contributions, and to Stathis Sideris for <a href="http://www.ditaa.org">Ditaa</a>.</p>
 

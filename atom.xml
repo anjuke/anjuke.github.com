@@ -4,7 +4,7 @@
   <title><![CDATA[Anjuke Engineering]]></title>
   <link href="http://arch.corp.anjuke.com/atom.xml" rel="self"/>
   <link href="http://arch.corp.anjuke.com/"/>
-  <updated>2014-05-16T12:55:49+08:00</updated>
+  <updated>2014-05-16T13:42:40+08:00</updated>
   <id>http://arch.corp.anjuke.com/</id>
   <author>
     <name><![CDATA[Anjuke Inc.]]></name>
@@ -12,6 +12,1269 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[编写可维护的代码]]></title>
+    <link href="http://arch.corp.anjuke.com/blog/2014/05/15/maintainable-code-practice/"/>
+    <updated>2014-05-15T11:30:00+08:00</updated>
+    <id>http://arch.corp.anjuke.com/blog/2014/05/15/maintainable-code-practice</id>
+    <content type="html"><![CDATA[<p><img class="right" src="https://avatars1.githubusercontent.com/u/863872?s=460" width="80"></p>
+
+<p>文：<a href="https://github.com/kdlan">蕫菲</a> kdlan</p>
+
+<p>接着 <a href="http://arch.corp.anjuke.com/blog/2014/01/10/v2-and-desigin-pattern/">上次的内容</a></p>
+
+<h3>从最简单用户注册开始</h3>
+
+<p>产品需求，需要用户通过 form 提交邮箱和注册密码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">UserRegisterController</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">//...</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">UserRegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>过了两天产品过来说，我们需要向注册的用户发送欢迎邮件。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterController</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">//...</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>过了两天，产品又来，说我们要支持手机注册，手机注册的用户需要验证手机号，并且注册成功以后要发送成功的短信。邮件的注册流程保持不变。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">//do nothing</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span>  <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>过了两天产品说用户注册成功以后要发送站内信</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">//do nothing</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>又过了两天，产品说用户注册以后，原来匿名状态下的数据要同步到登陆以后的数据中（比如收藏订阅）。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">//do nothing</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">syncUserFavorateData</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>又过两天，产品说我们要支持微博注册，QQ注册，豆瓣注册。</p>
+
+<p>按照现在的代码，一定会越来越混乱，功能越来越多，性能越来越差，代码难以维护。</p>
+
+<h3>模板方法模式</h3>
+
+<p><em>Template Method Pattern</em></p>
+
+<h4>什么是模板方法</h4>
+
+<p>模板方法模式定义了一个算法的步骤，并允许次类别为一个或多个步骤提供其实践方式。让次类别在不改变算法架构的情况下，重新定义算法中的某些步骤。</p>
+
+<h4>用法</h4>
+
+<p>模板方法模式多用在：</p>
+
+<ul>
+<li>某些类别的算法中，实做了相同的方法，造成程式码的重复。</li>
+<li>控制子类别必须遵守的一些事项。</li>
+</ul>
+
+
+<p>简单来说就是在父类里面定义好业务逻辑的处理流程，将可变化的部分提取，变为抽象类。具体业务继承父类，实现父类的抽象方法来提供不同的行为。</p>
+
+<h4>用模板方法模式重构我们的代码</h4>
+
+<p>在完成了邮件注册，手机注册，注册后发送站内信的几个功能后，我们的代码是这样的，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">){</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">//do nothing</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">if</span><span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当产品提出要支持微博、QQ 注册的时候，我们可以预测到，以后还有类似的第三方账号注册，比如豆瓣、百度… 这时我们可以这么写，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">abstract</span> <span class="k">class</span> <span class="nc">User_AbstractRegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">abstract</span> <span class="k">function</span> <span class="nf">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">abstract</span> <span class="k">function</span> <span class="nf">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_EmailRegisterService</span> <span class="k">extends</span> <span class="nx">User_AbstractRegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">function</span> <span class="nf">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">){</span>
+</span><span class='line'>        <span class="c1">//donothing</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">function</span> <span class="nf">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">){</span>
+</span><span class='line'>        <span class="c1">//send welcome email</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_MobileRegisterService</span> <span class="k">extends</span> <span class="nx">User_AbstractRegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">function</span> <span class="nf">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">){</span>
+</span><span class='line'>        <span class="c1">//check phone number</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">function</span> <span class="nf">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//send welcome sms</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_WeiboRegisterService</span> <span class="k">extends</span> <span class="nx">User_AbstractRegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">function</span> <span class="nf">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//get user info from Weibo api</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">function</span> <span class="nf">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//send welcome weibo</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterController</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">function</span> <span class="nf">handleRequest</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">registerType</span> <span class="o">==</span> <span class="nx">Email_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$service</span><span class="o">=</span><span class="k">new</span> <span class="nx">User_EmailRegisterService</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">registerType</span> <span class="o">==</span> <span class="nx">Mobile_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$service</span><span class="o">=</span><span class="k">new</span> <span class="nx">User_MobileRegisterService</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">registerType</span> <span class="o">==</span> <span class="nx">WEIBO_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$service</span><span class="o">=</span><span class="k">new</span> <span class="nx">User_WeiboRegisterService</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$service</span><span class="o">-&gt;</span><span class="na">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>之后产品提出要新增微博注册，新增 QQ 注册，只需要新增一个子类，在Controller里面增加一个 else if 即可。</p>
+
+<p>对于原来匿名状态下的数据要同步到登陆以后的数据中这样的需求，也只需要在父类中修改来进行统一处理即可。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">abstract</span> <span class="k">class</span> <span class="nc">User_AbstractRegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">syncUserData</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">syncUserData</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">abstract</span> <span class="k">function</span> <span class="nf">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">abstract</span> <span class="k">function</span> <span class="nf">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>对比第一个版本代码</p>
+
+<ul>
+<li>少一次 if 判断，只需要在 Controller 里做一次处理即可，原来在 <code>saveUser</code> 之前和之后都要进行判断，减少了出错的可能。</li>
+<li>各个子业务的代码分割在不同的子类中，<code>User_RegisterService</code> 不需要再承载过多的职责。缺点是类的数量变多了。</li>
+<li>每新增一个用户注册后操作的需求（比如同步数据，比如发送api监控实时的用户注册量，以及发送站内消息），我们都需要去修改 <code>User_AbstractRegisterService</code> 来增加一部分逻辑。</li>
+<li>整个处理流程里的做事情并没有变化，性能仍然是问题。</li>
+</ul>
+
+
+<h4>需求又来了</h4>
+
+<p>TeamLeader 过来跟我们说单个页面性能不能超过 200 ms。</p>
+
+<p>加了断点以后，发现同步数据这块的速度很慢，于是决定把这块内容发送消息出去，后台起个 job 来单独做数据同步。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">abstract</span> <span class="k">class</span> <span class="nc">User_AbstractRegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">){</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendUserRegisterMQ</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendUserRegisterMQ</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">abstract</span> <span class="k">function</span> <span class="nf">checkUserInfo</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">abstract</span> <span class="k">function</span> <span class="nf">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterSyncDataJob</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">run</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$data</span><span class="o">=</span><span class="nx">getUserRegisterMessageFromMQ</span><span class="p">();</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">syncUserData</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">syncUserData</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">){</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>syncUserData</code> 因为是在原来的抽象类中实现的，不太好复用。</p>
+
+<p>虽然性能问题解决了，但是如果继续有需求，比如需要把调用 Weibo API 发送微博或者手机发送欢迎短信的操作也放在 job 中异步执行，这段代码仍然不太好修改。</p>
+
+<h3>继续改进</h3>
+
+<h4>重新梳理业务</h4>
+
+<p>把节点往回推到完成了邮件注册，手机注册，注册后发送站内信的几个功能后。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="o">...</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">//do nothing</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">){</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">EMAIL_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$userInfo</span><span class="o">-&gt;</span><span class="na">type</span> <span class="o">==</span> <span class="nx">MOBILE_USER</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeEmail</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendWelcomeSMS</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">checkPhone</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">sendUserMessage</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这是，产品给我们提了支持微博注册的需求，我们就可以总结出来，用户注册业务的流程</p>
+
+<ul>
+<li>对注册数据进行事前检查（短信验证码）</li>
+<li>获取用户数据（表单、Weibo API）</li>
+<li>保存注册数据</li>
+<li>注册后特殊处理（发送欢迎邮件、欢迎短信）</li>
+<li>注册后通用处理（发送站内信）</li>
+<li>注册后特殊处理和通用处理本身其实没有本质上的区别，只是特殊处理需要去判断用户的类型来确定应该做哪些事情，而通用处理则不用去管这些</li>
+</ul>
+
+
+<h4>重新设计</h4>
+
+<p>按照这样的流程，我们可以重新来设计 <code>User_RegisterService</code>的代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterService</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">beforeUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">getUserInfo</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">afterUserRegisterWithType</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">afterUserRegisterWithAll</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">beforeUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//TODO</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getUserInfo</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//TODO</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">private</span> <span class="k">function</span> <span class="nf">afterUserRegisterWithType</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//TODO</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getAllTypeAfterRegisterHandler</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//TODO</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们有注册前检查和注册后处理两类处理逻辑，所以这里我们定义三个接口，分别用来处理 <code>beforeUserRegister</code>，<code>getUserInfo</code>，<code>afterUserRegister</code>。</p>
+
+<p>但是考虑到每个类型的用户，对应的 <code>beforeUserRegister</code>，<code>getUserInfo</code>，<code>afterUserRegister</code> 之间都有很强的相关性，因此我们的接口这样来设计，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">interface</span> <span class="nx">AfterUserRegisterHandler</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">afterUserRegister</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">interface</span> <span class="nx">UserRegisterHandler</span> <span class="k">extends</span> <span class="nx">AfterUserRegisterHandler</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">beforeUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">getUserInfo</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>数据同步、发送站内信的处理可以单独实现 <code>AfterUserRegisterHandler</code> 接口，邮箱注册、微博注册的逻辑，就需要实现 <code>UserRegisterHandler</code> 接口。</p>
+
+<p>接口定义好以后我们来实现 <code>User_RegisterService</code> 里的各个方法。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">User_RegisterService</span> <span class="p">{</span>
+</span><span class='line'>     <span class="k">public</span> <span class="k">function</span> <span class="nf">register</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">beforeUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$userInfo</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">getUserInfo</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userDao</span><span class="o">.</span><span class="nx">save</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">afterUserRegisterWithType</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">afterUserRegisterWithAll</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">beforeUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$handler</span> <span class="o">=</span> <span class="nx">getRegisterHandlerByType</span><span class="p">(</span><span class="nv">$data</span><span class="o">-&gt;</span><span class="na">type</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$handler</span><span class="o">-&gt;</span><span class="na">beforeUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getUserInfo</span><span class="p">(</span><span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$handler</span> <span class="o">=</span> <span class="nx">getRegisterHandlerByType</span><span class="p">(</span><span class="nv">$data</span><span class="o">-&gt;</span><span class="na">type</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$handler</span><span class="o">-&gt;</span><span class="na">getUserInfo</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">afterUserRegisterWithType</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$handler</span> <span class="o">=</span> <span class="nx">getAfterRegisterHandlerByType</span><span class="p">(</span><span class="nv">$data</span><span class="o">-&gt;</span><span class="na">type</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$handler</span><span class="o">-&gt;</span><span class="na">afterUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">afterUserRegisterWithAll</span><span class="p">(</span><span class="nv">$userInfo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$allHandler</span> <span class="o">=</span> <span class="nx">getAllTypeRegisterHandler</span><span class="p">();</span>
+</span><span class='line'>        <span class="nx">forearch</span> <span class="p">(</span><span class="nv">$allHandler</span> <span class="k">as</span> <span class="nv">$handler</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$handler</span><span class="o">-&gt;</span><span class="na">afterUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//TODO</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getAfterRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//TODO</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getAllTypeAfterRegisterHandler</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//TODO</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>getRegisterHandlerByType</code> 的几个方法里，简单的可以直接 if else 返回对应的 handler，也可以通过映射的方式来实现。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'>    <span class="c1">// ...</span>
+</span><span class='line'>    <span class="k">private</span> <span class="nv">$registerHandlerMapping</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>        <span class="nx">EMAIL_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">EmailUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="nx">MOBILE_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">MobileUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="nx">WEIBO_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">MobileUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="nv">$allTypeAfterRegisterHandler</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>        <span class="k">new</span> <span class="nx">SendUserMessageAfterRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="c1">//new SyncAnonymousUserDataAfterRegisterHandler(),</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$registerHandlerMapping</span><span class="p">[</span><span class="nv">$type</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getAfterRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nx">getRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getAllTypeAfterRegisterHandler</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$allTypeAfterRegisterHandler</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>下一次，当我们的产品又提出了新需求以后，只要产品没有重新定义用户注册的流程，我们就只需要去实现 <code>UserRegisterHandler</code> 或者 <code>AfterUserRegisterHandler</code>，添加到 <code>registerHandlerMapping</code> 或 <code>allTypeAfterRegisterHandler</code> 里面，就可以支持新的功能，<code>User_RegisterService</code> 其他地方的代码都不用修改。</p>
+
+<h4>发送消息</h4>
+
+<p>为了提高性能，降低耦合度，需要再把用户同步的操作分离，发送消息到 MQ，单独起 job 来处理用户数据的同步。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'>     <span class="k">private</span> <span class="nv">$registerHandlerMapping</span> <span class="o">=</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>        <span class="nx">EMAIL_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">EmailUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="nx">MOBILE_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">MobileUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="nx">WEIBO_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">MobileUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>     <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="nv">$allTypeAfterRegisterHandler</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>        <span class="k">new</span> <span class="nx">SendUserMessageAfterRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="c1">//new SyncAnonymousUserDataAfterRegisterHandler(),</span>
+</span><span class='line'>        <span class="k">new</span> <span class="nx">SendUserRegisterMQAfterRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>    <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">private</span> <span class="k">function</span> <span class="nf">getRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$registerHandlerMapping</span><span class="p">[</span><span class="nv">$type</span><span class="p">];</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">private</span> <span class="k">function</span> <span class="nf">getAfterRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nx">getRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">);</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">private</span> <span class="k">function</span> <span class="nf">getAllTypeAfterRegisterHandler</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$allTypeAfterRegisterHandler</span><span class="p">;</span>
+</span><span class='line'>     <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">AfterUserRegisterJob</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">run</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nv">$handlerClass</span> <span class="o">=</span> <span class="nx">getHandlerClassFromArgv</span><span class="p">();</span>
+</span><span class='line'>        <span class="nv">$data</span> <span class="o">=</span> <span class="nx">getUserRegisterMessageFromMQ</span><span class="p">();</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">process</span><span class="p">(</span><span class="nv">$handlerClass</span><span class="p">,</span> <span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">process</span><span class="p">(</span><span class="nv">$handlerClass</span><span class="p">,</span> <span class="nv">$data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$handler</span> <span class="o">=</span> <span class="k">new</span> <span class="nv">$handlerClass</span><span class="p">();</span>
+</span><span class='line'>        <span class="nv">$handler</span><span class="o">-&gt;</span><span class="na">afterUserRegister</span><span class="p">(</span><span class="nv">$data</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Usage：</p>
+
+<pre><code>$ php laucher.php AfterUserRegisterJob SyncAnonymousUserDataAfterRegisterHandler
+</code></pre>
+
+<p>因为之前已经把后续处理的逻辑都分装在 <code>AfterRegisterHandler</code> 里面，<code>job</code> 这里调用的时候只需要写一些胶水代码，读取数据，调用具体的实现类即可。</p>
+
+<p>之前 <code>User_RegisterService</code> 里的逻辑代码也不用修改，只需要修改 <code>allTypeAfterRegisterHandler</code> 这一处，就能做到发送消息到 MQ，启动 job 处理消息了。</p>
+
+<p>下一次，当我们要把所有的用户注册后的行为全部搬迁到 job 的时候，只需要这么修改</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'>     <span class="k">private</span> <span class="nv">$registerHandlerMapping</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>        <span class="nx">EMAIL_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">EmailUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="nx">MOBILE_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">MobileUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="nx">WEIBO_USER</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">MobileUserRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>        <span class="c1">//...</span>
+</span><span class='line'>     <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="nv">$allTypeAfterRegisterHandler</span> <span class="o">=</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>        <span class="c1">//new SendUserMessageAfterRegisterHandler(),</span>
+</span><span class='line'>        <span class="c1">//new SyncAnonymousUserDataAfterRegisterHandler(),</span>
+</span><span class='line'>        <span class="k">new</span> <span class="nx">SendUserRegisterMQAfterRegisterHandler</span><span class="p">(),</span>
+</span><span class='line'>    <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$registerHandlerMapping</span><span class="p">[</span><span class="nv">$type</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getAfterRegisterHandlerByType</span><span class="p">(</span><span class="nv">$type</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="nx">DoNothingAfterRegisterHandler</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">private</span> <span class="k">function</span> <span class="nf">getAllTypeAfterRegisterHandler</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nv">$allTypeAfterRegisterHandler</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后再启动对应的发送微博等任务的 job，就可以非常容易的做到这些需求了。</p>
+
+<h3>软件设计原则</h3>
+
+<p>前面我们看到了一个小业务模块的 3 种写法</p>
+
+<ul>
+<li>第一种写法，每次来新需求，我们都需要对代码的多处来进行修改。</li>
+<li>第二种写法做了一定程度的抽象，但是当有一些之前没有考虑到的需求（例如拆分处理，通过消息队列传输数据），仍然会有多处的代码修改点。</li>
+<li>而第三种写法，只要产品对业务流程本身没有大的调整，新需求到来的时候，我们只需要编写新需求的处理类，通过修改或者新增胶水代码，就可以完成需求，对原来代码的修改点降到最低。</li>
+</ul>
+
+
+<p><a href="http://arch.corp.anjuke.com/blog/2014/01/10/v2-and-desigin-pattern/">上次</a> 我们提到了一些软件设计的原则，我们来看看第三种的写法是如何做到只需要一两个修改点，就能完成新需求的。</p>
+
+<h4>Single Responsibility Principle (SRP) – 职责单一原则</h4>
+
+<p>简单来说，就是一段代码只做一件事情。</p>
+
+<p><code>User_RegisterService</code> 的 <code>register</code> 方法只负责定义了用户注册的流程，所有的具体业务逻辑处理全部交给了其他的对象来负责。</p>
+
+<p><code>UserRegisterHandler</code> 的实现类只负责某个具体注册类型的处理。</p>
+
+<p><code>AfterUserRegisterHandler</code> 的实现类，只负责用户注册后需要进行的处理。</p>
+
+<h4>Program to an interface, not an implementation - 针对接口编程，而不是实现</h4>
+
+<p><code>User_RegisterService</code> 的 <code>register</code> 方法里所有操作的业务逻辑对象，全部都是针对 <code>UserRegisterHandler</code> 和 <code>AfterUserRegisterHandler</code> 这两个接口，<code>register</code> 方法并不关心具体操作的是哪个实现类，这样把 <code>register</code> 方法和某个特定实现的逻辑类（比如微博，手机）隔离开，做到解耦。</p>
+
+<p>这样当我们把同步数据，发送微博这些处理独立到 job 中去以后，我们就只用实现一个简单的 job，负责读取数据调用实现类就行了，原来的代码都不用做修改。</p>
+
+<h4>Open/Closed Principle (OCP) – 开闭原则</h4>
+
+<p>对扩展开放，对修改关闭。</p>
+
+<p><code>User_RegisterService</code> 的 <code>register</code> 方法里通过定义流程，操作接口，来确定了核心的处理流程，通过替换不同的 <code>UserRegisterHandler</code>，<code>AfterUserRegisterHandler</code> 实现类，实现了对 <code>register</code> 的扩展。我们可以给 <code>register</code> 方法提供不同的实现类，来完成我们特定的业务逻辑。</p>
+
+<h4>控制代码，业务代码，组装代码</h4>
+
+<p><code>User_RegisterService</code> 的 <code>register</code> 方法就是控制代码，它负责定义我们的一段处理流程。</p>
+
+<p><code>UserRegisterHandler</code> 和 <code>AfterUserRegisterHandler</code> 的实现类，就是业务代码，定义了我们某个特殊的业务逻辑的实现。</p>
+
+<p><code>getRegisterHandlerByType</code>，<code>getAfterRegisterHandlerByType</code>，<code>getAllTypeAfterRegisterHandler</code> 几个方法就是组装代码，用来把控制代码和业务代码组合起来，来完成我们的业务。</p>
+
+<h3>如何操作</h3>
+
+<h4>不要一开始就设计</h4>
+
+<p>在第二个例子和第三个例子，都选取了在完成了邮件注册，手机注册，注册后发送站内信的几个功能后，产品提出新的需求，这个时间节点上来进行重构。</p>
+
+<p>原因就是在这个节点之前，我们的功能其实是相对比较简单的，没必要做那么多设计，快速时间功能就行了。</p>
+
+<p>这个节点之后，我们的业务需求就已经比较清晰，能够比较清楚的预测到后面一段时间的需求，因此选取了这样一个时间点来做。</p>
+
+<h4>梳理需求，定义流程</h4>
+
+<p>重新设计开始之前，我们要对需求进行分析，定义出我们业务处理的流程，比如前面的列子，梳理出来的流程就是</p>
+
+<ul>
+<li>邮箱注册
+
+<ul>
+<li>获取表单数据</li>
+<li>保存用户数据</li>
+<li>发送欢迎邮件</li>
+<li>发送站内信</li>
+</ul>
+</li>
+<li>手机注册
+
+<ul>
+<li>获取表单数据</li>
+<li>手机验证码</li>
+<li>保存数据</li>
+<li>发送欢迎短信</li>
+<li>发送站内信</li>
+</ul>
+</li>
+<li>微博注册
+
+<ul>
+<li>调用API获取用户数据</li>
+<li>保存数据</li>
+<li>发送微博</li>
+<li>发送站内信</li>
+</ul>
+</li>
+</ul>
+
+
+<p>再将这几个流程合并，我们就能抽象出这个业务的基本流程</p>
+
+<ul>
+<li>对注册数据进行事前检查（短信验证码）</li>
+<li>获取用户数据（表单、Weibo API）</li>
+<li>保存注册数据</li>
+<li>注册后特殊处理（发送欢迎邮件、欢迎短信）</li>
+<li>注册后通用处理（发送站内信）</li>
+</ul>
+
+
+<p>我们只需要按照这个流程来编写我们核心的流程代码即可。</p>
+
+<h4>设计接口，实现代码</h4>
+
+<p>流程出来以后，我们就可以针对每个流程来设计具体的业务接口。遵循单一职责的原则，接口的设计尽量保持只做一件事情。</p>
+
+<h3>如何学习</h3>
+
+<p>面向对象和设计模式都只是工具，不能帮助我们解决所有的问题，而且很多模式都是有试用场景的，生搬硬套只会让代码更加难以维护，可以参考 <a href="http://www.zhihu.com/question/23757237">设计模式有何不妥，所谓的荼毒体现在哪</a>。只有平常多写，多看，多思考才能不断的提升我们写代码的技巧。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[V2 中的软件设计]]></title>
@@ -7679,136 +8942,6 @@
 <h3>注意事项</h3>
 
 <p>在调试的过程中，有时会尝试用telnet查看Storm Thrift Server是否存活，一旦这样操作就会导致Nimbus挂起，无法自动退出。和作者确认过，这是Thrift自身的Bug，目前还没有解决方法。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[深入Solr实战 - 实例篇]]></title>
-    <link href="http://arch.corp.anjuke.com/blog/2012/10/30/solr-guideline-in-action/"/>
-    <updated>2012-10-30T10:29:00+08:00</updated>
-    <id>http://arch.corp.anjuke.com/blog/2012/10/30/solr-guideline-in-action</id>
-    <content type="html"><![CDATA[<p><img class="right" src="http://0.gravatar.com/avatar/084c149bb5a1769082ef794c6dcd1a91"></p>
-
-<p>之前我们有提到<a href="http://arch.corp.anjuke.com/blog/2012/10/15/solr-guildeline/">Solr的使用的一些规范</a>，这次我们深入实例。</p>
-
-<p>我们从access log中找出一些查询耗时比较高的查询,跟去&#8221;深入solr实战&#8221;中提到的修改方式,做了一些更改,查询结果没有变化但是速度出现下降</p>
-
-<!-- more -->
-
-
-<p>测试环境:在cloud中不对外服务的solr instance,关闭filtercache，测试以下查询：</p>
-
-<p>96ms左右</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>http://10.10.6.34:7731/solr/select/?
-</span><span class='line'>start=0&
-</span><span class='line'>q=commid:51087&
-</span><span class='line'>qt=standard&
-</span><span class='line'>fq=city_id:14&
-</span><span class='line'>fq=hpstarttime:[0+TO+1347292898]&
-</span><span class='line'>fq=hpendtime:[1347292898+TO++2147483647+]&
-</span><span class='line'>fq=%28chpratio:3897.99871+AND+hpplanid:[0+TO+689944]%29+OR+one_chpratio:[3897.99872+TO+2147483647]&
-</span><span class='line'>rows=0&
-</span><span class='line'>version=2.2</span></code></pre></td></tr></table></div></figure>
-
-
-<p>改成</p>
-
-<p>40ms左右</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>http://10.10.6.34:7731/solr/select/?
-</span><span class='line'>start=0&
-</span><span class='line'>q=\*:\*&
-</span><span class='line'>qt=standard&
-</span><span class='line'>fq=commid:51087&
-</span><span class='line'>fq=hpstarttime:[0+TO+1347292898]%20AND%20hpendtime:[1347292898+TO++2147483647+]%20AND%20%28%28chpratio:3897.99871+AND+hpplanid:[0+TO+689944]%29+OR+one_chpratio:[3897.99872+TO+2147483647+]%29&
-</span><span class='line'>rows=0&
-</span><span class='line'>version=2.2</span></code></pre></td></tr></table></div></figure>
-
-
-<p>解析:</p>
-
-<ol>
-<li>这个instance存放的都是北京房源,所以拿掉了city_id:14的fq</li>
-<li>hp的一系列fq首先不是term查询,其次相关的参数几乎时刻都在变化无法吃出cache,所以进行了合并</li>
-<li>不需要计算score,所以让q=<em>:</em></li>
-<li>commid相对固定,容易吃住cache,所以放在fq而没有合并到hp的查询条件中</li>
-<li>hp的fq过滤后没有文档,所以commid是否合并如hp的fq对速度没有影响</li>
-</ol>
-
-
-<p>169ms左右</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>http://10.10.6.34:7731/solr/select/?
-</span><span class='line'>fl=score,*&
-</span><span class='line'>sort=order_string+desc,rank_level+asc,score+desc,rank_sub_level+asc,rank_score+desc&start=0&
-</span><span class='line'>q=_val_:%22map%28rank_score2,4683.3,10000,0,1%29%22&
-</span><span class='line'>qt=standard&
-</span><span class='line'>hl=false&
-</span><span class='line'>fq=city_id:14&
-</span><span class='line'>fq=commid:50815&
-</span><span class='line'>fq=islist:1&
-</span><span class='line'>fq=hpendtime:[0+TO+1347292823]+OR+hpstarttime:[1347292823+TO+*]</span></code></pre></td></tr></table></div></figure>
-
-
-<p>改成</p>
-
-<p>35ms左右</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>http://10.10.6.34:7731/solr/select/?
-</span><span class='line'>fl=score,*&
-</span><span class='line'>sort=order_string+desc,rank_level+asc,score+desc,rank_sub_level+asc,rank_score+desc&
-</span><span class='line'>start=0&
-</span><span class='line'>q=_val_:%22map%28rank_score2,4683.3,10000,0,1%29%22&
-</span><span class='line'>qt=standard&
-</span><span class='line'>hl=false&
-</span><span class='line'>fq=commid:50815%20AND%20islist:1%20AND%20hpendtime:[0+TO+1347292823]+OR+hpstarttime:[1347292823+TO+2147483647]</span></code></pre></td></tr></table></div></figure>
-
-
-<p>解析</p>
-
-<ol>
-<li>同上1,去掉city_id:14的fq</li>
-<li>同上2,合并fq</li>
-<li>hp的fq过滤后有大量文档,所以合并commid可以明显提升速度</li>
-</ol>
-
 ]]></content>
   </entry>
   
